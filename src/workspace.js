@@ -1,6 +1,6 @@
-import {InterfaceRegistry} from './interfaces/registry.js';
+import {InterfaceRegistry,parseMessage} from './interfaces/registry.js';
 import {HOME} from './fs.js';
-import {parsePackageXml,parseCmake,parsePythonSetup} from './metadata.js';
+import {parsePackageXml,parseCmake,parsePythonSetup,cmakeCalls} from './metadata.js';
 export const ROOT=HOME+'/ros2_ws';
 export const BASE_PACKAGES=['builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
 export function manifest(name,type,dependencies=[]){return `<?xml version="1.0"?>
@@ -55,10 +55,26 @@ export class Workspace{
  installedPackage(name){if(!this.current(name))throw Error(`Package '${name}' has no current build. Run colcon build (source edits invalidate the browser install).`);return this.installed.get(name);}
  visible(terminal){return terminal.overlays.has(ROOT)&&this.fs.exists(ROOT+'/install/setup.bash')?[...this.installed.keys()].filter(n=>this.current(n)):[];}
  resolve(terminal,name){if(!this.visible(terminal).includes(name))throw Error(`Package '${name}' not found. Build it, then source ~/ros2_ws/install/setup.bash in this terminal.`);return this.installedPackage(name);}
+ buildOrder(names){const output=[],visiting=new Set(),done=new Set();const visit=name=>{if(done.has(name))return;if(visiting.has(name))throw Error('Cyclic package dependency');visiting.add(name);const p=ROOT+'/src/'+name+'/package.xml';if(!this.fs.exists(p))throw Error('Missing package.xml in '+name);const m=parsePackageXml(this.fs.read(p));for(const d of m.dependencies)if(names.includes(d))visit(d);visiting.delete(name);done.add(name);output.push(name);};for(const name of names)visit(name);return output;}
  inspect(name){
   const files=this.fs.filesUnder(ROOT+'/src/'+name);if(!files['package.xml'])throw Error('Missing package.xml in '+name);
   const metadata=parsePackageXml(files['package.xml']);if(metadata.name!==name)throw Error('package.xml name must match directory '+name);
   for(const d of metadata.dependencies)if(!BASE_PACKAGES.includes(d)&&!this.current(d))throw Error('Dependency '+d+' is not available; build its package first');
+  const msgFiles=Object.keys(files).filter(p=>p.startsWith('msg/')&&p.endsWith('.msg'));
+  if(msgFiles.length){
+   if(metadata.buildType!=='ament_cmake')throw Error('Interface packages must use ament_cmake');
+   const cm=files['CMakeLists.txt']??'',calls=cmakeCalls(cm),generation=calls.find(c=>c.name==='rosidl_generate_interfaces');
+   if(!generation||generation.args[0]!=='${PROJECT_NAME}')throw Error('Use rosidl_generate_interfaces(${PROJECT_NAME} "msg/Name.msg")');
+   const declared=generation.args.slice(1).map(p=>p.replace(/^"|"$/g,''));
+   for(const file of declared)if(!msgFiles.includes(file))throw Error('Missing or unsupported interface '+file);
+   if(msgFiles.some(p=>!declared.includes(p)))throw Error('List every message in rosidl_generate_interfaces');
+   parseCmake(cm.replace(/rosidl_generate_interfaces\([^]*?\)/g,''),name);
+   for(const d of ['rosidl_default_generators','rosidl_default_runtime'])if(!metadata.dependencies.has(d))throw Error('Missing dependency '+d);
+   if(!calls.some(c=>c.name==='find_package'&&c.args[0]==='rosidl_default_generators'&&c.args.includes('REQUIRED')))throw Error('Missing find_package(rosidl_default_generators REQUIRED)');
+   if(!/<member_of_group>\s*rosidl_interface_packages\s*<\/member_of_group>/.test(files['package.xml']))throw Error('Interface package must be a member of rosidl_interface_packages');
+   const generated=Object.fromEntries(msgFiles.map(p=>[name+'/msg/'+p.slice(4,-4),parseMessage(files[p])]));
+   return {name,type:'interface',metadata,files,executables:new Map(),launch:[],generated,fingerprint:this.fingerprint(name)};
+  }
   let executables,launch=[];
   if(metadata.buildType==='ament_python'){
    for(const p of ['resource/'+name,name+'/__init__.py','setup.py','setup.cfg'])if(!Object.hasOwn(files,p))throw Error('Missing '+p);
@@ -79,5 +95,5 @@ export function browserCompile(data){return new Promise((resolve,reject)=>{const
 export class Builder{
  constructor(workspace,compile=browserCompile){this.workspace=workspace;this.compile=compile;this.controller=null;}
  cancel(){this.controller?.abort();}
- async build(names=null,report=()=>{}){if(this.controller)throw Error('A build is already running');const controller=new AbortController();this.controller=controller;try{const w=this.workspace;names??=w.packages();if(!names.length)throw Error('No packages in src');for(const name of names){w.installed.delete(name);report('Starting >>> '+name);const record=w.inspect(name);if(record.type==='python'){const result=await this.compile({type:'python',name,files:record.files,entries:[...record.executables.values()],schema:w.registry.schema(),signal:controller.signal});for(const imported of result.imports??[]){const root=imported.split('.')[0];if(BASE_PACKAGES.includes(root)&&!record.metadata.dependencies.has(root))throw Error(root+' missing from package.xml');}}else for(const entry of record.executables.values()){report('Compiling '+entry.source+' with Clang/LLD');const result=await this.compile({type:'cpp',code:entry.code,schema:w.registry.schema(),signal:controller.signal});entry.module=result.module;}if(controller.signal.aborted)throw Error('Build cancelled');if(w.fingerprint(name)!==record.fingerprint)throw Error('Files changed during build; rebuild');record.schema=w.registry.schema();w.install(record);report('Finished <<< '+name);}return names;}finally{this.controller=null;}}
+ async build(names=null,report=()=>{}){if(this.controller)throw Error('A build is already running');const controller=new AbortController();this.controller=controller;try{const w=this.workspace;names??=w.packages();names=w.buildOrder(names);if(!names.length)throw Error('No packages in src');for(const name of names){w.installed.delete(name);report('Starting >>> '+name);const record=w.inspect(name);if(record.type==='interface'){for(const [type,schema]of Object.entries(record.generated)){const check=new InterfaceRegistry();check.add(type,schema);check.cppHeaders();}}else if(record.type==='python'){const result=await this.compile({type:'python',name,files:record.files,entries:[...record.executables.values()],schema:w.registry.schema(),signal:controller.signal});for(const imported of result.imports??[]){const root=imported.split('.')[0];if(BASE_PACKAGES.includes(root)&&!record.metadata.dependencies.has(root))throw Error(root+' missing from package.xml');}}else for(const entry of record.executables.values()){report('Compiling '+entry.source+' with Clang/LLD');const result=await this.compile({type:'cpp',code:entry.code,schema:w.registry.schema(),signal:controller.signal});entry.module=result.module;}if(controller.signal.aborted)throw Error('Build cancelled');if(w.fingerprint(name)!==record.fingerprint)throw Error('Files changed during build; rebuild');if(record.generated)for(const [type,schema]of Object.entries(record.generated))w.registry.add(type,schema);record.schema=w.registry.schema();w.install(record);report('Finished <<< '+name);}return names;}finally{this.controller=null;}}
 }

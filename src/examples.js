@@ -115,3 +115,12 @@ def generate_launch_description():
              remappings=[('topic', 'conversation')]),
     ])
 `;}
+
+export function customFiles(){return {
+ 'msg/StudentStatus.msg':'string name\nint32 counter\nbool ready\n',
+ 'package.xml':manifest('tutorial_interfaces','ament_cmake',['rosidl_default_generators','rosidl_default_runtime']).replace('  <export>','  <member_of_group>rosidl_interface_packages</member_of_group>\n  <export>'),
+ 'CMakeLists.txt':'cmake_minimum_required(VERSION 3.8)\nproject(tutorial_interfaces)\nfind_package(ament_cmake REQUIRED)\nfind_package(rosidl_default_generators REQUIRED)\nrosidl_generate_interfaces(${PROJECT_NAME} "msg/StudentStatus.msg")\nament_package()\n'
+};}
+export function statusFiles(language){const py=language==='python',pkg=py?'py_pubsub':'cpp_pubsub';const publisher=py?pythonTalker.replace('from std_msgs.msg import String','from tutorial_interfaces.msg import StudentStatus').replaceAll('String','StudentStatus').replace("'topic'","'student_status'").replace("message.data = f'Hello World: {self.count}'","message.name = 'Ada'\n        message.counter = self.count\n        message.ready = True").replace('f\'Publishing: "{message.data}"\'',"f'{message.name}: {message.counter}, ready={message.ready}'"):
+ cppTalker.replace('#include <std_msgs/msg/string.hpp>','#include <tutorial_interfaces/msg/student_status.hpp>').replaceAll('std_msgs::msg::String','tutorial_interfaces::msg::StudentStatus').replace('"topic"','"student_status"').replace('message.data = "Hello World: " + std::to_string(count_++);','message.name = "Ada"; message.counter = count_++; message.ready = true;').replace('message.data.c_str()','message.name.c_str()');
+ return {[py?pkg+'/status_publisher.py':'src/status_publisher.cpp']:publisher,'package.xml':manifest(pkg,py?'ament_python':'ament_cmake',[py?'rclpy':'rclcpp','std_msgs','tutorial_interfaces']),[py?'setup.py':'CMakeLists.txt']:py?setup(pkg,[`talker = ${pkg}.publisher:main`,`listener = ${pkg}.subscriber:main`,`status = ${pkg}.status_publisher:main`]):cmake(pkg,{talker:'src/publisher.cpp',listener:'src/subscriber.cpp',status:'src/status_publisher.cpp'},['rclcpp','std_msgs','tutorial_interfaces'])};}
