@@ -6,9 +6,10 @@ try{
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
  await page.goto(process.env.LAB_URL||(process.argv.includes('--built')?'http://127.0.0.1:8018/ros2-basics-lab/':'http://127.0.0.1:8017/ros2-basics-lab/'));
- assert.deepEqual(await page.locator('#locale option').evaluateAll(options=>options.map(o=>o.value)),['en','fr','nl']);
+ assert.deepEqual(await page.locator('#locale option').evaluateAll(options=>options.map(o=>o.value)),['en','nl','fr']);
+ assert(await page.locator('.university-logos img').evaluateAll(imgs=>imgs.every(img=>img.complete&&img.naturalWidth>0)),'University logos loaded');
  await page.locator('#locale').selectOption('fr');await page.getByRole('button',{name:'Commencer',exact:true}).click();
- await page.locator('.xterm').waitFor();await page.getByRole('button',{name:'Vérifier la progression',exact:true}).waitFor();
+ await page.locator('.xterm').waitFor();assert(await page.locator('#files').isVisible(),'Lesson 1 shows workspace');assert.equal(await page.locator('.command:visible').count(),4);await page.getByRole('button',{name:'Vérifier la progression',exact:true}).waitFor();
  await page.locator('#nav button').nth(1).click();await page.getByText('Un espace de travail contient', {exact:false}).waitFor();
  const before=await page.locator('#lesson code').allTextContents();
  await page.locator('.xterm-helper-textarea').focus();await page.keyboard.insertText('mkdir -p ~/ros2_ws/src');await page.keyboard.press('Enter');

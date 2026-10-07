@@ -1,5 +1,16 @@
 export const translations = {
-  "Native handoff": ["Guide de transition", "Overdracht naar native ROS 2"],
+  "Show all commands": [
+    "Afficher toutes les commandes",
+    "Alle opdrachten tonen"
+  ],
+  "Show fewer commands": [
+    "Afficher moins de commandes",
+    "Minder opdrachten tonen"
+  ],
+  "Native handoff": [
+    "Guide de transition",
+    "Overdracht naar native ROS 2"
+  ],
   "Designed for the ROS 2 exercise session at Diepenbeek.": [
     "Conçu pour la séance d’exercices ROS 2 à Diepenbeek.",
     "Ontworpen voor de ROS 2-oefenzitting in Diepenbeek."
@@ -300,10 +311,6 @@ export const translations = {
     "Où suis-je ? Le terminal permet de saisir des commandes. L’invite indique le dossier courant ; ~ désigne /home/student. Chaque terminal dispose de l’environnement Jazzy de base, comme si .bashrc avait sourcé /opt/ros/jazzy/setup.bash.",
     "Waar ben ik? In een terminal geef je opdrachten. De prompt toont je huidige map; ~ staat voor /home/student. Elke terminal begint met de Jazzy-basisomgeving, alsof .bashrc het bestand /opt/ros/jazzy/setup.bash heeft gesourcet."
   ],
-  "An empty graph is correct: you have not started any nodes. A node is a running participant. A publisher sends messages on a named topic; a subscriber receives them. One topic connects nodes even when they use different languages.": [
-    "Un graphe vide est normal : aucun nœud n’a été lancé. Un nœud est un participant actif. Un publisher envoie des messages sur un topic nommé ; un subscriber les reçoit. Un topic relie les nœuds même s’ils utilisent des langages différents.",
-    "Een lege graaf is normaal: je hebt nog geen nodes gestart. Een node is een actieve deelnemer. Een publisher stuurt berichten op een topic; een subscriber ontvangt ze. Een topic verbindt nodes ook als ze verschillende programmeertalen gebruiken."
-  ],
   "Try Ctrl+C while typing: it cancels the line and returns a fresh prompt. Up/Down recall commands. Ctrl+A/E move to the beginning/end; Ctrl+U clears the line. Tab completes paths. No robot is needed.": [
     "Essayez Ctrl+C pendant la saisie : la ligne est annulée et une nouvelle invite apparaît. Haut/Bas rappellent les commandes. Ctrl+A/E vont au début/à la fin ; Ctrl+U efface la ligne. Tab complète les chemins. Aucun robot n’est nécessaire.",
     "Probeer Ctrl+C tijdens het typen: de regel wordt geannuleerd en je krijgt een nieuwe prompt. Omhoog/omlaag halen opdrachten terug. Ctrl+A/E gaan naar het begin/einde; Ctrl+U wist de regel. Tab vult paden aan. Je hebt geen robot nodig."
@@ -411,5 +418,9 @@ export const translations = {
   "Inspect package.xml and CMakeLists.txt. add_executable defines hello; install makes it available to ros2 run.": [
     "Inspectez package.xml et CMakeLists.txt. add_executable définit hello ; install le rend disponible pour ros2 run.",
     "Bekijk package.xml en CMakeLists.txt. add_executable definieert hello; install maakt het beschikbaar voor ros2 run."
+  ],
+  "The base topics /parameter_events and /rosout are already available for parameter changes and ROS logs. You have not started any student nodes yet. A node is a running participant. A publisher sends messages on a named topic; a subscriber receives them. One topic connects nodes even when they use different languages.": [
+    "Les topics de base /parameter_events et /rosout sont déjà disponibles pour les changements de paramètres et les logs ROS. Aucun nœud étudiant n’est encore lancé. Un nœud est un participant actif. Un publisher envoie des messages sur un topic nommé ; un subscriber les reçoit. Un topic relie les nœuds même s’ils utilisent des langages différents.",
+    "De basistopics /parameter_events en /rosout zijn al beschikbaar voor parameterwijzigingen en ROS-logs. Je hebt nog geen eigen nodes gestart. Een node is een actieve deelnemer. Een publisher stuurt berichten op een topic; een subscriber ontvangt ze. Een topic verbindt nodes ook als ze verschillende programmeertalen gebruiken."
   ]
 };

@@ -4,7 +4,7 @@
 
 The in-memory filesystem starts with `/home/student`, `/opt/ros/jazzy`, `/tmp` and `/etc`. Paths support home expansion, relative components and root clamping. Terminals share files and the graph but own their working directory, history, environment and foreground task. The Jazzy base environment is available initially; workspace overlays must be sourced separately in each terminal.
 
-Shell commands: `pwd`, `cd`, `ls` (`-a`, `-l`), `mkdir` (`-p`), `touch`, `cat`, `cp` (`-r`), `mv`, `rm` (`-r`, `-f`), `tree`, `echo`, `clear`, `history`, `which`, `printenv`, and controlled `source`. Quotes and simple environment expansion work. Pipes, arbitrary redirection, substitution, background jobs, sudo and arbitrary shell scripts are unsupported and rejected. This is not Bash.
+Shell commands: `pwd`, `cd`, `ls` (`-a`, `-l`), `mkdir` (`-p`), `touch`, `cat`, `cp` (`-r`), `mv`, `rm` (`-r`, `-f`), `tree`, `echo`, `clear`, `history`, `which`, `printenv`, and controlled `source`. Quotes, simple environment expansion and unquoted `*`/`?` wildcard paths work. Quoted wildcards stay literal, and `*` does not match hidden files. `echo text > file` creates or overwrites a file; `echo text >> file` appends; `echo -n` omits the redirected newline. Other output redirection, pipes, input redirection, substitution, background jobs, sudo and arbitrary shell scripts are unsupported and rejected. This is not Bash.
 
 The terminal supports Ctrl+C, history arrows, cursor editing, Ctrl+A/E/U/K/W/L, Tab path completion and Ctrl+D to close an empty terminal. Closing a terminal stops its processes and subscriptions.
 
@@ -18,7 +18,7 @@ Supported CMake calls are `cmake_minimum_required`, `project`, `find_package(...
 
 ## ROS communication
 
-Use `ros2 --help` or a subcommand’s `--help` for exact CLI forms. The modeled CLI includes package creation/listing/executables, node inspection, topic list/type/info/echo/hz/pub, interface list/show, scalar parameters, services, run and declarative launch. Topic publishers, echo subscriptions and launch children are owned by their terminal and removed on stop. Python and C++ processes exchange messages on the same graph.
+Use `ros2 --help` or a subcommand’s `--help` for exact CLI forms. The modeled CLI includes package creation/listing/executables, node inspection, topic list/type/info/echo/hz/pub, interface list/show, scalar parameters, services, run and declarative launch. Topic publishers, echo subscriptions and launch children are owned by their terminal and removed on stop. Python and C++ processes exchange messages on the same graph. The base channels `/rosout` (`rcl_interfaces/msg/Log`) and `/parameter_events` (`rcl_interfaces/msg/ParameterEvent`) have a modeled, hidden CLI-daemon publisher. Running nodes add their own publishers and produce real logger messages and parameter declaration/change events. Echo stays silent until an event occurs. Stopping a node or CLI subscription removes its endpoints; the base publisher remains. This models the standard CLI environment without running a native daemon.
 
 The canonical interface registry supplies standard message/service fields, arrays, constants, defaults, generated teaching types and validation. JavaScript numbers restrict exact integers to the safe-integer range. Custom `.msg` files support scalar bool, int32, int64, float32, float64 and string fields; arbitrary rosidl syntax is not implemented.
 

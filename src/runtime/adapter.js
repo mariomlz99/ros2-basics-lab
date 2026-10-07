@@ -6,7 +6,7 @@ export class RuntimeAdapter{
  mapNode(name){const n='/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),this.ros.name??name.replace(/^\//,'')].filter(Boolean).join('/');this.sourceNames.set(n,name);return n;}
  mapTopic(name){const absolute=n=>n.startsWith('/')?n:'/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),n].filter(Boolean).join('/');return absolute(this.ros.remappings?.find(([a])=>absolute(a)===absolute(name))?.[1]??name);}
  watchdog(ms,message){clearTimeout(this.timer);this.timer=setTimeout(()=>{this.output(message);this.stop();},ms);}
- cleanupNode(node){for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.runtime.services.delete(name);this.runtime.parameters.delete(node);this.runtime.nodes.delete(node);this.nodes.delete(node);this.runtime.removeEmptyTopics();}
+ cleanupNode(node){for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.runtime.services.delete(name);this.runtime.removeNode(node);this.nodes.delete(node);this.runtime.removeEmptyTopics();}
  stop(){const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
  handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node)};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
   switch(d.kind){
@@ -14,9 +14,10 @@ export class RuntimeAdapter{
    case 'executing':this.watchdog(10000,'Program took too long; stopped.');break;
    case 'ready':clearTimeout(this.timer);this.status('Running');break;
    case 'stdout':this.output(d.text);break;
+   case 'log':r.log(d.node,d.text,d.level);this.output('['+d.node+'] '+d.text);break;
    case 'error':this.output(d.text);this.stop();break;
    case 'shutdown':this.stop();break;
-   case 'node':if(r.nodes.has(d.node))throw Error('Node already exists: '+d.node);r.nodes.add(d.node);this.nodes.add(d.node);break;
+   case 'node':if(r.nodes.has(d.node))throw Error('Node already exists: '+d.node);r.addNode(d.node);this.nodes.add(d.node);break;
    case 'destroy':this.cleanupNode(d.node);break;
    case 'publisher':r.ensureTopic(d.topic,d.type).publishers.add(d.node);break;
    case 'publish':r.publish(d.topic,d.type,d.message,{node:d.node,owner:this});break;
@@ -29,7 +30,7 @@ export class RuntimeAdapter{
    case 'service':{const name=this.mapTopic(d.name);if(r.services.has(name))throw Error('Service already exists: '+name);const worker=this.worker;r.services.set(name,{node:d.node,type:d.type,handler:request=>new Promise((resolve,reject)=>{const token=String(++r.sampleCounter);const timer=setTimeout(()=>{this.pendingServices.delete(token);reject(Error('Service response timed out'));},10000);this.pendingServices.set(token,{resolve,reject,timer});worker.postMessage({kind:'service_request',id:d.id,token,request});})});break;}
    case 'service_result':{const pending=this.pendingServices.get(d.token);if(pending){clearTimeout(pending.timer);this.pendingServices.delete(d.token);pending.resolve(d.response);}break;}
    case 'service_call':{const worker=this.worker;r.callService(this.mapTopic(d.name),d.type,d.request).then(response=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response});}).catch(e=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response:{error:e.message}});});break;}
-   case 'parameter_declare':{let p=r.parameters.get(d.node);if(!p)r.parameters.set(d.node,p=new Map());const v=Object.hasOwn(this.ros.parameters??{},d.name)?this.ros.parameters[d.name]:d.value;p.set(d.name,v);if(v!==d.value)this.worker?.postMessage({kind:'parameter_update',node:this.sourceNames.get(d.node),name:d.name,value:v});break;}
+   case 'parameter_declare':{let p=r.parameters.get(d.node);if(!p)r.parameters.set(d.node,p=new Map());const v=Object.hasOwn(this.ros.parameters??{},d.name)?this.ros.parameters[d.name]:d.value;p.set(d.name,v);let types=r.parameterTypes.get(d.node);if(!types)r.parameterTypes.set(d.node,types=new Map());types.set(d.name,d.value_type??(typeof v==='boolean'?1:typeof v==='string'?4:Number.isInteger(v)?2:3));r.parameterEvent(d.node,d.name,v,'new_parameters');if(v!==d.value)this.worker?.postMessage({kind:'parameter_update',node:this.sourceNames.get(d.node),name:d.name,value:v});break;}
   }r.onChange();
  }
 }

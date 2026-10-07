@@ -93,12 +93,14 @@ class Node:
         if name in self._parameters:
             raise ValueError('Parameter already declared')
         self._parameters[name] = value
-        _send('parameter_declare', node=self.name, name=name, value=value)
+        _send('parameter_declare', node=self.name, name=name, value=value, value_type=1 if isinstance(value, bool) else 2 if isinstance(value, int) else 3 if isinstance(value, float) else 4)
         return types.SimpleNamespace(value=value)
     def get_parameter(self, name):
         return types.SimpleNamespace(value=self._parameters[name])
     def get_logger(self):
-        return types.SimpleNamespace(info=print, warning=print, error=print)
+        def log(level, message):
+            _send('log', node=self.name, level=level, text=str(message))
+        return types.SimpleNamespace(debug=lambda s: log(10, s), info=lambda s: log(20, s), warning=lambda s: log(30, s), warn=lambda s: log(30, s), error=lambda s: log(40, s), fatal=lambda s: log(50, s))
     def destroy_node(self):
         for key, (node, _, _) in list(_subscriptions.items()):
             if node == self.name:

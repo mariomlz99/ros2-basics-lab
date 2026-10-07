@@ -26,3 +26,11 @@ Final integration includes collapsible workspace folders, editor highlighting/di
 Use README.md commands to start or validate the app. Learner files are intentionally in memory and must be exported before reload. Supported API boundaries are in HANDOFF.md. Full Bash/CMake/colcon, DDS/RMW and arbitrary ROS APIs are not implemented. Firefox, Safari and physical mobile devices are not yet validated; mobile checking used Chrome viewport emulation.
 
 The local candidate is ready for review. Public repository creation or deployment remains a separate, unperformed step.
+
+## Inspection follow-up
+
+Added real `echo >`/`>>` file writes and quote-aware `*`/`?` pathname expansion, including `rm -rf *`. The prompt retains its green color during editing and the cursor uses an explicit blinking green block. Long command groups initially show four commands with an expansion button. Lesson 1 shows the workspace files/editor.
+
+The header uses official KU Leuven and UHasselt image assets (sources recorded beside the assets). Locale order is EN, NL, FR. Lesson 4 uses the neutral greeting “Hello”.
+
+The graph now includes modeled CLI-daemon publishers on `/rosout` and `/parameter_events`, backed by canonical rcl_interfaces schemas, with real Python/C++ logger and parameter events. Endpoint cleanup preserves only the base publishers. Bare ROS subcommands show usage; typos report the supported choices. Unit and real-runtime suites pass.

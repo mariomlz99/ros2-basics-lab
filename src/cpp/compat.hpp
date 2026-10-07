@@ -5,7 +5,7 @@ namespace rclcpp {
 class Node;
 inline bool initialized=false;
 class Logger{std::string name_;public:explicit Logger(std::string name):name_(name){}const char* get_name()const{return name_.c_str();}};
-template<class... Args> inline void log(const Logger& logger,const char* format,Args... args){std::printf("[%s] ",logger.get_name());std::printf(format,args...);std::printf("\n");std::fflush(stdout);}
+template<class... Args> inline void log(const Logger& logger,int level,const char* format,Args... args){char text[4096];std::snprintf(text,sizeof(text),format,args...);kinenest::emit("{\"kind\":\"log\",\"node\":"+kinenest::quote(logger.get_name())+",\"level\":"+std::to_string(level)+",\"text\":"+kinenest::quote(text)+"}");}
 template<class T> class Publisher {
  std::string node_,topic_;
 public:
@@ -112,7 +112,7 @@ public:
  template<class T> T declare_parameter(const std::string& name,T value){
   auto& params=parameters[name_];if(params.count(name))kinenest::fail("Parameter already declared: "+name);
   Parameter parameter(value);params.emplace(name,parameter);
-  kinenest::emit("{\"kind\":\"parameter_declare\",\"node\":"+kinenest::quote(name_)+",\"name\":"+kinenest::quote(name)+",\"value\":"+parameter.json()+"}");return value;
+  kinenest::emit("{\"kind\":\"parameter_declare\",\"node\":"+kinenest::quote(name_)+",\"name\":"+kinenest::quote(name)+",\"value\":"+parameter.json()+",\"value_type\":"+std::to_string(std::is_same<T,bool>::value?1:std::is_integral<T>::value?2:std::is_floating_point<T>::value?3:4)+"}");return value;
  }
  Parameter get_parameter(const std::string& name)const{
   auto node=parameters.find(name_);if(node==parameters.end()||!node->second.count(name))kinenest::fail("Parameter not declared: "+name);
@@ -143,9 +143,9 @@ inline void shutdown(){initialized=false;kinenest::emit("{\"kind\":\"shutdown\"}
 inline std::vector<Node::SharedPtr> spinning;
 inline void spin(Node::SharedPtr node){spinning.push_back(node);kn_spin();}
 }
-#define RCLCPP_INFO(logger, ...) ::rclcpp::log(logger, __VA_ARGS__)
-#define RCLCPP_WARN(logger, ...) ::rclcpp::log(logger, __VA_ARGS__)
-#define RCLCPP_ERROR(logger, ...) ::rclcpp::log(logger, __VA_ARGS__)
+#define RCLCPP_INFO(logger, ...) ::rclcpp::log(logger, 20, __VA_ARGS__)
+#define RCLCPP_WARN(logger, ...) ::rclcpp::log(logger, 30, __VA_ARGS__)
+#define RCLCPP_ERROR(logger, ...) ::rclcpp::log(logger, 40, __VA_ARGS__)
 
 extern "C" __attribute__((export_name("kn_receive_message"))) void kn_receive_message(int id){auto it=kinenest::subscriptions.find(id);if(it!=kinenest::subscriptions.end()){auto fn=it->second;fn();}}
 extern "C" __attribute__((export_name("kn_tick"))) void kn_tick(int id){auto it=kinenest::timers.find(id);if(it!=kinenest::timers.end()){auto fn=it->second;fn();}}

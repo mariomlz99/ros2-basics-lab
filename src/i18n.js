@@ -1,5 +1,5 @@
 import {translations} from './translations.js';
-const languages=['en','fr','nl'];
+const languages=['en','nl','fr'];
 const read=(key,fallback)=>{try{return localStorage.getItem(key)??fallback;}catch{return fallback;}};
 const save=(key,value)=>{try{localStorage.setItem(key,value);}catch{}};
 let locale=read('ros2lab.locale','en');if(!languages.includes(locale))locale='en';
@@ -44,7 +44,7 @@ export function initPreferences(){
  if(!['light','dark'].includes(theme))theme='dark';
  document.documentElement.classList.toggle('light',theme==='light');
  const controls=document.createElement('div');controls.className='preferences';
- controls.innerHTML='<label><span>Theme</span><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><span>Language</span><select id="locale"><option value="en">EN</option><option value="fr">FR</option><option value="nl">NL</option></select></label>';
+ controls.innerHTML='<label><span>Theme</span><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><span>Language</span><select id="locale"><option value="en">EN</option><option value="nl">NL</option><option value="fr">FR</option></select></label>';
  document.querySelector('header').append(controls);
  controls.querySelector('#theme').value=theme;
  controls.querySelector('#theme').onchange=e=>{document.documentElement.classList.toggle('light',e.target.value==='light');save('ros2lab.theme',e.target.value);};

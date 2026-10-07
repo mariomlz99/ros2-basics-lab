@@ -2,7 +2,7 @@ import {InterfaceRegistry,parseMessage} from './interfaces/registry.js';
 import {HOME} from './fs.js';
 import {parsePackageXml,parseCmake,parsePythonSetup,cmakeCalls} from './metadata.js';
 export const ROOT=HOME+'/ros2_ws';
-export const BASE_PACKAGES=['builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
+export const BASE_PACKAGES=['rcl_interfaces','builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
 export function manifest(name,type,dependencies=[]){return `<?xml version="1.0"?>
 <package format="3">
   <name>${name}</name><version>0.0.0</version>

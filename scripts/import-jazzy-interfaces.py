@@ -4,6 +4,7 @@ import json,re,ast
 root=Path('/opt/ros/jazzy/share'); out=Path(__file__).resolve().parent.parent/'src/interfaces/builtin.js'
 chosen={'builtin_interfaces':['msg/Time','msg/Duration'],'std_msgs':['msg/String','msg/Bool','msg/Int32','msg/Int64','msg/Float32','msg/Float64','msg/Header','msg/Empty','msg/ColorRGBA'],'geometry_msgs':['msg/Vector3','msg/Point','msg/Quaternion','msg/Pose','msg/PoseStamped','msg/Twist','msg/TwistStamped','msg/PoseWithCovariance','msg/TwistWithCovariance'],'sensor_msgs':['msg/Image','msg/LaserScan','msg/Imu'],'nav_msgs':['msg/Odometry'],'example_interfaces':['srv/AddTwoInts'],'std_srvs':['srv/Trigger','srv/SetBool','srv/Empty'],'action_msgs':['msg/GoalInfo','msg/GoalStatus','msg/GoalStatusArray'],'unique_identifier_msgs':['msg/UUID']}
 chosen={pkg:[str(f.relative_to(root/pkg)).rsplit('.',1)[0] for kind in ['msg','srv'] for f in sorted((root/pkg/kind).glob('*.'+kind))] for pkg in chosen}
+chosen['rcl_interfaces']=['msg/Log','msg/ParameterEvent','msg/Parameter','msg/ParameterValue','msg/ParameterType']
 records={}
 for pkg,types in chosen.items():
  for typ in types:

@@ -1,12 +1,12 @@
 # Canonical interface registry
 
-`src/interfaces/builtin.js` contains 142 Jazzy message/service records transcribed from the locally installed upstream `.msg` and `.srv` definitions. `scripts/import-jazzy-interfaces.py` regenerates this file from `/opt/ros/jazzy/share`; it is a maintenance tool, not an application dependency.
+`src/interfaces/builtin.js` contains 147 Jazzy message/service records transcribed from the locally installed upstream `.msg` and `.srv` definitions. `scripts/import-jazzy-interfaces.py` regenerates this file from `/opt/ros/jazzy/share`; it is a maintenance tool, not an application dependency.
 
 Installed source package versions used for this snapshot:
 
 | Packages | Version | Declared upstream license |
 | --- | --- | --- |
-| builtin_interfaces, action_msgs | 2.0.3 | Apache License 2.0 |
+| builtin_interfaces, action_msgs, rcl_interfaces | 2.0.3 | Apache License 2.0 |
 | std_msgs, geometry_msgs, sensor_msgs, nav_msgs, std_srvs | 5.3.6 | Apache License 2.0 |
 | example_interfaces | 0.12.0 | Apache License 2.0 |
 | unique_identifier_msgs | 2.5.0 | BSD |

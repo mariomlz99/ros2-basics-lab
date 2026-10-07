@@ -2402,5 +2402,199 @@ export const BUILTIN = {
         "name": "uuid"
       }
     ]
+  },
+  "rcl_interfaces/msg/Log": {
+    "fields": [
+      {
+        "type": "builtin_interfaces/Time",
+        "name": "stamp"
+      },
+      {
+        "type": "uint8",
+        "name": "level"
+      },
+      {
+        "type": "string",
+        "name": "name"
+      },
+      {
+        "type": "string",
+        "name": "msg"
+      },
+      {
+        "type": "string",
+        "name": "file"
+      },
+      {
+        "type": "string",
+        "name": "function"
+      },
+      {
+        "type": "uint32",
+        "name": "line"
+      }
+    ],
+    "constants": [
+      {
+        "type": "uint8",
+        "name": "DEBUG",
+        "value": 10
+      },
+      {
+        "type": "uint8",
+        "name": "INFO",
+        "value": 20
+      },
+      {
+        "type": "uint8",
+        "name": "WARN",
+        "value": 30
+      },
+      {
+        "type": "uint8",
+        "name": "ERROR",
+        "value": 40
+      },
+      {
+        "type": "uint8",
+        "name": "FATAL",
+        "value": 50
+      }
+    ]
+  },
+  "rcl_interfaces/msg/ParameterEvent": {
+    "fields": [
+      {
+        "type": "builtin_interfaces/Time",
+        "name": "stamp"
+      },
+      {
+        "type": "string",
+        "name": "node"
+      },
+      {
+        "type": "Parameter[]",
+        "name": "new_parameters"
+      },
+      {
+        "type": "Parameter[]",
+        "name": "changed_parameters"
+      },
+      {
+        "type": "Parameter[]",
+        "name": "deleted_parameters"
+      }
+    ]
+  },
+  "rcl_interfaces/msg/Parameter": {
+    "fields": [
+      {
+        "type": "string",
+        "name": "name"
+      },
+      {
+        "type": "ParameterValue",
+        "name": "value"
+      }
+    ]
+  },
+  "rcl_interfaces/msg/ParameterValue": {
+    "fields": [
+      {
+        "type": "uint8",
+        "name": "type"
+      },
+      {
+        "type": "bool",
+        "name": "bool_value"
+      },
+      {
+        "type": "int64",
+        "name": "integer_value"
+      },
+      {
+        "type": "float64",
+        "name": "double_value"
+      },
+      {
+        "type": "string",
+        "name": "string_value"
+      },
+      {
+        "type": "byte[]",
+        "name": "byte_array_value"
+      },
+      {
+        "type": "bool[]",
+        "name": "bool_array_value"
+      },
+      {
+        "type": "int64[]",
+        "name": "integer_array_value"
+      },
+      {
+        "type": "float64[]",
+        "name": "double_array_value"
+      },
+      {
+        "type": "string[]",
+        "name": "string_array_value"
+      }
+    ]
+  },
+  "rcl_interfaces/msg/ParameterType": {
+    "fields": [],
+    "constants": [
+      {
+        "type": "uint8",
+        "name": "PARAMETER_NOT_SET",
+        "value": 0
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_BOOL",
+        "value": 1
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_INTEGER",
+        "value": 2
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_DOUBLE",
+        "value": 3
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_STRING",
+        "value": 4
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_BYTE_ARRAY",
+        "value": 5
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_BOOL_ARRAY",
+        "value": 6
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_INTEGER_ARRAY",
+        "value": 7
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_DOUBLE_ARRAY",
+        "value": 8
+      },
+      {
+        "type": "uint8",
+        "name": "PARAMETER_STRING_ARRAY",
+        "value": 9
+      }
+    ]
   }
 };
