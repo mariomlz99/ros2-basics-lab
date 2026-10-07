@@ -63,8 +63,8 @@ export class Terminal{
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');
    case 'clear':flags('');count(0,0);return '\x1bc';
    case 'printenv':flags('');count(0,1);return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
-   case 'which':flags('');count(1);return paths.map(p=>p==='ros2'?'/opt/ros/jazzy/bin/ros2':p==='colcon'?'/usr/bin/colcon':['nano','gedit','ls','mkdir','cat','touch','cp','mv','rm','echo','pwd','printenv','which','tree'].includes(p)?'/usr/bin/'+p:'').filter(Boolean).join('\n');
-   default:if(this.dispatch&&['ros2','colcon','source'].includes(cmd))return await this.dispatch(this,words);throw Error(cmd+': command not supported in this browser lab');
+   case 'which':flags('');count(1);return paths.map(p=>p==='ros2'?'/opt/ros/jazzy/bin/ros2':p==='colcon'?'/usr/bin/colcon':['python3','nano','gedit','ls','mkdir','cat','touch','cp','mv','rm','echo','pwd','printenv','which','tree'].includes(p)?'/usr/bin/'+p:'').filter(Boolean).join('\n');
+   default:if(this.dispatch&&['ros2','colcon','source','python3'].includes(cmd))return await this.dispatch(this,words);throw Error(cmd+': command not supported in this browser lab');
   }
  }
 }

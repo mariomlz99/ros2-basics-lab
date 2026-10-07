@@ -1,4 +1,61 @@
 export const translations = {
+"Read each source example, then choose Add file to create a missing file or Open file to inspect an existing one. If an existing file differs, Replace with example applies the displayed version after confirmation. Save edits before building. The final file configures executable names.":["Lisez chaque exemple, puis choisissez Ajouter le fichier pour créer un fichier manquant ou Ouvrir le fichier pour consulter un fichier existant. Si son contenu diffère, Remplacer par l’exemple applique la version affichée après confirmation. Enregistrez vos modifications avant de compiler. Le dernier fichier configure les noms des exécutables.", "Lees elk broncodevoorbeeld en kies Bestand toevoegen om een ontbrekend bestand aan te maken of Bestand openen om een bestaand bestand te bekijken. Als de inhoud verschilt, past Vervangen door voorbeeld de getoonde versie toe na bevestiging. Sla wijzigingen op voordat je bouwt. Het laatste bestand stelt de programmanamen in."],
+
+"Create the package before adding this file.":["Créez le paquet avant d’ajouter ce fichier.", "Maak het pakket voordat je dit bestand toevoegt."],
+"Show package command":["Afficher la commande de création", "Opdracht voor pakket tonen"],
+"Use Prepare this lesson to supply the prerequisite package.":["Utilisez Préparer cette leçon pour créer le paquet prérequis.", "Gebruik Deze les voorbereiden om het vereiste pakket aan te maken."],
+"Open file":["Ouvrir le fichier", "Bestand openen"],
+"File is already open in the workspace editor.":["Le fichier est déjà ouvert dans l’éditeur.", "Het bestand is al geopend in de werkruimte-editor."],
+"Opened existing file.":["Fichier existant ouvert.", "Bestaand bestand geopend."],
+"Your file differs from this example. Open it to keep your work, or replace it explicitly.":["Votre fichier diffère de cet exemple. Ouvrez-le pour conserver votre travail ou remplacez-le explicitement.", "Je bestand verschilt van dit voorbeeld. Open het om je werk te behouden of vervang het expliciet."],
+"Replace with example":["Remplacer par l’exemple", "Vervangen door voorbeeld"],
+"Replace this file with the displayed example? Existing contents and unsaved edits to this file will be lost.":["Remplacer ce fichier par l’exemple affiché ? Son contenu actuel et ses modifications non enregistrées seront perdus.", "Dit bestand vervangen door het getoonde voorbeeld? De bestaande inhoud en niet-opgeslagen wijzigingen in dit bestand gaan verloren."],
+
+"Copied!":["Copié !", "Gekopieerd!"],
+"Copy failed":["Échec de copie", "Kopiëren mislukt"],
+"Copy failed. Select the command and copy it manually.":["La copie a échoué. Sélectionnez la commande et copiez-la manuellement.", "Kopiëren is mislukt. Selecteer de opdracht en kopieer deze handmatig."],
+
+"Robot world":["Monde du robot", "Robotwereld"],
+"Camera \u00b7 /camera/image_raw":["Caméra · /camera/image_raw", "Camera · /camera/image_raw"],
+"LiDAR \u00b7 /scan":["LiDAR · /scan", "LiDAR · /scan"],
+"Preview \u00b7 simulator stopped":["Aperçu · simulateur arrêté", "Voorbeeld · simulator gestopt"],
+"Live sensor streams":["Flux de capteurs en direct", "Live sensorbeelden"],
+"Paused \u00b7 simulator stopped":["En pause · simulateur arrêté", "Gepauzeerd · simulator gestopt"],
+"Exercise walkthrough complete. Keep experimenting here, or return to any lesson. Your course workspace is separate.":["Parcours de l’exercice terminé. Continuez vos essais ici ou revenez à une leçon. Votre espace de travail du cours est séparé.", "De oefenstappen zijn voltooid. Experimenteer hier verder of keer terug naar een les. Je cursuswerkruimte is apart."],
+
+"Prepare this lesson":["Préparer cette leçon", "Deze les voorbereiden"],
+"Stop running commands and save edits before preparing a lesson.":["Arrêtez les commandes en cours et enregistrez vos modifications avant de préparer une leçon.", "Stop actieve opdrachten en sla wijzigingen op voordat je een les voorbereidt."],
+"Preparing prerequisite files and builds. Existing files are kept.":["Préparation et compilation des fichiers prérequis. Les fichiers existants sont conservés.", "Vereiste bestanden worden voorbereid en gebouwd. Bestaande bestanden blijven behouden."],
+"Lesson ready. Prerequisites are available; earlier lessons were not marked complete.":["La leçon est prête. Les prérequis sont disponibles ; les leçons précédentes ne sont pas marquées comme terminées.", "De les is klaar. Vereisten zijn beschikbaar; eerdere lessen zijn niet als voltooid gemarkeerd."],
+
+"Save session":["Enregistrer la session", "Sessie opslaan"],
+"Saved in this browser":["Enregistré dans ce navigateur", "Opgeslagen in deze browser"],
+"Saved session restored. Start your nodes again when needed.":["Session enregistrée restaurée. Redémarrez vos nœuds lorsque nécessaire.", "Opgeslagen sessie hersteld. Start je nodes opnieuw wanneer nodig."],
+"Session could not be saved. Export your workspace to keep a copy.":["La session n’a pas pu être enregistrée. Exportez votre espace de travail pour en garder une copie.", "De sessie kon niet worden opgeslagen. Exporteer je werkruimte om een kopie te bewaren."],
+
+"Restore layout":["Rétablir la disposition", "Indeling herstellen"],
+"Resize lesson and editor":["Redimensionner la leçon et l’éditeur", "Les en editor vergroten of verkleinen"],
+"Resize workspace height":["Redimensionner la hauteur de l’espace de travail", "Hoogte van de werkruimte aanpassen"],
+
+"Now check what ROS 2 can run from your package. ros2 pkg executables my_first_package lists its installed executable names. You should see my_first_package hello: the package name followed by the executable name. If nothing appears, check that the build succeeded and that you sourced install/setup.bash in this terminal.":["Vérifiez maintenant ce que ROS 2 peut exécuter dans votre paquet. ros2 pkg executables my_first_package liste les noms des exécutables installés. Vous devriez voir my_first_package hello : le nom du paquet suivi du nom de l’exécutable. Si rien ne s’affiche, vérifiez que la compilation a réussi et que vous avez sourcé install/setup.bash dans ce terminal.", "Controleer nu wat ROS 2 vanuit je pakket kan uitvoeren. ros2 pkg executables my_first_package toont de namen van de geïnstalleerde programma’s. Je hoort my_first_package hello te zien: de pakketnaam gevolgd door de programmanaam. Verschijnt er niets, controleer dan of het bouwen is geslaagd en of je install/setup.bash in deze terminal hebt gesourcet."],
+"Use the package and executable names from the previous output to run your node. This time, ros2 run my_first_package hello should print Hi from my_first_package. The source code did not change: sourcing made the installed package discoverable in this terminal.":["Utilisez les noms du paquet et de l’exécutable affichés à l’étape précédente pour lancer votre nœud. Cette fois, ros2 run my_first_package hello devrait afficher Hi from my_first_package. Le code source n’a pas changé : sourcer l’environnement a rendu le paquet installé accessible dans ce terminal.", "Gebruik de pakketnaam en programmanaam uit de vorige uitvoer om je node te starten. Nu hoort ros2 run my_first_package hello de tekst Hi from my_first_package. te tonen. De broncode is niet veranderd: door het sourcen kan deze terminal het geïnstalleerde pakket vinden."],
+
+"tree my_first_package shows the package without changing your directory: you are still in src. Use cd .. to return to its parent, the workspace root, before building. If you entered the package with cd my_first_package, use cd ../.. instead. A path starting with ~/ always begins at your home directory; it does not search for a workspace below your current directory.":["tree my_first_package affiche le paquet sans changer de dossier : vous êtes toujours dans src. Utilisez cd .. pour revenir au dossier parent, la racine de l’espace de travail, avant de compiler. Si vous êtes entré dans le paquet avec cd my_first_package, utilisez plutôt cd ../.. à la place. Un chemin commençant par ~/ part toujours de votre dossier personnel ; il ne recherche pas un espace de travail sous le dossier courant.", "tree my_first_package toont het pakket zonder van map te veranderen: je bevindt je nog in src. Gebruik cd .. om vóór het bouwen terug te keren naar de bovenliggende map, de hoofdmap van de werkruimte. Als je met cd my_first_package het pakket bent binnengegaan, gebruik dan cd ../.. . Een pad dat begint met ~/ vertrekt altijd vanuit je thuismap; het zoekt geen werkruimte onder je huidige map."],
+
+"Course complete!":["Cours terminé !", "Cursus voltooid!"],
+"Lesson complete!":["Leçon terminée !", "Les voltooid!"],
+"Final lesson complete.":["Dernière leçon terminée.", "Laatste les voltooid."],
+"Continue with the optional exercises to practise what you learned.":["Poursuivez avec les exercices facultatifs pour mettre en pratique ce que vous avez appris.", "Ga verder met de optionele oefeningen om te oefenen wat je hebt geleerd."],
+"You can explore the exercises now, or return to finish the earlier lessons.":["Vous pouvez explorer les exercices maintenant, ou revenir terminer les leçons précédentes.", "Je kunt nu de oefeningen verkennen of teruggaan om de eerdere lessen af te maken."],
+"Explore exercises":["Explorer les exercices", "Oefeningen verkennen"],
+"Move to lesson 2":["Passer à la leçon 2", "Ga naar les 2"],
+"Move to lesson 3":["Passer à la leçon 3", "Ga naar les 3"],
+"Move to lesson 4":["Passer à la leçon 4", "Ga naar les 4"],
+"Move to lesson 5":["Passer à la leçon 5", "Ga naar les 5"],
+"Move to lesson 6":["Passer à la leçon 6", "Ga naar les 6"],
+
+"You can edit the same file in different ways. nano notes.txt opens a simple terminal editor: Ctrl+O then Enter saves, and Ctrl+X exits. gedit notes.txt opens this lab’s workspace editor: edit the text and choose Save. On native Linux, gedit opens a graphical editor; vim notes.txt opens a modal terminal editor: press i to insert text, Esc to return to normal mode, then :wq and Enter to save and quit (:q! discards changes). Vim is not simulated in this lab yet. You can also inspect and edit ~/.bashrc with nano or gedit; its startup commands are not executed by this lab yet.":["Vous pouvez modifier le même fichier de plusieurs façons. nano notes.txt ouvre un éditeur simple dans le terminal : Ctrl+O puis Entrée enregistre, et Ctrl+X quitte. gedit notes.txt ouvre l’éditeur de l’espace de travail de ce labo : modifiez le texte puis choisissez Enregistrer. Sous Linux natif, gedit ouvre un éditeur graphique ; vim notes.txt ouvre un éditeur modal dans le terminal : appuyez sur i pour saisir du texte, Échap pour revenir au mode normal, puis :wq et Entrée pour enregistrer et quitter (:q! abandonne les modifications). Vim n’est pas encore simulé dans ce labo. Vous pouvez aussi consulter et modifier ~/.bashrc avec nano ou gedit ; ses commandes de démarrage ne sont pas encore exécutées par ce labo.", "Je kunt hetzelfde bestand op verschillende manieren bewerken. nano notes.txt opent een eenvoudige terminaleditor: Ctrl+O en Enter slaat op, Ctrl+X sluit af. gedit notes.txt opent de werkruimte-editor van dit lab: bewerk de tekst en kies Opslaan. Op native Linux opent gedit een grafische editor; vim notes.txt opent een modale terminaleditor: druk op i om tekst in te voegen, Esc om terug te keren naar de normale modus, en daarna :wq en Enter om op te slaan en af te sluiten (:q! verwerpt wijzigingen). Vim wordt nog niet gesimuleerd in dit lab. Je kunt ook ~/.bashrc bekijken en bewerken met nano of gedit; de opstartopdrachten daarin worden nog niet uitgevoerd door dit lab."],
+
 "Read the absolute path: this is where relative file paths begin.":["Lisez le chemin absolu : les chemins relatifs commencent ici.", "Bekijk het absolute pad: relatieve bestandspaden beginnen hier."],
 "Find .bashrc: -a also shows hidden files.":["Repérez .bashrc : -a affiche aussi les fichiers cachés.", "Zoek .bashrc: -a toont ook verborgen bestanden."],
 "Create a practice directory. A successful mkdir normally prints nothing.":["Créez un dossier d’exercice. mkdir ne produit normalement aucun texte en cas de succès.", "Maak een oefenmap. Een geslaagde mkdir toont normaal geen uitvoer."],

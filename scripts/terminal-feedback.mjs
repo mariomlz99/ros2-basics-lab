@@ -19,6 +19,7 @@ try{
  await page.evaluate(()=>{window.copyEvents=[];document.querySelector('.terminal-screen').addEventListener('keydown',e=>{if(e.code==='KeyC')setTimeout(()=>window.copyEvents.push(e.defaultPrevented),0);},true);});
  await input.focus();await page.keyboard.press('Control+Shift+c');await page.waitForFunction(()=>window.copyEvents.length);assert.deepEqual(await page.evaluate(()=>window.copyEvents),[true]);
  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
+ await page.locator('.command button').first().click();await page.getByRole('button',{name:'Copied!',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'pwd');await page.getByRole('button',{name:'Copy',exact:true}).first().waitFor();
  await page.evaluate(async()=>{
   const {Lab}=await import('./src/lab.js');const lab=new Lab();const host=document.createElement('div');document.body.append(host);
   const view=new window.TerminalView(lab,lab.terminal(),host,()=>{});window.copyTest={view,host};
@@ -30,7 +31,36 @@ try{
  await page.evaluate(()=>{window.copyTest.view.destroy();window.copyTest.host.remove();});
  // Every guide page remains reachable; Next alone does not complete a lesson.
  while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
- await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'0 / 6 completed');
+ await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'0 / 6 completed');assert.equal(await page.locator('#next-lesson').count(),0);
+ await command('pwd');await command('echo $ROS_DISTRO');await command('ros2 node list');
+ await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'1 / 6 completed');assert.equal(await page.locator('#next-lesson').textContent(),'Move to lesson 2');
+ await page.locator('#locale').selectOption('nl');await page.getByRole('button',{name:'Ga naar les 2',exact:true}).waitFor();await page.locator('#locale').selectOption('en');
+ await page.locator('#next-lesson').click();assert((await page.locator('#lesson-heading').textContent()).includes('Workspace & packages'));
+ // Passing the final lesson without earlier checks must not claim the whole course is complete.
+ await page.locator('#nav button').nth(5).click();while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
+ await command('mkdir -p ~/ros2_ws/src');await page.locator('#export').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('exported'));
+ await page.locator('.complete').click();assert.equal(await page.locator('.lesson-onward strong').textContent(),'Final lesson complete.');
+ await page.getByRole('button',{name:'Explore exercises',exact:true}).click();await page.getByRole('button',{name:'Start playground',exact:true}).waitFor();
  await page.locator('#nav button').nth(1).click();
+ await command('echo course > course-only.txt');
+ await page.locator('#exercise-nav button').click();assert.equal(await page.locator('#guide-next').count(),1);
+ assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),0);
+ for(const cls of ['world','camera','scan'])assert(await page.locator('#playground-stage .'+cls).evaluate(canvas=>canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.some(value=>value!==0)),cls+' preview is rendered');
+ await command('echo exercise > exercise-only.txt');await page.locator('#playground-start').click();
+ const before=await page.locator('#playground-stage .camera').evaluate(canvas=>canvas.toDataURL());
+ await command("ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.5}}'");await page.waitForTimeout(1100);
+ assert.notEqual(await page.locator('#playground-stage .camera').evaluate(canvas=>canvas.toDataURL()),before,'Camera stream follows movement');
+ await page.locator('#guide-next').click();assert.equal(await page.locator('#playground-status').textContent(),'Live sensor streams','Step navigation keeps streams alive');
+ await page.screenshot({path:'artifacts/screenshots/playground-streams.png',fullPage:true});
+ await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),0);assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1);
+ await page.locator('#exercise-nav button').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();
+ assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),1);await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1,'Both independent workspaces survive reload');
+ console.log('PASS playground previews/live streams, guided steps and independent saved workspaces');
+ await page.locator('#nav button').nth(4).click();
+ while(!await page.locator('#lesson details').count())await page.locator('#guide-next').click();
+ await page.getByRole('button',{name:'Show package command',exact:true}).click();assert((await page.locator('.command code').textContent()).includes('ros2 pkg create'));
+ await command('mkdir -p ~/ros2_ws/src');await command('cd ~/ros2_ws/src');await command(await page.locator('.command code').textContent());await page.locator('#guide-next').click();
+ await page.getByRole('button',{name:'Add file',exact:true}).click();await page.getByRole('button',{name:'Open file',exact:true}).waitFor();assert((await page.locator('#active-file').textContent()).includes('server.py'));
+ console.log('PASS lesson 5 missing-package guidance and Add/Open file actions');
  await input.focus();await page.keyboard.insertText('echo "Hello" > notes.txt');await page.waitForTimeout(300);await page.screenshot({path:'artifacts/screenshots/terminal-feedback.png',fullPage:true});console.log('PASS echo/append, rm -rf *, base topics/echo cleanup, guided navigation, scoped keyboard shortcuts and visible files');
 }finally{await browser.close();}

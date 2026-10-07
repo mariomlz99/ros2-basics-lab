@@ -22,6 +22,12 @@ try{
  await mkdir('artifacts/screenshots',{recursive:true});await page.screenshot({path:'artifacts/screenshots/diepenbeek-nl-light.png',fullPage:true});
  await page.reload();await page.getByRole('button',{name:'Start de les',exact:true}).waitFor();assert.equal(await page.locator('#locale').inputValue(),'nl');assert.equal(await page.locator('#theme').inputValue(),'light');
  await page.locator('#locale').selectOption('en');await page.locator('#theme').selectOption('dark');await page.getByRole('button',{name:'Start lesson',exact:true}).click();await page.locator('.xterm').waitFor();
+ await page.locator('#nav button').nth(0).click();const originalWidth=(await page.locator('#lesson').boundingBox()).width,originalHeight=(await page.locator('#workspace').boundingBox()).height;
+ const split=await page.locator('#resize-columns').boundingBox();await page.mouse.move(split.x+6,split.y+60);await page.mouse.down();await page.mouse.move(split.x+106,split.y+60);await page.mouse.up();
+ assert((await page.locator('#lesson').boundingBox()).width>originalWidth+80,'Dragging gives the lesson more width');
+ await page.locator('#resize-workspace').focus();await page.keyboard.press('ArrowDown');assert.equal((await page.locator('#workspace').boundingBox()).height,originalHeight+20);
+ assert.equal(await page.locator('.command code').textContent(),'pwd','Resizing preserves the current step');
+ await page.locator('#restore-layout').click();assert(Math.abs((await page.locator('#lesson').boundingBox()).width-originalWidth)<1);assert.equal((await page.locator('#workspace').boundingBox()).height,originalHeight);
  assert.equal(await page.locator('#nav button').count(),6);assert.equal(await page.locator('#exercise-nav button').count(),1);await page.locator('#nav button').nth(5).click();await page.locator('#guide-mode').click();const link=await page.locator('.native-handoff').boundingBox(),check=await page.locator('.complete').boundingBox();assert(check.y>=link.y+link.height+10,'Native handoff and check button are separated');
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile layout should fit viewport');

@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:8017/ros2-basics-lab/ . Python and the C++ toolchain download lazily; internet access is required for their first use. Lesson 1 needs neither runtime. Learner files live in memory: export your workspace before reloading. Language and theme preferences persist locally.
+Open http://127.0.0.1:8017/ros2-basics-lab/ . Python and the C++ toolchain download lazily; internet access is required for their first use. Lesson 1 needs neither runtime. Workspaces, installed packages, terminal environments and lesson progress autosave in this browser; Save session also saves immediately. Processes must be restarted after reopening. Course and playground workspaces are separate. Export sources for a portable backup; browser storage is local to this site and browser profile. Language, theme and layout preferences persist locally.
 
 ## Validate
 

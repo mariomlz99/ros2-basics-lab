@@ -32,6 +32,8 @@ async function handle(data){
     await preparePython();
     pyodide.globals.set('available_json',JSON.stringify(data.services??[]));pyodide.runPython('_available_services = set(json.loads(available_json))');
     if(data.schema){pyodide.globals.set("schema_json",JSON.stringify(data.schema));pyodide.runPython("_install_interfaces(json.loads(schema_json))");}
+    const sources=data.files?Object.entries(data.files).filter(([path])=>path.endsWith('.py')).map(([,source])=>source).join('\n'):(data.code??'');
+    await pyodide.loadPackagesFromImports(sources,{messageCallback:output,errorCallback:output});
     if(data.kind==='build'){
       installFiles(data.files);
       pyodide.globals.set('bridge_files',data.files);

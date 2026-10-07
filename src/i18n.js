@@ -34,6 +34,7 @@ export function translateUI(){
   if(current!==translated)node.nodeValue=translated;
   originals.set(node,{source,translated});
  }
+ for(const node of document.querySelectorAll('[data-layout-label]')){node.setAttribute('aria-label',t(node.dataset.layoutLabel));node.title=t(node.dataset.layoutLabel);}
  document.documentElement.lang=locale;
  document.querySelector('#locale')?.setAttribute('aria-label',t('Language'));
  document.querySelector('#theme')?.setAttribute('aria-label',t('Theme'));

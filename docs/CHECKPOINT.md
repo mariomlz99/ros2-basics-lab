@@ -48,3 +48,22 @@ Navigation is split into LESSONS (six lessons) and EXERCISES (optional playgroun
 The six lessons now default to one command or source file per step, with Back/Next, remembered positions per lesson/programming language, and an optional complete lesson overview. Introductory commands include observation prompts. Navigation does not execute commands or count as lesson completion; the final checks still inspect lab state. The scrollable lesson panel and running workspace are preserved. The full-course acceptance runner explicitly uses overview mode; terminal-feedback checks guided navigation and completion behavior.
 
 Within the terminal, Ctrl+C copies selected text, otherwise interrupts. Ctrl+Shift+C copies selected text and prevents the browser inspector shortcut; without a selection it does nothing. Browser clipboard behavior and interruption were checked with Chrome. Removed the initial Ready footer; later actionable status messages remain. Build, 25 model tests, terminal-feedback and built-site preferences/mobile checks pass.
+
+## Continued classroom inspection
+
+Lesson checks offer a next-lesson button; completing all six offers the optional exercises. The final lesson alone does not claim the entire course is complete. Lesson 1 compares nano, gedit and native Vim. Lesson 2 establishes home explicitly, returns from src with cd .., explains tree versus changing directories, and gives executable discovery its own explanation. Package creation reports metadata and actual generated files for both build types, with a native-style duplicate-directory error.
+
+Workspace columns and height have pointer/keyboard dividers with remembered sizes; terminal heights can be resized, and narrow screens retain stacked resizable panels. Restore layout resets sizes without resetting lab state. Build, package-generation tests, terminal completion-flow checks and built-site layout/mobile/preferences checks pass.
+
+
+## Saved sessions, independent exercises and Python CLI
+
+Nested workspace src checks are no longer tied to ~/ros2_ws. Browser sessions autosave files, installed artifacts, shell environments/history, positions and progress, with an explicit Save session button. C++ artifacts serialize as Wasm bytes and recompile to modules on restore. Real Python and C++ publisher execution after reload passes. Prepare this lesson creates/builds prerequisites without completing earlier lessons or overwriting existing package sources. ROS Tab completion uses each terminal’s sourced packages and live graph.
+
+python3 supports scripts, -c, version and an interactive CPython prompt. NumPy and other available Pyodide packages load on demand; standard libraries execute normally. Browser checks cover NumPy calculations, shared text writes, exit and interrupting an executing infinite loop. The home-directory text filesystem is synchronized; binary files and native pip/system processes are outside the supported contract.
+
+The playground now has separate saved files, terminal views and runtime graph. Robot, camera and LiDAR canvases show previews before Start, live streams persist across guided exercise steps, and returning to the course restores its independent workspace. Browser checks cover actual moving camera images and both workspaces after reload. Copy buttons show Copied! temporarily after successful clipboard writes.
+
+Hosting remains local only. User states university logos will not be published; public branding will be decided later. Future release locks should exclude unreleased lesson content from public builds/repositories, rather than rely on client-side flags. No release gating has been added yet.
+
+Lesson source actions now distinguish Add file, Open file and explicit confirmed replacement. Missing packages offer a jump to their creation command. Guided source examples open automatically; repeated refreshes preserve button DOM until file state changes. Lesson 5 browser checks pass.
