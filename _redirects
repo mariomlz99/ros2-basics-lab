@@ -1,0 +1,10 @@
+/ /index.html 200
+/session-01.html /basics.html?start=1 301
+/session-02.html /basics.html?start=1 301
+/session-03.html /basics.html?start=1 301
+/session-04.html /basics.html?start=1 301
+/session-05.html /basics.html?start=1 301
+/session-06.html /basics.html?start=1 301
+/bridge.html /basics.html?start=1 301
+/real-ros.html / 301
+/about.html / 301

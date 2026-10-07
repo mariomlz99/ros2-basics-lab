@@ -1,6 +1,6 @@
 # Canonical interface registry
 
-`src/interfaces/builtin.js` contains 147 Jazzy message/service records transcribed from the locally installed upstream `.msg` and `.srv` definitions. `scripts/import-jazzy-interfaces.py` regenerates this file from `/opt/ros/jazzy/share`; it is a maintenance tool, not an application dependency.
+`src/interfaces/builtin.js` contains Jazzy message/service records and the Fibonacci action transcribed from the locally installed upstream `.msg` and `.srv` definitions. Definitions follow the installed files under `/opt/ros/jazzy/share`. Fibonacci includes `order`, result `sequence`, and feedback `partial_sequence`.
 
 Installed source package versions used for this snapshot:
 
@@ -15,4 +15,4 @@ These are upstream ROS interface definitions maintained by their ROS contributor
 
 The registry is shared by CLI inspection, Python classes, C++ headers and runtime validation. Service request and response constants are separate. CLI inspection expands nested fields. Coverage of an interface does not imply implementation of the corresponding ROS action, navigation, sensor driver or middleware API.
 
-Custom interfaces use this registry after a successful build. Their deliberately bounded scalar syntax is described in HANDOFF.md.
+Custom interfaces use this registry after a successful build. Their deliberately bounded scalar syntax is described in SUPPORTED.md.
