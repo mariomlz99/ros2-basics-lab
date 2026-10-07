@@ -14,5 +14,9 @@
   "src/cpp/compat.hpp": "23513eb8fa4e9f758456676e61af43e595aa60d02fa7e988ec2e579cbfb68ddb",
   "src/cpp/vendor/wasm-clang.js": "212a4a01c34c700d083272161ffe24bc5f878ce16bd7754df22f173143b8b5d6",
   "src/cpp/vendor/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
-  "src/cpp/vendor/LICENSE.llvm": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47"
+  "src/cpp/vendor/LICENSE.llvm": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47",
+  "src/simulator/robot.js": "d29a318ac9b88648d83b8c9a23f43848ed1a7c6ed33957e73a2e323bfb83fb37",
+  "src/simulator/sensors.js": "48030458fc0c5061cde63ae04a5854d8d5b11e9e7b7b963491a22fe89fa98ef3",
+  "src/simulator/lidar.js": "13dceba7e48c1e94b089feb18ded93f77efbbcac3629c10f833217b235f04303",
+  "src/simulator/camera.js": "83dafe214d9f946d98e93279d902b4ef8e59c1bce6eabfd35de3efe59edd895b"
 }
