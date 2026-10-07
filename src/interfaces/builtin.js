@@ -1873,7 +1873,7 @@ export const BUILTIN = {
         "name": "result"
       }
     ],
-    "constants": [
+    "responseConstants": [
       {
         "type": "uint8",
         "name": "RESULT_SUCCESS",
@@ -2372,7 +2372,7 @@ export const BUILTIN = {
         "name": "goals_canceling"
       }
     ],
-    "constants": [
+    "responseConstants": [
       {
         "type": "int8",
         "name": "ERROR_NONE",

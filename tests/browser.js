@@ -22,5 +22,18 @@ try{
   await a.execute('cd ~/ros2_ws/src');const pkg=language==='python'?'py_service':'cpp_service';await a.execute(`ros2 pkg create --build-type ${language==='python'?'ament_python':'ament_cmake'} ${pkg} --dependencies ${language==='python'?'rclpy':'rclcpp'} example_interfaces`);for(const[p,source]of Object.entries(serviceFiles(language)))lab.fs.write(ROOT+'/src/'+pkg+'/'+p,source);await a.execute('cd ~/ros2_ws');await a.execute('colcon build --packages-select '+pkg);log=[];await a.execute('ros2 run '+pkg+' server');await until(()=>lab.runtime.services.has('/add_two_ints'),'service server');assert(JSON.parse(await b.execute("ros2 service call /add_two_ints example_interfaces/srv/AddTwoInts '{a: 7, b: 8}'")).sum===15,'CLI sum');await b.execute('ros2 run '+pkg+' client');await until(()=>log.some(([id,s])=>id===b.id&&s.includes('Sum: 5')),'client sum');lab.stop(a.id);lab.stop(b.id);assert(lab.runtime.services.size===0,'Service cleanup');await report('PASS '+language+' service and client');
   lab.fs.mkdir(ROOT+'/src/'+name+'/launch',true);lab.fs.write(ROOT+'/src/'+name+'/launch/system.launch.py',launchSource(name));lab.fs.write(ROOT+'/src/'+name+'/'+(language==='python'?'setup.py':'CMakeLists.txt'),language==='python'?setup(name,[`talker = ${name}.talker:main`,`listener = ${name}.listener:main`],['launch/system.launch.py']):cmake(name,{talker:'src/publisher_member_function.cpp',listener:'src/subscriber_member_function.cpp'},['rclcpp','std_msgs','tutorial_interfaces'],true));await a.execute('colcon build --packages-select '+name);log=[];await a.execute('ros2 launch '+name+' system.launch.py');await until(()=>log.some(([,s])=>s.includes('I heard:')&&s.includes('Launched')),'launch remap and parameter');lab.stop(a.id);assert(lab.runtime.nodes.size===0&&lab.runtime.jobs.size===0,'Launch group cleanup');await report('PASS '+language+' launch processes, remapping, parameters and cleanup');
  }
+ // Failed real compilers must never leave runnable packages behind.
+ for(const [pkg,file,bad,pattern] of [
+  ['py_pubsub','py_pubsub/talker.py','def broken(:\n',/SyntaxError|invalid syntax/],
+  ['cpp_pubsub','src/publisher_member_function.cpp','#include <std_msgs/msg/string.hpp>\nint main(){std_msgs::msg::String msg; msg.dtaa = "bad";}\n',/dtaa/],
+ ]){
+  const path=ROOT+'/src/'+pkg+'/'+file,original=lab.fs.read(path);lab.fs.write(path,bad);
+  let error;try{await a.execute('colcon build --packages-select '+pkg);}catch(e){error=e;}
+  assert(error&&pattern.test(error.message),'Authentic diagnostic for '+pkg+': '+error);
+  assert(!lab.workspace.installed.has(pkg),'Failed build must not install '+pkg);
+  lab.fs.write(path,original);await report('PASS real compiler failure leaves '+pkg+' unavailable');
+ }
+ lab.reset();assert(lab.runtime.nodes.size===0&&lab.runtime.jobs.size===0&&lab.processes.active().length===0,'Reset cleanup');
+ await report('PASS workspace reset removes all processes');
  out.textContent='PASS real runtime suite';await fetch('/done',{method:'POST',body:out.textContent});
 }catch(e){out.textContent='FAIL '+e.stack+'\n'+JSON.stringify(log.slice(-10));await fetch('/done',{method:'POST',body:out.textContent});}finally{lab.reset();}

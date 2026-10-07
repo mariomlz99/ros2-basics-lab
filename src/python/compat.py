@@ -175,7 +175,7 @@ def _install_interfaces(schema):
                     setattr(self, field['name'], kwargs.pop(field['name'], [default() for _ in range(int(count or 0))] if array else default()))
                 if kwargs:
                     raise TypeError('Unknown fields: ' + ', '.join(kwargs))
-            return type(label, (), {'__init__': constructor, '_type': name, **{c['name']: c['value'] for c in record.get('constants', [])}})
+            return type(label, (), {'__init__': constructor, '_type': name, **{c['name']: c['value'] for c in record.get('responseConstants' if label == 'Response' else 'constants', [])}})
         if 'response' in record:
             cls = type(short, (), {'_type': name, 'Request': message_class(record['fields'], 'Request'), 'Response': message_class(record['response'], 'Response')})
         else:

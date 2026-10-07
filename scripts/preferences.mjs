@@ -1,0 +1,27 @@
+import {chromium} from 'playwright-core';
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));
+ await page.goto(process.env.LAB_URL||(process.argv.includes('--built')?'http://127.0.0.1:8018/ros2-basics-lab/':'http://127.0.0.1:8017/ros2-basics-lab/'));
+ assert.deepEqual(await page.locator('#locale option').evaluateAll(options=>options.map(o=>o.value)),['en','fr','nl']);
+ await page.locator('#locale').selectOption('fr');await page.getByRole('button',{name:'Commencer',exact:true}).click();
+ await page.locator('.xterm').waitFor();await page.getByRole('button',{name:'Vérifier la progression',exact:true}).waitFor();
+ await page.locator('#nav button').nth(1).click();await page.getByText('Un espace de travail contient', {exact:false}).waitFor();
+ const before=await page.locator('#lesson code').allTextContents();
+ await page.locator('.xterm-helper-textarea').focus();await page.keyboard.insertText('mkdir -p ~/ros2_ws/src');await page.keyboard.press('Enter');
+ await page.waitForTimeout(300);const transcript=await page.locator('.terminal-transcript pre').textContent();
+ await page.locator('#locale').selectOption('nl');await page.getByText('Een werkruimte bevat',{exact:false}).waitFor();
+ assert.deepEqual(await page.locator('#lesson code').allTextContents(),before);
+ assert.equal(await page.locator('.terminal-transcript pre').textContent(),transcript);
+ await page.locator('#theme').selectOption('light');assert.equal(await page.locator('html').getAttribute('class'),'light');
+ await mkdir('artifacts/screenshots',{recursive:true});await page.screenshot({path:'artifacts/screenshots/diepenbeek-nl-light.png',fullPage:true});
+ await page.reload();await page.getByRole('button',{name:'Start de les',exact:true}).waitFor();assert.equal(await page.locator('#locale').inputValue(),'nl');assert.equal(await page.locator('#theme').inputValue(),'light');
+ await page.locator('#locale').selectOption('en');await page.locator('#theme').selectOption('dark');await page.getByRole('button',{name:'Start lesson',exact:true}).click();await page.locator('.xterm').waitFor();
+ await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile layout should fit viewport');
+ await page.screenshot({path:'artifacts/screenshots/diepenbeek-mobile.png',fullPage:true});
+ assert.deepEqual(errors,[]);console.log('PASS EN/FR/NL, live state preservation, light/dark persistence and mobile layout');
+}finally{await browser.close();}

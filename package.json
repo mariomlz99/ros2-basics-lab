@@ -8,7 +8,10 @@
     "test": "node --test tests/*.test.js",
     "dev": "node scripts/bundle.mjs && node scripts/serve.mjs",
     "build": "node scripts/bundle.mjs && node scripts/build.mjs",
-    "test:browser": "node scripts/browser.mjs"
+    "test:browser": "node scripts/browser.mjs",
+    "preview": "node scripts/serve.mjs --built",
+    "test:acceptance": "node scripts/acceptance.mjs",
+    "test:preferences": "node scripts/preferences.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

@@ -7,10 +7,11 @@ function xmlNode(source){
     const tag=match[0];if(tag.startsWith('<?')||tag.startsWith('<!--'))continue;
     if(tag.startsWith('</')){const name=tag.slice(2,-1).trim();if(stack.length===1||stack.at(-1).name!==name)throw Error('package.xml has mismatched XML tags.');stack.pop();continue;}
     const name=tag.slice(1).match(/^[A-Za-z_][\w:-]*/)?.[0];if(!name)throw Error('Invalid package.xml tag.');
+    const attributes=tag.slice(1,-1).replace(/\/$/,'').slice(name.length);if(attributes.replace(/([\w:-]+)\s*=\s*(["'])([^]*?)\2/g,'').trim())throw Error('Malformed XML attributes');
     const node={name,attrs:Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*["']([^"']*)["']/g)].map(m=>[m[1],m[2]])),children:[],text:''};
     stack.at(-1).children.push(node);if(!tag.endsWith('/>'))stack.push(node);
   }
-  const tail=source.slice(pos);if(tail.includes('<')||root.text.trim())throw Error('Malformed package.xml');stack.at(-1).text+=tail;if(stack.length!==1||root.children.length!==1||root.children[0].name!=='package')throw Error('package.xml must contain one <package> root.');
+  const tail=source.slice(pos);if(tail.trim()||root.text.trim())throw Error('Malformed package.xml');stack.at(-1).text+=tail;if(stack.length!==1||root.children.length!==1||root.children[0].name!=='package')throw Error('package.xml must contain one <package> root.');
   return root.children[0];
 }
 export function parsePackageXml(source){
