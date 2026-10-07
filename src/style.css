@@ -14,3 +14,7 @@
 .exercise-heading{margin-top:26px;margin-bottom:10px}@media(max-width:650px){aside>.eyebrow{display:block;margin-bottom:8px}aside>.exercise-heading{margin-top:18px}}
 
 .course-context{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:0 0 30px;max-width:920px}.course-context p{margin:4px 0}.course-context .campus{font-size:13px;color:var(--muted)}.course-context strong{font-weight:600}.course-context code{font-size:12px;color:var(--muted);white-space:nowrap}
+
+.guide-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg,#101a20);padding:10px 0;z-index:2;border-bottom:1px solid #406358;margin-bottom:16px}.guide-progress{margin-right:auto;font-size:12px}.guide-controls button{font-size:12px;padding:6px 9px}.guide-hint{border-left:2px solid #a2e7c4;padding-left:12px;font-size:12px;opacity:.85}.light .guide-controls{background:#f4f7f5}
+
+#status:empty{display:none}

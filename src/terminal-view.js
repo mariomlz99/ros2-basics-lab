@@ -8,7 +8,17 @@ export class TerminalView{
   this.xterm=new XTerm({convertEol:true,cursorBlink:true,cursorStyle:'block',fontSize:13,fontFamily:'"DejaVu Sans Mono", monospace',scrollback:2000,theme:{background:'#101a20',foreground:'#dceae5',cursor:'#a2e7c4',cursorAccent:'#101a20',selectionBackground:'#406358'}});this.fit=new FitAddon();this.xterm.loadAddon(this.fit);this.xterm.open(this.element.querySelector('.terminal-screen'));this.fit.fit();this.xterm.textarea?.setAttribute('aria-label',`Terminal ${terminal.id} input`);
   this.element.querySelector('.stop').onclick=()=>this.interrupt();this.element.querySelector('.close').onclick=()=>{if(this.nano?.buffer.dirty&&!confirm(t('Discard unsaved terminal edits?')))return;onClose();};
   terminal.editFile=(mode,path)=>{if(mode==='gedit'){if(!onOpenFile)throw Error('Workspace editor unavailable');onOpenFile(path);return;}this.nano=new NanoEditor(lab.fs,path,this.element,()=>{this.nano=null;terminal.busy=false;terminal.foreground=null;terminal.stopTask=null;this.element.classList.remove('editing');this.xterm.focus();if(!this.executing)this.prompt();});this.element.classList.add('editing');terminal.busy=true;terminal.foreground='editor';terminal.stopTask=()=>{this.nano?.destroy();this.nano=null;this.element.classList.remove('editing');terminal.foreground=null;};};
-  terminal.output=s=>this.output(s);this.xterm.onData(s=>this.input(s));this.xterm.attachCustomKeyEventHandler(e=>{if(e.ctrlKey&&e.shiftKey&&e.code==='KeyC'){if(e.type==='keydown')navigator.clipboard?.writeText(this.xterm.getSelection());return false;}return true;});
+  terminal.output=s=>this.output(s);this.xterm.onData(s=>this.input(s));this.xterm.attachCustomKeyEventHandler(e=>{
+   if(e.ctrlKey&&!e.altKey&&e.code==='KeyC'){
+    e.preventDefault();e.stopPropagation();
+    if(e.type==='keydown'){
+     const selection=this.xterm.getSelection();
+     if(selection||e.shiftKey){if(selection)navigator.clipboard?.writeText(selection).catch(()=>this.output(t('Copy failed. Select text in the plain-text transcript and use the browser copy menu.')));}
+     else this.interrupt();
+    }
+    return false;
+   }return true;
+  });
   this.resize=new ResizeObserver(()=>{if(this.element.isConnected){this.fit.fit();}});this.resize.observe(this.element);this.prompt();
   this.poll=setInterval(()=>{if(!this.executing&&terminal.busy&&terminal.foreground==='process'&&!lab.processes.active().some(p=>p.terminal===terminal.id)){terminal.busy=false;terminal.stopTask=null;terminal.foreground=null;this.prompt();}const state=this.element.querySelector('.terminal-state');const owned=lab.processes.active().filter(p=>p.terminal===terminal.id&&p.language!=='cli');state.textContent=this.nano?'Editing · nano':terminal.busy?(owned.length?(owned.every(p=>p.status==='Running')?'Running · callbacks ready':owned.map(p=>p.status||'Loading').join(' / ')):'Running · foreground'):terminal.overlays.size?'Jazzy + workspace overlay':'Jazzy base';},150);
  }

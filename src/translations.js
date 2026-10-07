@@ -1,4 +1,28 @@
 export const translations = {
+"Read the absolute path: this is where relative file paths begin.":["Lisez le chemin absolu : les chemins relatifs commencent ici.", "Bekijk het absolute pad: relatieve bestandspaden beginnen hier."],
+"Find .bashrc: -a also shows hidden files.":["Repérez .bashrc : -a affiche aussi les fichiers cachés.", "Zoek .bashrc: -a toont ook verborgen bestanden."],
+"Create a practice directory. A successful mkdir normally prints nothing.":["Créez un dossier d’exercice. mkdir ne produit normalement aucun texte en cas de succès.", "Maak een oefenmap. Een geslaagde mkdir toont normaal geen uitvoer."],
+"Watch the prompt change: you are now inside practice.":["Observez le changement de l’invite : vous êtes dans practice.", "Bekijk de gewijzigde prompt: je bevindt je nu in practice."],
+"Create an empty file and find it in Workspace files.":["Créez un fichier vide et retrouvez-le dans les fichiers de l’espace de travail.", "Maak een leeg bestand en zoek het bij de werkruimtebestanden."],
+"The > operator writes to the file, replacing its contents. Why is there no text in the terminal?":["L’opérateur > écrit dans le fichier en remplaçant son contenu. Pourquoi le terminal n’affiche-t-il aucun texte ?", "De operator > schrijft naar het bestand en vervangt de inhoud. Waarom verschijnt er geen tekst in de terminal?"],
+"Check that the file contains the text you just wrote.":["Vérifiez que le fichier contient le texte que vous venez d’écrire.", "Controleer of het bestand de tekst bevat die je net schreef."],
+"Compare the directory tree with Workspace files.":["Comparez l’arborescence avec les fichiers de l’espace de travail.", "Vergelijk de mappenstructuur met de werkruimtebestanden."],
+"Move to the parent directory and check the prompt again.":["Remontez au dossier parent et vérifiez à nouveau l’invite.", "Ga naar de bovenliggende map en bekijk de prompt opnieuw."],
+"Remove the practice directory and its contents. Watch it disappear from the file tree.":["Supprimez le dossier practice et son contenu. Observez sa disparition de l’arborescence.", "Verwijder de map practice en de inhoud. Bekijk hoe ze uit de bestandenstructuur verdwijnt."],
+"The shell expands this environment variable. The result should be jazzy.":["Le shell développe cette variable d’environnement. Le résultat devrait être jazzy.", "De shell vult deze omgevingsvariabele in. Het resultaat hoort jazzy te zijn."],
+"Locate the ros2 executable supplied by the base environment.":["Localisez l’exécutable ros2 fourni par l’environnement de base.", "Zoek het ros2-programma dat door de basisomgeving wordt geleverd."],
+"Read the available command groups before trying the graph commands.":["Lisez les groupes de commandes disponibles avant d’explorer le graphe.", "Lees de beschikbare opdrachtgroepen voordat je de graaf verkent."],
+"An empty result is expected: you have not started a student node yet.":["Un résultat vide est normal : vous n’avez pas encore démarré de nœud étudiant.", "Een leeg resultaat is normaal: je hebt nog geen eigen node gestart."],
+"Find /parameter_events and /rosout. System topics can exist before your own nodes start.":["Repérez /parameter_events et /rosout. Les topics système peuvent exister avant vos propres nœuds.", "Zoek /parameter_events en /rosout. Systeemtopics kunnen al bestaan voordat je eigen nodes starten."],
+
+"Step":["Étape", "Stap"],
+"Back":["Précédent", "Vorige"],
+"Next":["Suivant", "Volgende"],
+"Guided steps":["Étapes guidées", "Begeleide stappen"],
+"Lesson overview":["Vue d’ensemble de la leçon", "Lesoverzicht"],
+"Run the command, inspect the output, then choose Next. If it keeps running, leave it active unless the lesson asks you to stop it.":["Exécutez la commande, examinez le résultat, puis choisissez Suivant. Si elle continue à tourner, laissez-la active sauf si la leçon demande de l’arrêter.", "Voer de opdracht uit, bekijk het resultaat en kies Volgende. Blijft ze draaien, laat ze actief tenzij de les vraagt om ze te stoppen."],
+"Copy failed. Select text in the plain-text transcript and use the browser copy menu.":["Échec de la copie. Sélectionnez le texte dans la transcription et utilisez le menu de copie du navigateur.", "Kopiëren mislukt. Selecteer tekst in het transcript en gebruik het kopieermenu van de browser."],
+
   "Show all commands": [
     "Afficher toutes les commandes",
     "Alle opdrachten tonen"

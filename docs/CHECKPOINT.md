@@ -42,3 +42,9 @@ Added bounded nano (Ctrl+O/Enter, Ctrl+S, Ctrl+X with save/discard) and gedit op
 Compared empty and unknown-selection builds with local native Jazzy: empty builds create build/install/log and return a zero-package summary. Browser discovery now follows cwd recursively, skips COLCON_IGNORE, binds installed packages to the actual build directory and produces per-package failure reports/logs. It no longer tells students which directory to build from. One current install record per package remains a documented limitation. Native handoff link/button spacing was corrected.
 
 Navigation is split into LESSONS (six lessons) and EXERCISES (optional playground), translated in EN/NL/FR. Desktop/mobile spacing checks, editor save/discard/shared-file checks, Ctrl+Shift+V paste, unit tests, visible Python course and both-language real-runtime suite pass.
+
+## Guided lesson and clipboard follow-up
+
+The six lessons now default to one command or source file per step, with Back/Next, remembered positions per lesson/programming language, and an optional complete lesson overview. Introductory commands include observation prompts. Navigation does not execute commands or count as lesson completion; the final checks still inspect lab state. The scrollable lesson panel and running workspace are preserved. The full-course acceptance runner explicitly uses overview mode; terminal-feedback checks guided navigation and completion behavior.
+
+Within the terminal, Ctrl+C copies selected text, otherwise interrupts. Ctrl+Shift+C copies selected text and prevents the browser inspector shortcut; without a selection it does nothing. Browser clipboard behavior and interruption were checked with Chrome. Removed the initial Ready footer; later actionable status messages remain. Build, 25 model tests, terminal-feedback and built-site preferences/mobile checks pass.
