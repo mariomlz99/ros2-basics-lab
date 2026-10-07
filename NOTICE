@@ -1,0 +1,21 @@
+ROS 2 Basics Lab
+Derived execution components from KineNest / ROS2Learn.
+Copyright 2026 Mario Malizia and contributors
+Copyright 2026 ROS2Learn contributors
+Apache License 2.0; see LICENSE.
+Source snapshot: 91e405f5bd2ff3787b0db3b887d2c1c744f1b1be
+https://github.com/mariomlz99/kinenest
+
+C++ toolchain wrapper adapted from Ben Smith (binji/wasm-clang), Apache-2.0.
+Clang/LLVM and sysroot retain upstream licenses; see src/cpp/vendor/LICENSE*.
+The retained C++ yaw helper is derived from Open Source Robotics Foundation,
+Copyright 2014, Apache-2.0. It is not part of the lab curriculum.
+ROS is a trademark of Open Source Robotics Foundation, Inc.
+This independent educational application is not endorsed by Open Robotics.
+Pyodide is externally loaded under MPL-2.0; CPython under the PSF license.
+
+Canonical ROS interface field definitions are transcribed from Jazzy packages:
+builtin_interfaces, action_msgs, std_msgs, geometry_msgs, sensor_msgs,
+nav_msgs, std_srvs and example_interfaces (Apache License 2.0), and the
+unique_identifier_msgs UUID field declaration (upstream package license: BSD).
+See docs/INTERFACES.md for source package versions and scope.
