@@ -27,7 +27,7 @@ export class ProcessManager {
       const Adapter=await factory();if(token!==this.generation||!this.processes.has(id))return null;
       const options={ros,output:text=>{process.output.push(text);if(process.output.length>100)process.output.shift();this.onOutput(process,text);},status:text=>{process.status=text;this.onChange();},onStop:()=>{process.state='stopped';this.processes.delete(id);if(group){const members=this.groups.get(group);members?.delete(id);if(members?.size===0)this.groups.delete(group);}this.onChange();}};
       const adapter=new Adapter(this.runtime,options);process.adapter=adapter;
-      const program=installed.type==='python'?{files:installed.files,entry,schema:installed.schema}:{code:entry.code,module:entry.module,schema:installed.schema};
+      const program=installed.type==='python'?{files:installed.files,entry,schema:installed.schema,services:[...this.runtime.services.keys()]}:{code:entry.code,module:entry.module,schema:installed.schema,services:[...this.runtime.services.keys()]};
       adapter.run(program);process.state='running';this.onChange();return process;
     }catch(error){this.processes.delete(id);if(group){const members=this.groups.get(group);members?.delete(id);if(members?.size===0)this.groups.delete(group);}this.onChange();throw error;}
   }

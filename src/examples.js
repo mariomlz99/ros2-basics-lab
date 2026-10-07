@@ -124,3 +124,84 @@ export function customFiles(){return {
 export function statusFiles(language){const py=language==='python',pkg=py?'py_pubsub':'cpp_pubsub';const publisher=py?pythonTalker.replace('from std_msgs.msg import String','from tutorial_interfaces.msg import StudentStatus').replaceAll('String','StudentStatus').replace("'topic'","'student_status'").replace("message.data = f'Hello World: {self.count}'","message.name = 'Ada'\n        message.counter = self.count\n        message.ready = True").replace('f\'Publishing: "{message.data}"\'',"f'{message.name}: {message.counter}, ready={message.ready}'"):
  cppTalker.replace('#include <std_msgs/msg/string.hpp>','#include <tutorial_interfaces/msg/student_status.hpp>').replaceAll('std_msgs::msg::String','tutorial_interfaces::msg::StudentStatus').replace('"topic"','"student_status"').replace('message.data = "Hello World: " + std::to_string(count_++);','message.name = "Ada"; message.counter = count_++; message.ready = true;').replace('message.data.c_str()','message.name.c_str()');
  return {[py?pkg+'/status_publisher.py':'src/status_publisher.cpp']:publisher,'package.xml':manifest(pkg,py?'ament_python':'ament_cmake',[py?'rclpy':'rclcpp','std_msgs','tutorial_interfaces']),[py?'setup.py':'CMakeLists.txt']:py?setup(pkg,[`talker = ${pkg}.publisher:main`,`listener = ${pkg}.subscriber:main`,`status = ${pkg}.status_publisher:main`]):cmake(pkg,{talker:'src/publisher.cpp',listener:'src/subscriber.cpp',status:'src/status_publisher.cpp'},['rclcpp','std_msgs','tutorial_interfaces'])};}
+export const pythonServer=`import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class Adder(Node):
+    def __init__(self):
+        super().__init__('adder')
+        self.service = self.create_service(AddTwoInts, 'add_two_ints', self.add)
+
+    def add(self, request, response):
+        response.sum = request.a + request.b
+        self.get_logger().info(f'{request.a} + {request.b} = {response.sum}')
+        return response
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = Adder()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+`;
+export const pythonClient=`import rclpy
+from rclpy.node import Node
+from example_interfaces.srv import AddTwoInts
+
+class Client(Node):
+    def __init__(self):
+        super().__init__('addition_client')
+        self.client = self.create_client(AddTwoInts, 'add_two_ints')
+        request = AddTwoInts.Request()
+        request.a = 2
+        request.b = 3
+        self.future = self.client.call_async(request)
+        self.future.add_done_callback(self.received)
+
+    def received(self, future):
+        self.get_logger().info(f'Sum: {future.result().sum}')
+        self.destroy_node()
+        rclpy.shutdown()
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = Client()
+    rclpy.spin(node)
+`;
+export const cppServer=`#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include <example_interfaces/srv/add_two_ints.hpp>
+using Add = example_interfaces::srv::AddTwoInts;
+int main(int argc, char **argv) {
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<rclcpp::Node>("adder");
+  auto service = node->create_service<Add>("add_two_ints",
+    [node](Add::Request::SharedPtr request, Add::Response::SharedPtr response) {
+      response->sum = request->a + request->b;
+      RCLCPP_INFO(node->get_logger(), "Sum: %lld", (long long)response->sum);
+    });
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  return 0;
+}
+`;
+export const cppClient=`#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include <example_interfaces/srv/add_two_ints.hpp>
+using Add = example_interfaces::srv::AddTwoInts;
+int main(int argc, char **argv) {
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<rclcpp::Node>("addition_client");
+  auto client = node->create_client<Add>("add_two_ints");
+  auto request = std::make_shared<Add::Request>();
+  request->a = 2; request->b = 3;
+  client->async_send_request(request, [node](rclcpp::Client<Add>::SharedFuture future) {
+    RCLCPP_INFO(node->get_logger(), "Sum: %lld", (long long)future.get()->sum);
+    rclcpp::shutdown();
+  });
+  rclcpp::spin(node);
+  return 0;
+}
+`;
+export function serviceFiles(language){const py=language==='python',pkg=py?'py_service':'cpp_service';return py?{[pkg+'/server.py']:pythonServer,[pkg+'/client.py']:pythonClient,'setup.py':setup(pkg,[`server = ${pkg}.server:main`,`client = ${pkg}.client:main`])}:{'src/server.cpp':cppServer,'src/client.cpp':cppClient,'CMakeLists.txt':cmake(pkg,{server:'src/server.cpp',client:'src/client.cpp'},['rclcpp','example_interfaces'])};}

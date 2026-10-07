@@ -174,3 +174,72 @@ def _install_interfaces(schema):
         return cls
     for name in schema:
         make(name)
+
+_services = {}
+_available_services = set()
+
+class Future:
+    def __init__(self):
+        self._done, self._result, self._error = False, None, None
+        self._callbacks = []
+    def done(self):
+        return self._done
+    def result(self):
+        if self._error:
+            raise RuntimeError(self._error)
+        return self._result
+    def add_done_callback(self, callback):
+        if self._done:
+            callback(self)
+        else:
+            self._callbacks.append(callback)
+
+class Client:
+    def __init__(self, node, cls, name):
+        self.node, self.cls, self.name = node, cls, name
+    def wait_for_service(self, timeout_sec=None):
+        if self.name not in _available_services and '/' + self.name not in _available_services:
+            raise RuntimeError('Start the service server in another terminal, then rerun the client. Blocking waits are not supported.')
+        return True
+    def call_async(self, request):
+        if not isinstance(request, self.cls.Request):
+            raise TypeError('Wrong request type')
+        key = _id()
+        future = Future()
+        _futures[key] = (future, self.cls)
+        _send('service_call', id=key, node=self.node, name=self.name, type=self.cls._type, request=_payload(request))
+        return future
+
+def _create_service(self, cls, name, callback):
+    key = _id()
+    _services[key] = (self.name, cls, callback)
+    _send('service', node=self.name, name=name, type=cls._type, id=key)
+    return key
+
+def _create_client(self, cls, name):
+    return Client(self.name, cls, name)
+
+Node.create_service = _create_service
+Node.create_client = _create_client
+_module('rclpy.task', Future=Future)
+
+def _service_request(key, token, payload):
+    if key not in _services:
+        raise RuntimeError('Service stopped')
+    _, cls, callback = _services[key]
+    result = callback(cls.Request(**json.loads(payload)), cls.Response())
+    if not isinstance(result, cls.Response):
+        raise TypeError('Service callback must return a response')
+    _send('service_result', token=token, response=_payload(result))
+
+def _service_response(key, payload):
+    entry = _futures.pop(key, None)
+    if entry is None:
+        return
+    future, cls = entry
+    data = json.loads(payload)
+    future._error = data.get('error')
+    future._result = None if future._error else cls.Response(**data)
+    future._done = True
+    for callback in future._callbacks:
+        callback(future)

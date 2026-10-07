@@ -81,6 +81,23 @@ public:
 };
 inline std::map<std::string,std::map<std::string,Parameter>> parameters;
 
+template<class T> class Service {
+ int id_;
+public:using SharedPtr=std::shared_ptr<Service<T>>;explicit Service(int id):id_(id){}~Service(){kinenest::service_handlers.erase(id_);}
+};
+template<class T> class Client{
+ std::string node_,name_;
+public:
+ using SharedPtr=std::shared_ptr<Client<T>>;
+ class SharedFuture{typename T::Response::SharedPtr value_;public:explicit SharedFuture(typename T::Response::SharedPtr v):value_(v){}typename T::Response::SharedPtr get(){return value_;}};
+ Client(std::string node,std::string name):node_(node),name_(name){}
+ template<class Callback> int async_send_request(typename T::Request::SharedPtr request,Callback callback){
+  const int id=++kinenest::next_id;
+  kinenest::service_responses[id]=[callback](){callback(SharedFuture(std::make_shared<typename T::Response>(kinenest::MessageTraits<typename T::Response>::decode())));};
+  kinenest::emit("{\"kind\":\"service_call\",\"id\":"+std::to_string(id)+",\"node\":"+kinenest::quote(node_)+",\"name\":"+kinenest::quote(name_)+",\"type\":"+kinenest::quote(kinenest::MessageTraits<typename T::Request>::type())+",\"request\":"+kinenest::MessageTraits<typename T::Request>::encode(*request)+"}");return id;
+ }
+};
+
 class Node:public std::enable_shared_from_this<Node> {
  std::string name_;
 
@@ -104,6 +121,13 @@ public:
  template<class T> bool get_parameter(const std::string& name,T& value)const{value=get_parameter(name).template value<T>();return true;}
 
 
+
+ template<class T> typename Client<T>::SharedPtr create_client(const std::string& name){return std::make_shared<Client<T>>(name_,name);}
+ template<class T,class Callback> typename Service<T>::SharedPtr create_service(const std::string& name,Callback callback){
+  const int id=++kinenest::next_id;
+  kinenest::service_handlers[id]=[callback](const std::string& token){auto request=std::make_shared<typename T::Request>(kinenest::MessageTraits<typename T::Request>::decode("request."));auto response=std::make_shared<typename T::Response>();callback(request,response);kinenest::emit("{\"kind\":\"service_result\",\"token\":"+kinenest::quote(token)+",\"response\":"+kinenest::MessageTraits<typename T::Response>::encode(*response)+"}");};
+  kinenest::emit("{\"kind\":\"service\",\"id\":"+std::to_string(id)+",\"node\":"+kinenest::quote(name_)+",\"name\":"+kinenest::quote(name)+",\"type\":"+kinenest::quote(kinenest::MessageTraits<typename T::Request>::type())+"}");return std::make_shared<Service<T>>(id);
+ }
  template<class T> typename Publisher<T>::SharedPtr create_publisher(const std::string& topic,int){return std::make_shared<Publisher<T>>(name_,topic);}
  template<class T,class Callback> typename Subscription<T>::SharedPtr create_subscription(const std::string& topic,int,Callback callback){
   const int id=++kinenest::next_id;
@@ -129,3 +153,6 @@ extern "C" __attribute__((export_name("kn_parameter_update"))) void kn_parameter
  auto found=rclcpp::parameters.find(node);if(found==rclcpp::parameters.end()||!found->second.count(name))return;
  found->second[name]=rclcpp::Parameter::incoming("value");
 }
+
+extern "C" __attribute__((export_name("kn_service_request"))) void kn_service_request(int id){auto it=kinenest::service_handlers.find(id);if(it!=kinenest::service_handlers.end())it->second(kinenest::field_string("token"));}
+extern "C" __attribute__((export_name("kn_service_response"))) void kn_service_response(int id){auto it=kinenest::service_responses.find(id);if(it!=kinenest::service_responses.end()){auto fn=it->second;kinenest::service_responses.erase(it);fn();}}

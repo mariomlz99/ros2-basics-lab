@@ -18,6 +18,8 @@ async function handle(data){
   app=await tool.instantiate(module,imports);postMessage({kind:'executing'});let spinning=false;try{app.exports._start();}catch(e){if(e===SPIN)spinning=true;else if(e.code!==0)throw e;}flush();postMessage({kind:'metrics',metrics:tool.metrics});postMessage({kind:spinning?'ready':'shutdown'});
  }else if(data.kind==='message'){currentPayload=data.message;try{app.exports.kn_receive_message(data.subscription);flush();}finally{currentPayload=null;postMessage({kind:'frame_done',subscription:data.subscription});}}
  else if(data.kind==='timer'){try{app.exports.kn_tick(data.id);flush();}finally{postMessage({kind:'frame_done',subscription:'timer-'+data.id});}}
+ else if(data.kind==='service_request'){currentPayload=data;try{app.exports.kn_service_request(data.id);flush();}finally{currentPayload=null;}}
+ else if(data.kind==='service_response'){if(data.response.error)throw Error(data.response.error);currentPayload=data.response;try{app.exports.kn_service_response(data.id);flush();}finally{currentPayload=null;}}
  else if(data.kind==='parameter_update'){currentPayload=data;try{app.exports.kn_parameter_update();}finally{currentPayload=null;}}
 }
 onmessage=({data})=>{chain=chain.then(()=>handle(data)).catch(e=>{flush();postMessage({kind:'error',text:'C++: '+(e.message??e)});});};

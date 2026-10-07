@@ -25,6 +25,9 @@ export class RuntimeAdapter{
    case 'timer':{const dispose=r.every(d.period,()=>{if(this.worker)this.mailbox.offer('timer-'+d.id,()=>{this.worker?.postMessage({kind:'timer',id:d.id});this.watchdog(5000,'Timer callback took too long; stopped.');});});this.jobs.set(d.id,{node:d.node,dispose});break;}
    case 'timer_cancel':this.jobs.get(d.id)?.dispose();this.jobs.delete(d.id);this.mailbox.remove('timer-'+d.id);break;
    case 'frame_done':this.mailbox.done(d.subscription);if(!this.mailbox.inFlight.size)clearTimeout(this.timer);break;
+   case 'service':{const name=this.mapTopic(d.name);if(r.services.has(name))throw Error('Service already exists: '+name);const worker=this.worker;r.services.set(name,{node:d.node,type:d.type,handler:request=>new Promise((resolve,reject)=>{const token=String(++r.sampleCounter);const timer=setTimeout(()=>{this.pendingServices.delete(token);reject(Error('Service response timed out'));},10000);this.pendingServices.set(token,{resolve,reject,timer});worker.postMessage({kind:'service_request',id:d.id,token,request});})});break;}
+   case 'service_result':{const pending=this.pendingServices.get(d.token);if(pending){clearTimeout(pending.timer);this.pendingServices.delete(d.token);pending.resolve(d.response);}break;}
+   case 'service_call':{const worker=this.worker;r.callService(this.mapTopic(d.name),d.type,d.request).then(response=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response});}).catch(e=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response:{error:e.message}});});break;}
    case 'parameter_declare':{let p=r.parameters.get(d.node);if(!p)r.parameters.set(d.node,p=new Map());const v=Object.hasOwn(this.ros.parameters??{},d.name)?this.ros.parameters[d.name]:d.value;p.set(d.name,v);if(v!==d.value)this.worker?.postMessage({kind:'parameter_update',node:this.sourceNames.get(d.node),name:d.name,value:v});break;}
   }r.onChange();
  }

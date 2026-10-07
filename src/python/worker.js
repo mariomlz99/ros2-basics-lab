@@ -30,6 +30,7 @@ function installFiles(files){
 async function handle(data){
   if(data.kind==='start'||data.kind==='build'){
     await preparePython();
+    pyodide.globals.set('available_json',JSON.stringify(data.services??[]));pyodide.runPython('_available_services = set(json.loads(available_json))');
     if(data.schema){pyodide.globals.set("schema_json",JSON.stringify(data.schema));pyodide.runPython("_install_interfaces(json.loads(schema_json))");}
     if(data.kind==='build'){
       installFiles(data.files);
@@ -67,6 +68,9 @@ async function handle(data){
   }else if(data.kind==='action_event'){
     pyodide.globals.set('action_key',data.id);pyodide.globals.set('action_event',data.event);pyodide.globals.set('action_payload',JSON.stringify(data.payload));
     pyodide.runPython('_action_event(action_key, action_event, action_payload)');
+  }else if(data.kind==='service_request'){
+    pyodide.globals.set('request_key',data.id);pyodide.globals.set('request_token',data.token);pyodide.globals.set('request_payload',JSON.stringify(data.request));
+    pyodide.runPython('_service_request(request_key, request_token, request_payload)');
   }else if(data.kind==='service_response'){
 
     pyodide.globals.set('response_key',data.id);pyodide.globals.set('response_json',JSON.stringify(data.response));
