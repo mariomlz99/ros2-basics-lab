@@ -51,7 +51,7 @@ export class Workspace{
  }
  packages(){if(!this.fs.exists(ROOT+'/src'))throw Error('Create ~/ros2_ws/src first');return this.fs.list(ROOT+'/src').filter(e=>e.kind==='dir').map(e=>e.name);}
  fingerprint(name){return JSON.stringify(this.fs.filesUnder(ROOT+'/src/'+name));}
- current(name){const r=this.installed.get(name);if(!r)return false;try{return this.fs.exists(ROOT+'/install/'+name+'/share/'+name+'/package.xml')&&r.fingerprint===this.fingerprint(name);}catch{return false;}}
+ current(name){const r=this.installed.get(name);if(!r)return false;try{return this.fs.exists(ROOT+'/install/'+name+'/share/'+name+'/package.xml')&&[...r.executables.keys()].every(e=>this.fs.exists(ROOT+'/install/'+name+'/lib/'+name+'/'+e))&&r.launch.every(p=>this.fs.exists(ROOT+'/install/'+name+'/share/'+name+'/'+p))&&r.fingerprint===this.fingerprint(name);}catch{return false;}}
  installedPackage(name){if(!this.current(name))throw Error(`Package '${name}' has no current build. Run colcon build (source edits invalidate the browser install).`);return this.installed.get(name);}
  visible(terminal){return terminal.overlays.has(ROOT)&&this.fs.exists(ROOT+'/install/setup.bash')?[...this.installed.keys()].filter(n=>this.current(n)):[];}
  resolve(terminal,name){if(!this.visible(terminal).includes(name))throw Error(`Package '${name}' not found. Build it, then source ~/ros2_ws/install/setup.bash in this terminal.`);return this.installedPackage(name);}
