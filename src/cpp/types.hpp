@@ -14,6 +14,8 @@
 #include <array>
 #include <cstdint>
 #include <limits>
+#include <codecvt>
+#include <locale>
 
 extern "C" {
 __attribute__((import_module("kinenest"),import_name("emit"))) void kn_emit(const char*,int);
@@ -47,12 +49,14 @@ inline std::string field_string(const std::string& path){
 template<class T> struct MessageTraits;
 template<class T> T read(const std::string& p){
  if constexpr(std::is_same<T,std::string>::value)return field_string(p);
+ else if constexpr(std::is_same<T,std::wstring>::value)return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(field_string(p));
  else if constexpr(std::is_same<T,bool>::value)return field_bool(p);
  else if constexpr(std::is_arithmetic<T>::value)return static_cast<T>(field_number(p));
  else return MessageTraits<T>::decode(p+".");
 }
 template<class T> std::string encode_value(const T& v){
  if constexpr(std::is_same<T,std::string>::value)return quote(v);
+ else if constexpr(std::is_same<T,std::wstring>::value)return quote(std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(v));
  else if constexpr(std::is_same<T,bool>::value)return v?"true":"false";
  else if constexpr(std::is_arithmetic<T>::value)return number(v);
  else return MessageTraits<T>::encode(v);

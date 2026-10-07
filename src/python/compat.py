@@ -135,7 +135,7 @@ _module('rclpy.node', Node=Node)
 # All concrete message/service types are generated from the canonical registry.
 def _install_interfaces(schema):
     classes = {}
-    primitives = {'bool': False, 'string': '', 'float32': 0.0, 'float64': 0.0}
+    primitives = {'bool': False, 'string': '', 'wstring': '', 'float32': 0.0, 'float64': 0.0}
     def make(name):
         if name in classes:
             return classes[name]
