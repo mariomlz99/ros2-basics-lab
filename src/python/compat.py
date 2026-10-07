@@ -27,26 +27,6 @@ def _module(name, **values):
         setattr(sys.modules[parent], child, module)
     return module
 
-class String:
-    _type = 'std_msgs/msg/String'
-    def __init__(self, data=''):
-        self.data = data
-
-class Vector3:
-    def __init__(self):
-        self.x = self.y = self.z = 0.0
-
-class Twist:
-    _type = 'geometry_msgs/msg/Twist'
-    def __init__(self):
-        self.linear, self.angular = Vector3(), Vector3()
-
-class LaserScan:
-    _type = 'sensor_msgs/msg/LaserScan'
-
-class Image:
-    _type = 'sensor_msgs/msg/Image'
-
 def _type_name(cls):
     if not hasattr(cls, '_type'):
         raise TypeError('Unsupported or unbuilt ROS interface')
@@ -152,6 +132,45 @@ def _dispatch_timer(key):
 
 _module('rclpy', init=init, shutdown=shutdown, ok=lambda: _initialized, spin=spin, create_node=Node)
 _module('rclpy.node', Node=Node)
-for _pkg, _values in [('std_msgs', {'String': String}), ('geometry_msgs', {'Twist': Twist}), ('sensor_msgs', {'Image': Image, 'LaserScan': LaserScan})]:
-    _module(_pkg)
-    _module(_pkg + '.msg', **_values)
+# All concrete message/service types are generated from the canonical registry.
+def _install_interfaces(schema):
+    classes = {}
+    primitives = {'bool': False, 'string': '', 'float32': 0.0, 'float64': 0.0}
+    def make(name):
+        if name in classes:
+            return classes[name]
+        record = schema[name]
+        package, kind, short = name.split('/')
+        if package not in sys.modules:
+            _module(package)
+        if package + '.' + kind not in sys.modules:
+            _module(package + '.' + kind)
+        def message_class(fields, label):
+            def constructor(self, **kwargs):
+                for field in fields:
+                    typename = field['type']
+                    array = '[' in typename
+                    count = typename.split('[')[1].rstrip(']') if array else ''
+                    base = typename.split('[')[0]
+                    def default():
+                        if 'default' in field:
+                            return field['default']
+                        if base in primitives:
+                            return primitives[base]
+                        if base.startswith(('int', 'uint')) or base in ('byte', 'char'):
+                            return 0
+                        target = base if base.count('/') == 2 else base.replace('/', '/msg/') if '/' in base else package + '/msg/' + base
+                        return make(target)()
+                    setattr(self, field['name'], kwargs.pop(field['name'], [default() for _ in range(int(count or 0))] if array else default()))
+                if kwargs:
+                    raise TypeError('Unknown fields: ' + ', '.join(kwargs))
+            return type(label, (), {'__init__': constructor, '_type': name, **{c['name']: c['value'] for c in record.get('constants', [])}})
+        if 'response' in record:
+            cls = type(short, (), {'_type': name, 'Request': message_class(record['fields'], 'Request'), 'Response': message_class(record['response'], 'Response')})
+        else:
+            cls = message_class(record['fields'], short)
+        classes[name] = cls
+        setattr(sys.modules[package + '.' + kind], short, cls)
+        return cls
+    for name in schema:
+        make(name)

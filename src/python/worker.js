@@ -30,6 +30,7 @@ function installFiles(files){
 async function handle(data){
   if(data.kind==='start'||data.kind==='build'){
     await preparePython();
+    if(data.schema){pyodide.globals.set("schema_json",JSON.stringify(data.schema));pyodide.runPython("_install_interfaces(json.loads(schema_json))");}
     if(data.kind==='build'){
       installFiles(data.files);
       pyodide.globals.set('bridge_files',data.files);

@@ -1,10 +1,11 @@
+// Modified for ROS 2 Basics Lab: independent cache namespace.
 import {API} from './vendor/wasm-clang.js';
 export const TOOLCHAIN={revision:'648c4a89997a351eef75cdaec3ef5b89d4937dec',base:'https://raw.githubusercontent.com/binji/wasm-clang/648c4a89997a351eef75cdaec3ef5b89d4937dec/',files:{clang:31214472,lld:19490094,memfs:345442,'sysroot.tar':9297920}};
 export async function loadToolchain({output=()=>{},stage=()=>{}}={}){
  const metrics={downloadBytes:0,cacheBytes:0,loadMs:0,compileMs:0,linkMs:0,peakLinearMemoryBytes:0};const started=performance.now();
  const readBuffer=async name=>{
   const url=TOOLCHAIN.base+name,expected=TOOLCHAIN.files[name];let cache,response;
-  try{cache=await caches.open('kinenest-clang-'+TOOLCHAIN.revision);response=await cache.match(url);}catch{}
+  try{cache=await caches.open('ros2lab-clang-'+TOOLCHAIN.revision);response=await cache.match(url);}catch{}
   if(response){
    try{const bytes=await response.arrayBuffer();if(bytes.byteLength===expected){metrics.cacheBytes+=bytes.byteLength;return bytes;}}catch{}
    // An incomplete cached response must not poison every subsequent Run.

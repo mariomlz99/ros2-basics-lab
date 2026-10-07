@@ -1,7 +1,8 @@
+import {InterfaceRegistry} from './interfaces/registry.js';
 import {HOME} from './fs.js';
 import {parsePackageXml,parseCmake,parsePythonSetup} from './metadata.js';
 export const ROOT=HOME+'/ros2_ws';
-export const BASE_PACKAGES=['rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
+export const BASE_PACKAGES=['builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
 export function manifest(name,type,dependencies=[]){return `<?xml version="1.0"?>
 <package format="3">
   <name>${name}</name><version>0.0.0</version>
@@ -35,7 +36,7 @@ ${launch?'install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})':''}
 ament_package()
 `;}
 export class Workspace{
- constructor(fs){this.fs=fs;this.installed=new Map();this.interfaces=new Map();}
+ constructor(fs){this.fs=fs;this.installed=new Map();this.registry=new InterfaceRegistry();}
  create(name,type,{cwd=ROOT+'/src',dependencies=[],node=null,license='Apache-2.0'}={}){
   if(!/^[a-z][a-z0-9_]*$/.test(name)||node&&!/^[a-z][a-z0-9_]*$/.test(node))throw Error('Use lowercase names with letters, numbers and underscores');
   if(!['ament_python','ament_cmake'].includes(type))throw Error('Build type must be ament_python or ament_cmake');
@@ -78,5 +79,5 @@ export function browserCompile(data){return new Promise((resolve,reject)=>{const
 export class Builder{
  constructor(workspace,compile=browserCompile){this.workspace=workspace;this.compile=compile;this.controller=null;}
  cancel(){this.controller?.abort();}
- async build(names=null,report=()=>{}){if(this.controller)throw Error('A build is already running');const controller=new AbortController();this.controller=controller;try{const w=this.workspace;names??=w.packages();if(!names.length)throw Error('No packages in src');for(const name of names){w.installed.delete(name);report('Starting >>> '+name);const record=w.inspect(name);if(record.type==='python'){const result=await this.compile({type:'python',name,files:record.files,entries:[...record.executables.values()],signal:controller.signal});for(const imported of result.imports??[]){const root=imported.split('.')[0];if(BASE_PACKAGES.includes(root)&&!record.metadata.dependencies.has(root))throw Error(root+' missing from package.xml');}}else for(const entry of record.executables.values()){report('Compiling '+entry.source+' with Clang/LLD');const result=await this.compile({type:'cpp',code:entry.code,signal:controller.signal});entry.module=result.module;}if(controller.signal.aborted)throw Error('Build cancelled');if(w.fingerprint(name)!==record.fingerprint)throw Error('Files changed during build; rebuild');w.install(record);report('Finished <<< '+name);}return names;}finally{this.controller=null;}}
+ async build(names=null,report=()=>{}){if(this.controller)throw Error('A build is already running');const controller=new AbortController();this.controller=controller;try{const w=this.workspace;names??=w.packages();if(!names.length)throw Error('No packages in src');for(const name of names){w.installed.delete(name);report('Starting >>> '+name);const record=w.inspect(name);if(record.type==='python'){const result=await this.compile({type:'python',name,files:record.files,entries:[...record.executables.values()],schema:w.registry.schema(),signal:controller.signal});for(const imported of result.imports??[]){const root=imported.split('.')[0];if(BASE_PACKAGES.includes(root)&&!record.metadata.dependencies.has(root))throw Error(root+' missing from package.xml');}}else for(const entry of record.executables.values()){report('Compiling '+entry.source+' with Clang/LLD');const result=await this.compile({type:'cpp',code:entry.code,schema:w.registry.schema(),signal:controller.signal});entry.module=result.module;}if(controller.signal.aborted)throw Error('Build cancelled');if(w.fingerprint(name)!==record.fingerprint)throw Error('Files changed during build; rebuild');record.schema=w.registry.schema();w.install(record);report('Finished <<< '+name);}return names;}finally{this.controller=null;}}
 }
