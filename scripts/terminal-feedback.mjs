@@ -51,6 +51,13 @@ try{
  await command("ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.5}}'");await page.waitForTimeout(1100);
  assert.notEqual(await page.locator('#playground-stage .camera').evaluate(canvas=>canvas.toDataURL()),before,'Camera stream follows movement');
  await page.locator('#guide-next').click();assert.equal(await page.locator('#playground-status').textContent(),'Live sensor streams','Step navigation keeps streams alive');
+ const cameraView=page.locator('#playground-stage .camera'),originalHeight=(await cameraView.boundingBox()).height;
+ await page.locator('.stream-expand').nth(1).click();assert((await cameraView.boundingBox()).height>originalHeight+100);assert.equal(await page.locator('.stream-expand').nth(1).getAttribute('aria-expanded'),'true');
+ await page.locator('.stream-expand').nth(1).click();assert.equal((await cameraView.boundingBox()).height,originalHeight);
+ const divider=await page.locator('#resize-streams').boundingBox();await page.mouse.move(divider.x+30,divider.y+7);await page.mouse.down();await page.mouse.move(divider.x+30,divider.y+87);await page.mouse.up();assert((await cameraView.boundingBox()).height>=originalHeight+75);
+ await page.locator('#resize-streams').focus();await page.keyboard.press('ArrowDown');assert((await cameraView.boundingBox()).height>=originalHeight+95);
+ await page.locator('.stream-expand').nth(0).click();await page.locator('#restore-layout').click();assert.equal(await page.locator('figure.expanded').count(),0);assert.equal((await cameraView.boundingBox()).height,originalHeight);assert.equal(await page.locator('#playground-status').textContent(),'Live sensor streams');
+
  await page.screenshot({path:'artifacts/screenshots/playground-streams.png',fullPage:true});
  await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),0);assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1);
  await page.locator('#exercise-nav button').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();

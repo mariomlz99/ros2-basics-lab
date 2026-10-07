@@ -67,3 +67,10 @@ The playground now has separate saved files, terminal views and runtime graph. R
 Hosting remains local only. User states university logos will not be published; public branding will be decided later. Future release locks should exclude unreleased lesson content from public builds/repositories, rather than rely on client-side flags. No release gating has been added yet.
 
 Lesson source actions now distinguish Add file, Open file and explicit confirmed replacement. Missing packages offer a jump to their creation command. Guided source examples open automatically; repeated refreshes preserve button DOM until file state changes. Lesson 5 browser checks pass.
+
+
+## Playground geometry and first public preview
+
+Each sensor view now has Enlarge/Restore controls; a keyboard/pointer divider resizes the stream area above the lesson/editor. Restore layout resets these sizes too. Camera rendering uses the same obstacle and enclosing walls as the world and LiDAR, without phantom coloured beacons. LiDAR handedness, 2 Hz scan timing and physical sensor placement were corrected. Collision tests verify clearance and camera message/pixel agreement; example readers now distinguish front distance from nearest return.
+
+The user authorized a first GitHub Pages deployment for colleague review. build:public removes university logos/assets and excludes internal checkpoint/extraction notes. Deployable public files retain licensing notices and handoff documentation.

@@ -40,7 +40,12 @@ function changeLesson(index){
 function renderPlayground(){
  const stage=$('#playground-stage');stage.hidden=lessonIndex!==6;if(lessonIndex!==6){playground?.stop();if($('#playground-status'))$('#playground-status').textContent='Paused · simulator stopped';return;}
  if(playground?.runtime===lab.runtime)return;
- playground?.stop();stage.innerHTML='<div class="playground-streams"><figure><figcaption>Robot world</figcaption><canvas class="world" width="400" height="260"></canvas></figure><figure><figcaption>Camera · /camera/image_raw</figcaption><canvas class="camera" width="320" height="240"></canvas></figure><figure><figcaption>LiDAR · /scan</figcaption><canvas class="scan" width="320" height="240"></canvas></figure></div><div class="playground-controls"><button id="playground-start">Start playground</button><button id="playground-stop">Stop playground</button><span id="playground-status">Preview · simulator stopped</span></div>';
+ playground?.stop();stage.innerHTML='<div class="playground-streams"><figure><figcaption>Robot world</figcaption><canvas class="world" width="400" height="320"></canvas></figure><figure><figcaption>Camera · /camera/image_raw</figcaption><canvas class="camera" width="320" height="240"></canvas></figure><figure><figcaption>LiDAR · /scan</figcaption><canvas class="scan" width="320" height="240"></canvas></figure></div><div class="playground-controls"><button id="playground-start">Start playground</button><button id="playground-stop">Stop playground</button><span id="playground-status">Preview · simulator stopped</span></div>';
+ for(const [index,figure]of [...stage.querySelectorAll('figure')].entries()){
+  const caption=figure.querySelector('figcaption'),canvas=figure.querySelector('canvas');caption.id='stream-caption-'+index;canvas.id='stream-view-'+index;
+  const button=el('button','Enlarge','stream-expand');button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls',canvas.id);button.setAttribute('aria-describedby',caption.id);
+  button.onclick=()=>{const expanded=figure.classList.toggle('expanded');button.textContent=expanded?'Restore view':'Enlarge';button.setAttribute('aria-expanded',String(expanded));};figure.insertBefore(button,canvas);
+ }
  playground=new Playground(lab.runtime,stage.querySelector('.world'),stage.querySelector('.camera'),stage.querySelector('.scan'));
  $('#playground-start').onclick=()=>{playground.start();$('#playground-status').textContent='Live sensor streams';};
  $('#playground-stop').onclick=()=>{playground.stop();$('#playground-status').textContent='Paused · simulator stopped';};

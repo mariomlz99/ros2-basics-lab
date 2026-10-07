@@ -1,7 +1,7 @@
 export class Robot {
   constructor() { this.reset(); }
   reset() { this.x=0; this.y=0; this.yaw=0; this.linear=0; this.angular=0; this.distance=0; this.remaining=0; }
-  command(linear, angular) { this.linear=linear; this.angular=angular; this.remaining=2; }
+  command(linear, angular) { if(!Number.isFinite(linear)||!Number.isFinite(angular))throw Error('Velocity must be finite');this.linear=linear; this.angular=angular; this.remaining=2; }
   step(dt) {
     if (!Number.isFinite(dt) || dt<0) throw new Error('Invalid timestep');
     const t=Math.min(dt,this.remaining); if (!t) return;
