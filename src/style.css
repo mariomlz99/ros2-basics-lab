@@ -12,3 +12,5 @@
 .native-handoff{display:block;width:fit-content;margin:18px 0 4px;color:var(--accent);text-underline-offset:3px}.native-handoff+.complete{display:block;margin-top:14px}
 
 .exercise-heading{margin-top:26px;margin-bottom:10px}@media(max-width:650px){aside>.eyebrow{display:block;margin-bottom:8px}aside>.exercise-heading{margin-top:18px}}
+
+.course-context{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:0 0 30px;max-width:920px}.course-context p{margin:4px 0}.course-context .campus{font-size:13px;color:var(--muted)}.course-context strong{font-weight:600}.course-context code{font-size:12px;color:var(--muted);white-space:nowrap}

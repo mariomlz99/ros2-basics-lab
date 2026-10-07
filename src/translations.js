@@ -494,5 +494,9 @@ export const translations = {
   "EXERCISES": [
     "EXERCICES",
     "OEFENINGEN"
+  ],
+  "Course:": [
+    "Cours :",
+    "Vak:"
   ]
 };
