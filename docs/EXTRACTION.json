@@ -1,0 +1,18 @@
+{
+  "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "src/runtime/mailbox.js": "5c72790f8c0ec936851f23937a240cd90db65eb24693039ed8f48ad2dd90e1c0",
+  "src/runtime/languages.js": "ddb90286b89340aa202508b0bc2347a6631907ff7b9c53d71fa062c9f6b9bc9a",
+  "src/bridge/processes.js": "43e990c6ceffb01f064e5ce23c11fb91e721aa5e805b68e8601b8b7b17af47e8",
+  "src/bridge/launch.js": "692ee1a236118fd9650c0dc48b76acc5daab257ca1f5403c763d59084d47204b",
+  "src/python/bridge.js": "47edd99ba28c6afc4b9c56aee1b5bb6cfc007c5ec12f065bb5169c2a1a75034a",
+  "src/python/worker.js": "9e8483e30dca57eabc8b01157e1f8b51fdc1d2e084dd514c74f5fb8acd744b16",
+  "src/python/compat.py": "04d307c2f8189e73d3e9a5cdaa05f297b175f0d3f8c05a4d36044d96cbad48a2",
+  "src/cpp/bridge.js": "f3fcb2ddc36835af8e368c656083a948f020728900cbb3f6e813f738fa5bc6ec",
+  "src/cpp/worker.js": "92f109ae7226054b1bf36d88c182ebefc8f7cdec908173059cb649a64a997fc3",
+  "src/cpp/protocol.js": "197d88c22278c56e9ed524ab186b513dc41e6009108e965f8037c37093cbb87b",
+  "src/cpp/toolchain.js": "c79c51af94e315331f68a87eea049b4df3c79e045f2d6b73e115d3e37f2c5383",
+  "src/cpp/compat.hpp": "23513eb8fa4e9f758456676e61af43e595aa60d02fa7e988ec2e579cbfb68ddb",
+  "src/cpp/vendor/wasm-clang.js": "212a4a01c34c700d083272161ffe24bc5f878ce16bd7754df22f173143b8b5d6",
+  "src/cpp/vendor/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "src/cpp/vendor/LICENSE.llvm": "ebcd9bbf783a73d05c53ba4d586b8d5813dcdf3bbec50265860ccc885e606f47"
+}
