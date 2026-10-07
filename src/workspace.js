@@ -1,0 +1,82 @@
+import {HOME} from './fs.js';
+import {parsePackageXml,parseCmake,parsePythonSetup} from './metadata.js';
+export const ROOT=HOME+'/ros2_ws';
+export const BASE_PACKAGES=['rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'];
+export function manifest(name,type,dependencies=[]){return `<?xml version="1.0"?>
+<package format="3">
+  <name>${name}</name><version>0.0.0</version>
+  <description>ROS 2 Basics Lab student package</description>
+  <maintainer email="student@example.com">Student</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>${type}</buildtool_depend>
+${dependencies.map(d=>'  <depend>'+d+'</depend>').join('\n')}
+  <export><build_type>${type}</build_type></export>
+</package>
+`;}
+export function setup(name,entries=[],launch=[]){return `from setuptools import find_packages, setup
+package_name = '${name}'
+setup(
+    name=package_name, version='0.0.0',
+    packages=find_packages(exclude=['test']),
+    data_files=[('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+                ('share/' + package_name, ['package.xml'])${launch.length?",\n                ('share/' + package_name + '/launch', "+JSON.stringify(launch)+')':''}],
+    install_requires=['setuptools'], zip_safe=True,
+    maintainer='Student', maintainer_email='student@example.com',
+    description='ROS 2 Basics Lab student package', license='Apache-2.0',
+    entry_points={'console_scripts': ${JSON.stringify(entries)}},
+)
+`;}
+export function cmake(name,targets={},dependencies=[],launch=false){return `cmake_minimum_required(VERSION 3.8)
+project(${name})
+find_package(ament_cmake REQUIRED)
+${dependencies.map(d=>`find_package(${d} REQUIRED)`).join('\n')}
+${Object.entries(targets).map(([n,p])=>`add_executable(${n} ${p})\n${dependencies.length?`ament_target_dependencies(${n} ${dependencies.join(' ')})`:''}\ninstall(TARGETS ${n} DESTINATION lib/\${PROJECT_NAME})`).join('\n')}
+${launch?'install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})':''}
+ament_package()
+`;}
+export class Workspace{
+ constructor(fs){this.fs=fs;this.installed=new Map();this.interfaces=new Map();}
+ create(name,type,{cwd=ROOT+'/src',dependencies=[],node=null,license='Apache-2.0'}={}){
+  if(!/^[a-z][a-z0-9_]*$/.test(name)||node&&!/^[a-z][a-z0-9_]*$/.test(node))throw Error('Use lowercase names with letters, numbers and underscores');
+  if(!['ament_python','ament_cmake'].includes(type))throw Error('Build type must be ament_python or ament_cmake');
+  if(license!=='Apache-2.0')throw Error('This package template supports --license Apache-2.0');
+  for(const d of dependencies)if(!/^[a-z][a-z0-9_]*$/.test(d))throw Error('Invalid dependency name');
+  const base=cwd+'/'+name;this.fs.mkdir(base);const write=(p,s)=>this.fs.write(base+'/'+p,s),dir=p=>this.fs.mkdir(base+'/'+p,true);
+  write('package.xml',manifest(name,type,dependencies));
+  if(type==='ament_python'){
+   dir(name);dir('resource');dir('test');write(name+'/__init__.py','');write('resource/'+name,'');write('setup.cfg',`[develop]\nscript_dir=$base/lib/${name}\n[install]\ninstall_scripts=$base/lib/${name}\n`);write('setup.py',setup(name,node?[`${node} = ${name}.${node}:main`]:[]));if(node)write(name+'/'+node+'.py',`def main():\n    print('Hi from ${name}.')\n\nif __name__ == '__main__':\n    main()\n`);
+  }else{dir('include/'+name);dir('src');write('CMakeLists.txt',cmake(name,node?{[node]:'src/'+node+'.cpp'}:{}));if(node)write('src/'+node+'.cpp',`#include <iostream>\nint main(){ std::cout << "Hi from ${name}." << std::endl; return 0; }\n`);}
+  return base;
+ }
+ packages(){if(!this.fs.exists(ROOT+'/src'))throw Error('Create ~/ros2_ws/src first');return this.fs.list(ROOT+'/src').filter(e=>e.kind==='dir').map(e=>e.name);}
+ fingerprint(name){return JSON.stringify(this.fs.filesUnder(ROOT+'/src/'+name));}
+ current(name){const r=this.installed.get(name);if(!r)return false;try{return this.fs.exists(ROOT+'/install/'+name+'/share/'+name+'/package.xml')&&r.fingerprint===this.fingerprint(name);}catch{return false;}}
+ installedPackage(name){if(!this.current(name))throw Error(`Package '${name}' has no current build. Run colcon build (source edits invalidate the browser install).`);return this.installed.get(name);}
+ visible(terminal){return terminal.overlays.has(ROOT)&&this.fs.exists(ROOT+'/install/setup.bash')?[...this.installed.keys()].filter(n=>this.current(n)):[];}
+ resolve(terminal,name){if(!this.visible(terminal).includes(name))throw Error(`Package '${name}' not found. Build it, then source ~/ros2_ws/install/setup.bash in this terminal.`);return this.installedPackage(name);}
+ inspect(name){
+  const files=this.fs.filesUnder(ROOT+'/src/'+name);if(!files['package.xml'])throw Error('Missing package.xml in '+name);
+  const metadata=parsePackageXml(files['package.xml']);if(metadata.name!==name)throw Error('package.xml name must match directory '+name);
+  for(const d of metadata.dependencies)if(!BASE_PACKAGES.includes(d)&&!this.current(d))throw Error('Dependency '+d+' is not available; build its package first');
+  let executables,launch=[];
+  if(metadata.buildType==='ament_python'){
+   for(const p of ['resource/'+name,name+'/__init__.py','setup.py','setup.cfg'])if(!Object.hasOwn(files,p))throw Error('Missing '+p);
+   if(!files['setup.cfg'].includes('script_dir=$base/lib/'+name)||!files['setup.cfg'].includes('install_scripts=$base/lib/'+name))throw Error('setup.cfg must install scripts into $base/lib/'+name);
+   executables=parsePythonSetup(files['setup.py'],name);launch=[...executables.launchFiles];for(const e of executables.values())if(!Object.hasOwn(files,e.module.replaceAll('.','/')+'.py'))throw Error('Missing source file for '+e.module);
+  }else{
+   if(!files['CMakeLists.txt'])throw Error('Missing CMakeLists.txt');const c=parseCmake(files['CMakeLists.txt'],name);executables=new Map();
+   for(const d of c.found)if(d!=='ament_cmake'&&!metadata.dependencies.has(d))throw Error('Dependency '+d+' missing from package.xml');
+   for(const [target,paths]of c.targets){if(paths.length!==1||!Object.hasOwn(files,paths[0]))throw Error('Target '+target+' needs one existing source file');if(!c.installed.has(target))throw Error('Target '+target+' is not installed');for(const d of c.dependencies.get(target)??[])if(!c.found.has(d))throw Error('Missing find_package('+d+' REQUIRED)');const code=files[paths[0]];if(code.includes('rclcpp')&&!c.dependencies.get(target)?.has('rclcpp'))throw Error('Target '+target+' needs ament_target_dependencies with rclcpp');executables.set(target,{code,source:paths[0]});}
+   for(const n of c.installed)if(!c.targets.has(n))throw Error('Invalid installed target '+n);if(c.launchInstalled)launch=Object.keys(files).filter(p=>p.startsWith('launch/')&&p.endsWith('.py'));
+  }
+  for(const p of launch)if(!Object.hasOwn(files,p))throw Error('Missing launch file '+p);
+  return {name,type:metadata.buildType==='ament_python'?'python':'cpp',metadata,files,executables,launch,fingerprint:this.fingerprint(name)};
+ }
+ install(record){const {name}=record;for(const dir of ['build/'+name,'install/'+name+'/share/'+name,'install/'+name+'/lib/'+name,'log'])this.fs.mkdir(ROOT+'/'+dir,true);this.fs.write(ROOT+'/build/'+name+'/status.txt','Validated '+record.type+' package\n');this.fs.write(ROOT+'/install/'+name+'/share/'+name+'/package.xml',record.files['package.xml']);for(const p of record.launch){this.fs.mkdir(ROOT+'/install/'+name+'/share/'+name+'/launch',true);this.fs.write(ROOT+'/install/'+name+'/share/'+name+'/'+p,record.files[p]);}for(const e of record.executables.keys())this.fs.write(ROOT+'/install/'+name+'/lib/'+name+'/'+e,'# Modeled executable; real code runs in a worker\n');for(const p of ['setup.bash','local_setup.bash'])this.fs.write(ROOT+'/install/'+p,'# Browser educational overlay\n');this.fs.write(ROOT+'/log/build.txt','Built '+name+'\n');this.installed.set(name,record);}
+}
+export function browserCompile(data){return new Promise((resolve,reject)=>{const {signal,...payload}=data;if(signal?.aborted){reject(Error('Build cancelled'));return;}const worker=new Worker(new URL(data.type==='cpp'?'./cpp/worker.js':'./python/worker.js',import.meta.url),data.type==='cpp'?{type:'module'}:undefined);const timer=setTimeout(()=>finish(Error('Build timed out. Check runtime download access.')),180000);const cancel=()=>finish(Error('Build cancelled'));function finish(error,result){clearTimeout(timer);signal?.removeEventListener('abort',cancel);worker.terminate();error?reject(error):resolve(result);}signal?.addEventListener('abort',cancel,{once:true});worker.onerror=e=>finish(Error(e.message));worker.onmessage=({data:d})=>{if(d.kind==='build_ok')finish(null,d);else if(d.kind==='error')finish(Error(d.text));};worker.postMessage({kind:'build',...payload});});}
+export class Builder{
+ constructor(workspace,compile=browserCompile){this.workspace=workspace;this.compile=compile;this.controller=null;}
+ cancel(){this.controller?.abort();}
+ async build(names=null,report=()=>{}){if(this.controller)throw Error('A build is already running');const controller=new AbortController();this.controller=controller;try{const w=this.workspace;names??=w.packages();if(!names.length)throw Error('No packages in src');for(const name of names){w.installed.delete(name);report('Starting >>> '+name);const record=w.inspect(name);if(record.type==='python'){const result=await this.compile({type:'python',name,files:record.files,entries:[...record.executables.values()],signal:controller.signal});for(const imported of result.imports??[]){const root=imported.split('.')[0];if(BASE_PACKAGES.includes(root)&&!record.metadata.dependencies.has(root))throw Error(root+' missing from package.xml');}}else for(const entry of record.executables.values()){report('Compiling '+entry.source+' with Clang/LLD');const result=await this.compile({type:'cpp',code:entry.code,signal:controller.signal});entry.module=result.module;}if(controller.signal.aborted)throw Error('Build cancelled');if(w.fingerprint(name)!==record.fingerprint)throw Error('Files changed during build; rebuild');w.install(record);report('Finished <<< '+name);}return names;}finally{this.controller=null;}}
+}
