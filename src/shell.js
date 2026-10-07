@@ -47,6 +47,8 @@ export class Terminal{
   const flags=allowed=>{for(const f of options)if(!allowed.includes(f))throw Error(cmd+': unsupported option -'+f);};
   const count=(min,max=Infinity)=>{if(paths.length<min||paths.length>max)throw Error(cmd+': expected '+(min===max?min:`${min} or more`)+' operand(s)');};
   switch(cmd){
+   case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file> — Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file> — opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');await this.editFile(cmd,path);return '';}
+   case 'vim':case 'vi':throw Error('Vim is not implemented in this lab. Use nano <file> or gedit <file>.');
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.cwd=p;return '';}
    case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?[...(options.has('a')?[{name:'.',kind:'dir'},{name:'..',kind:'dir'}]:[]),...this.fs.list(full)]:[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':'-rw-r--r--')+' student '+String(e.content?.length??0).padStart(5)+' ':'')+e.name+(e.kind==='dir'?'/':'')).join(options.has('l')?'\n':'  ');}
@@ -61,7 +63,7 @@ export class Terminal{
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');
    case 'clear':flags('');count(0,0);return '\x1bc';
    case 'printenv':flags('');count(0,1);return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
-   case 'which':flags('');count(1);return paths.map(p=>p==='ros2'?'/opt/ros/jazzy/bin/ros2':p==='colcon'?'/usr/bin/colcon':['ls','mkdir','cat','touch','cp','mv','rm','echo','pwd','printenv','which','tree'].includes(p)?'/usr/bin/'+p:'').filter(Boolean).join('\n');
+   case 'which':flags('');count(1);return paths.map(p=>p==='ros2'?'/opt/ros/jazzy/bin/ros2':p==='colcon'?'/usr/bin/colcon':['nano','gedit','ls','mkdir','cat','touch','cp','mv','rm','echo','pwd','printenv','which','tree'].includes(p)?'/usr/bin/'+p:'').filter(Boolean).join('\n');
    default:if(this.dispatch&&['ros2','colcon','source'].includes(cmd))return await this.dispatch(this,words);throw Error(cmd+': command not supported in this browser lab');
   }
  }

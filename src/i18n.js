@@ -20,7 +20,7 @@ export function t(text){
 const originals=new WeakMap();
 // Translate only interface prose. Student files, commands, diagnostics and
 // terminal output are data and must survive locale changes byte-for-byte.
-const excluded='script,style,code,pre,.cm-editor,.terminal-screen,#file-tree';
+const excluded='script,style,code,pre,.nano-text,.nano-path,.cm-editor,.terminal-screen,#file-tree';
 let observer;
 export function translateUI(){
  observer?.disconnect();

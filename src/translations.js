@@ -422,5 +422,77 @@ export const translations = {
   "The base topics /parameter_events and /rosout are already available for parameter changes and ROS logs. You have not started any student nodes yet. A node is a running participant. A publisher sends messages on a named topic; a subscriber receives them. One topic connects nodes even when they use different languages.": [
     "Les topics de base /parameter_events et /rosout sont déjà disponibles pour les changements de paramètres et les logs ROS. Aucun nœud étudiant n’est encore lancé. Un nœud est un participant actif. Un publisher envoie des messages sur un topic nommé ; un subscriber les reçoit. Un topic relie les nœuds même s’ils utilisent des langages différents.",
     "De basistopics /parameter_events en /rosout zijn al beschikbaar voor parameterwijzigingen en ROS-logs. Je hebt nog geen eigen nodes gestart. Een node is een actieve deelnemer. Een publisher stuurt berichten op een topic; een subscriber ontvangt ze. Een topic verbindt nodes ook als ze verschillende programmeertalen gebruiken."
+  ],
+  "nano · teaching editor": [
+    "nano · éditeur pédagogique",
+    "nano · oefeneditor"
+  ],
+  "^O Save": [
+    "^O Enregistrer",
+    "^O Opslaan"
+  ],
+  "^X Exit": [
+    "^X Quitter",
+    "^X Afsluiten"
+  ],
+  "Arrow keys to move · Tab to indent": [
+    "Flèches pour déplacer · Tab pour indenter",
+    "Pijltjes om te bewegen · Tab voor inspringen"
+  ],
+  "Modified": [
+    "Modifié",
+    "Gewijzigd"
+  ],
+  "File saved.": [
+    "Fichier enregistré.",
+    "Bestand opgeslagen."
+  ],
+  "Write file:": [
+    "Écrire le fichier :",
+    "Bestand schrijven:"
+  ],
+  "Confirm · Enter": [
+    "Confirmer · Entrée",
+    "Bevestigen · Enter"
+  ],
+  "Cancel": [
+    "Annuler",
+    "Annuleren"
+  ],
+  "Yes": [
+    "Oui",
+    "Ja"
+  ],
+  "No": [
+    "Non",
+    "Nee"
+  ],
+  "Save changes before closing?": [
+    "Enregistrer avant de fermer ?",
+    "Wijzigingen opslaan voor het sluiten?"
+  ],
+  "Editing · nano": [
+    "Édition · nano",
+    "Bewerken · nano"
+  ],
+  "Discard unsaved terminal edits?": [
+    "Abandonner les modifications non enregistrées du terminal ?",
+    "Niet-opgeslagen terminalwijzigingen verwerpen?"
+  ],
+  "File changed in another editor. Reopen it before saving.": [
+    "Fichier modifié dans un autre éditeur. Rouvrez-le avant d’enregistrer.",
+    "Bestand gewijzigd in een andere editor. Open het opnieuw voordat je opslaat."
+  ],
+  "To edit a file, run nano notes.txt: Ctrl+O then Enter saves, and Ctrl+X exits. Or run gedit notes.txt to open it in the workspace editor. Both edit the same virtual file. You can also inspect and edit ~/.bashrc; its startup commands are not executed by this lab yet.": [
+    "Pour modifier un fichier, lancez nano notes.txt : Ctrl+O puis Entrée enregistre, Ctrl+X quitte. Ou lancez gedit notes.txt pour l’ouvrir dans l’éditeur de fichiers. Les deux modifient le même fichier virtuel. Vous pouvez aussi lire et modifier ~/.bashrc ; ce labo n’exécute pas encore ses commandes de démarrage.",
+    "Bewerk een bestand met nano notes.txt: Ctrl+O en Enter slaan op, Ctrl+X sluit af. Of gebruik gedit notes.txt om het in de werkruimte-editor te openen. Beide bewerken hetzelfde virtuele bestand. Je kunt ook ~/.bashrc bekijken en bewerken; dit lab voert de opstartopdrachten daarvan nog niet uit."
+  ],
+  "LESSONS": [
+    "LEÇONS",
+    "LESSEN"
+  ],
+  "EXERCISES": [
+    "EXERCICES",
+    "OEFENINGEN"
   ]
 };

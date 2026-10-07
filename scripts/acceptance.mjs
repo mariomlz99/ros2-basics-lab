@@ -5,7 +5,7 @@ const base=process.env.LAB_URL||(process.argv.includes('--built')?'http://127.0.
 async function command(i,line,{wait=true}={}){await card(i).locator('.xterm-helper-textarea').focus();await page.keyboard.insertText(line);await page.keyboard.press('Enter');await page.waitForTimeout(100);if(!wait&&/^ros2 (run|launch)/.test(line))await page.waitForFunction(i=>document.querySelectorAll('.terminal-state')[i].textContent.includes('callbacks ready'),i,{timeout:180000});if(wait)await page.waitForFunction(i=>!document.querySelectorAll('.terminal-state')[i].textContent.includes('Running'),i,{timeout:180000});}
 async function output(i,needle){await page.waitForFunction(([i,needle])=>document.querySelectorAll('.terminal-transcript pre')[i]?.textContent.includes(needle),[i,needle],{timeout:180000});}
 async function stop(i){await card(i).locator('.xterm-helper-textarea').focus();await page.keyboard.press('Control+c');await page.waitForTimeout(200);}
-async function lesson(index){await page.locator(`#nav button[data-index="${index}"]`).click();}
+async function lesson(index){await page.locator(`button[data-index="${index}"]`).click();}
 async function addFiles(limit=Infinity){const details=page.locator('#lesson details');for(let i=0;i<Math.min(await details.count(),limit);i++){const item=details.nth(i);if(await item.getAttribute('open')===null)await item.locator('summary').click();await item.getByRole('button',{name:'Add file',exact:true}).click();if((await page.locator('#status').innerText()).includes('first'))throw Error(await page.locator('#status').innerText());}}
 async function screenshot(name){await page.screenshot({path:`artifacts/screenshots/${language==='cpp'?'cpp-':''}${name}.png`,fullPage:true});}
 try{

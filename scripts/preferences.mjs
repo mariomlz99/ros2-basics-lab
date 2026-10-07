@@ -21,6 +21,7 @@ try{
  await mkdir('artifacts/screenshots',{recursive:true});await page.screenshot({path:'artifacts/screenshots/diepenbeek-nl-light.png',fullPage:true});
  await page.reload();await page.getByRole('button',{name:'Start de les',exact:true}).waitFor();assert.equal(await page.locator('#locale').inputValue(),'nl');assert.equal(await page.locator('#theme').inputValue(),'light');
  await page.locator('#locale').selectOption('en');await page.locator('#theme').selectOption('dark');await page.getByRole('button',{name:'Start lesson',exact:true}).click();await page.locator('.xterm').waitFor();
+ assert.equal(await page.locator('#nav button').count(),6);assert.equal(await page.locator('#exercise-nav button').count(),1);await page.locator('#nav button').nth(5).click();const link=await page.locator('.native-handoff').boundingBox(),check=await page.locator('.complete').boundingBox();assert(check.y>=link.y+link.height+10,'Native handoff and check button are separated');
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile layout should fit viewport');
  await page.screenshot({path:'artifacts/screenshots/diepenbeek-mobile.png',fullPage:true});

@@ -34,3 +34,11 @@ Added real `echo >`/`>>` file writes and quote-aware `*`/`?` pathname expansion,
 The header uses official KU Leuven and UHasselt image assets (sources recorded beside the assets). Locale order is EN, NL, FR. Lesson 4 uses the neutral greeting “Hello”.
 
 The graph now includes modeled CLI-daemon publishers on `/rosout` and `/parameter_events`, backed by canonical rcl_interfaces schemas, with real Python/C++ logger and parameter events. Endpoint cleanup preserves only the base publishers. Bare ROS subcommands show usage; typos report the supported choices. Unit and real-runtime suites pass.
+
+## Editor and colcon follow-up
+
+Added bounded nano (Ctrl+O/Enter, Ctrl+S, Ctrl+X with save/discard) and gedit opening the shared workspace editor, with stale-write protection and refresh of clean buffers. .bashrc can be edited but is still not executed at terminal startup. Terminal titles now include 🐧.
+
+Compared empty and unknown-selection builds with local native Jazzy: empty builds create build/install/log and return a zero-package summary. Browser discovery now follows cwd recursively, skips COLCON_IGNORE, binds installed packages to the actual build directory and produces per-package failure reports/logs. It no longer tells students which directory to build from. One current install record per package remains a documented limitation. Native handoff link/button spacing was corrected.
+
+Navigation is split into LESSONS (six lessons) and EXERCISES (optional playground), translated in EN/NL/FR. Desktop/mobile spacing checks, editor save/discard/shared-file checks, Ctrl+Shift+V paste, unit tests, visible Python course and both-language real-runtime suite pass.
