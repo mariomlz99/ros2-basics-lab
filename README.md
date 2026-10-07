@@ -42,3 +42,11 @@ Files → package metadata → build → install → sourced terminal → proces
 The shell, colcon/ament, CMake subset, ROS CLI and graph are modeled. Python runs in real CPython/Pyodide; C++ is compiled by Clang/LLD to WebAssembly. This is not native Linux or DDS/RMW. See [supported behavior and native handoff](docs/HANDOFF.md), [architecture](docs/ARCHITECTURE.md), and [local checkpoint](docs/CHECKPOINT.md).
 
 Source provenance and required license notices are retained in LICENSE, NOTICE and docs/EXTRACTION.json.
+
+## Public colleague preview
+
+The first review deployment is [ROS 2 Basics Lab on GitHub Pages](https://mariomlz99.github.io/ros2-basics-lab/). The [public deployment repository](https://github.com/mariomlz99/ros2-basics-lab) contains generated static files. Development source and internal checkpoints remain in this workspace.
+
+`npm run build:public` generates the public artifact in `dist/`, excluding university logos and internal checkpoint/extraction notes. Publishing is a separate Git push to the deployment repository. The public build includes `build-info.json` with its source revision. Do not publish the ordinary development build instead.
+
+Browser checks accept `LAB_URL=https://mariomlz99.github.io/ros2-basics-lab/`; pass `--public` to the preferences check for the logo-free site. Browser sessions are scoped to their host, so localhost saves do not automatically transfer to the public URL.

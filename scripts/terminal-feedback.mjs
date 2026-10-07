@@ -1,7 +1,7 @@
 import {chromium} from 'playwright-core';import assert from 'node:assert/strict';
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
 try{
- const page=await browser.newPage({viewport:{width:1440,height:1000}});await page.goto('http://127.0.0.1:8017/ros2-basics-lab/');await page.locator('#start').click();await page.locator('.xterm').waitFor();
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});await page.goto(process.env.LAB_URL||'http://127.0.0.1:8017/ros2-basics-lab/');await page.locator('#start').click();await page.locator('.xterm').waitFor();
  const input=page.locator('.xterm-helper-textarea'),transcript=page.locator('.terminal-transcript pre');
  const command=async text=>{await input.focus();await page.keyboard.insertText(text);await page.keyboard.press('Enter');await page.waitForTimeout(120);};
  await command('mkdir -p practice/practice');await command('cd practice');await command('echo "This is my text" > notes.txt');await command('echo "Hello" >> notes.txt');await command('cat notes.txt');assert((await transcript.textContent()).includes('This is my text\nHello'));

@@ -4,7 +4,7 @@ const language=process.env.LAB_LANGUAGE||'python',pkg=language==='cpp'?'cpp_pubs
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1440,height:1000}});
- await page.goto('http://127.0.0.1:8017/ros2-basics-lab/');await page.locator('#start').click();await page.locator('.xterm').waitFor();
+ await page.goto(process.env.LAB_URL||'http://127.0.0.1:8017/ros2-basics-lab/');await page.locator('#start').click();await page.locator('.xterm').waitFor();
  const command=async text=>{await page.locator('.xterm-helper-textarea').focus();await page.keyboard.type(text,{delay:2});await page.keyboard.press('Enter');await page.waitForTimeout(150);};
  await command('mkdir -p ~/practice/ros2_ws/src');await command('cd ~/practice/ros2_ws/src');await command('ros2 pkg create --build-type ament_cmake saved_package');await command('cd ..');await command('colcon build');await command('source install/setup.bash');await command('echo "saved text" > notes.txt');
  await page.locator('#nav button').nth(1).click();await page.locator('#guide-mode').click();await page.locator('.complete').click();assert.equal(await page.locator('.checks p').filter({hasText:'✓'}).count(),3,'Nested workspace passes all three checks');
