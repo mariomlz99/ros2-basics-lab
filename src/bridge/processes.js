@@ -7,6 +7,7 @@ export class ProcessManager {
     this.runtime=runtime;this.workspace=workspace;this.factories=factories;this.onChange=onChange;this.onOutput=onOutput;
     this.processes=new Map();this.groups=new Map();this.nextId=0;this.generation=0;
   }
+  task(executable,terminal,start){const id=++this.nextId;const process={id,name:'ros2cli',executable,terminal,language:'cli',state:'running',output:[]};this.processes.set(id,process);try{const cleanup=start(process);process.adapter={stop:cleanup};this.onChange();return process;}catch(e){this.processes.delete(id);throw e;}}
   active(){return [...this.processes.values()].filter(p=>p.state!=='stopped');}
   communicated(active,{topics=null}={}){
     const publishers=active.filter(p=>p.executable==='publisher'),subscribers=active.filter(p=>p.executable==='subscriber');

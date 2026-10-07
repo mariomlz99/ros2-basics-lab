@@ -18,6 +18,7 @@
 #include <locale>
 
 extern "C" {
+__attribute__((import_module("kinenest"),import_name("service_available"))) int kn_service_available(const char*,int);
 __attribute__((import_module("kinenest"),import_name("emit"))) void kn_emit(const char*,int);
 __attribute__((import_module("kinenest"),import_name("spin"))) void kn_spin();
 __attribute__((import_module("kinenest"),import_name("range_access"))) void kn_range_access(int);

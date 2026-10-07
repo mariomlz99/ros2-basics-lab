@@ -1,3 +1,4 @@
+import{parseScalar,parseMapping}from'./literals.js';
 import{FileSystem}from'./fs.js';import{Terminal}from'./shell.js';import{Workspace,Builder,ROOT,BASE_PACKAGES}from'./workspace.js';import{Runtime}from'./runtime/graph.js';import{ProcessManager}from'./bridge/processes.js';
 export class Lab{
  constructor({onChange=()=>{},onOutput=()=>{}}={}){this.onChange=onChange;this.onOutput=onOutput;this.fs=new FileSystem();this.workspace=new Workspace(this.fs);this.builder=new Builder(this.workspace);this.runtime=new Runtime(this.workspace.registry);this.terminals=new Map();this.nextTerminal=0;this.processes=new ProcessManager(this.runtime,this.workspace,{onChange:()=>{this.onChange();},onOutput:(p,s)=>this.output(p.terminal,s)});this.runtime.onChange=onChange;this.fs.listeners.add(onChange);}
@@ -25,9 +26,16 @@ export class Lab{
   if(sub==='topic'){
    const[action,name]=args;if(action==='--help')return 'ros2 topic list\nros2 topic type|info|echo|hz /topic\nros2 topic pub --once /topic package/msg/Type \'{"field": value}\'';
    if(action==='list'&&args.length===1)return [...r.topics.keys()].sort().join('\n');
-   if(action==='pub'){if(args[1]!=='--once'||args.length!==5)throw Error('Supported: ros2 topic pub --once /topic type \'{"field": value}\'');const msg=parseMapping(args[4]);r.registry.validate(args[3],msg);r.publish(args[2],args[3],msg,{node:'/cli_publisher'});r.removeEmptyTopics();return 'Published once';}
-   if(args.length!==2)throw Error('Use ros2 topic --help');const topic=r.topics.get(name);if(!topic)throw Error('Unknown topic: '+name);if(action==='type')return topic.type;if(action==='info')return `Type: ${topic.type}\nPublisher count: ${topic.publishers.size}\nSubscription count: ${topic.subscribers.size}`;
-   if(['echo','hz'].includes(action)){const node='/_ros2cli_'+t.id;r.nodes.add(node);let count=0,start=performance.now();const dispose=r.subscribe(name,node,msg=>{if(action==='echo')this.output(t.id,JSON.stringify(msg,null,2)+'\n---');else{count++;const elapsed=(performance.now()-start)/1000;if(elapsed>=1){this.output(t.id,'average rate: '+(count/elapsed).toFixed(2)+' Hz');count=0;start=performance.now();}}});t.busy=true;t.stopTask=()=>{dispose();r.nodes.delete(node);this.onChange();};return '';}
+   if(action==='pub'){
+    let once=false,rate=1;const positional=[];for(let i=1;i<args.length;i++){if(args[i]==='--once')once=true;else if(args[i]==='-r'||args[i]==='--rate')rate=Number(args[++i]);else positional.push(args[i]);}
+    if(positional.length!==3||!Number.isFinite(rate)||rate<1/60||rate>20)throw Error('Use ros2 topic pub [--once | -r 1] /topic type "{field: value}" (1/60–20 Hz)');
+    const[topic,type,payload]=positional;if(!BASE_PACKAGES.includes(type.split('/')[0])&&!workspace.visible(t).includes(type.split('/')[0]))throw Error('Interface package not found');
+    const message=r.registry.complete(type,parseMapping(payload));const node='/_ros2cli_pub_'+t.id;
+    const process=this.processes.task('topic pub',t.id,()=>{r.ensureTopic(topic,type).publishers.add(node);r.nodes.add(node);const send=()=>r.publish(topic,type,message,{node});send();const dispose=once?()=>{}:r.every(1/rate,send);return()=>{dispose();r.nodes.delete(node);r.topics.get(topic)?.publishers.delete(node);r.removeEmptyTopics();};});
+    if(once){this.processes.stop(process.id);return 'Published once';}t.busy=true;t.foreground='process';t.stopTask=()=>this.processes.stop(process.id);return 'Publishing at '+rate+' Hz. Ctrl+C stops the publisher.';
+   }
+   const verbose=action==='info'&&args.length===3&&args[2]==='-v';if(args.length!==2&&!verbose)throw Error('Use ros2 topic --help');const topic=r.topics.get(name);if(!topic)throw Error('Unknown topic: '+name);if(action==='type')return topic.type;if(action==='info')return `Type: ${topic.type}\nPublisher count: ${topic.publishers.size}\nSubscription count: ${topic.subscribers.size}`+(verbose?`\nPublishers:\n${[...topic.publishers].join("\n")}\nSubscribers:\n${[...topic.subscribers].join("\n")}`:'');
+   if(['echo','hz'].includes(action)){const node='/_ros2cli_'+t.id;r.nodes.add(node);let count=0,start=performance.now();const dispose=r.subscribe(name,node,msg=>{if(action==='echo')this.output(t.id,JSON.stringify(msg,null,2).slice(0,6000)+'\n---');else{count++;const elapsed=(performance.now()-start)/1000;if(elapsed>=1){this.output(t.id,'average rate: '+(count/elapsed).toFixed(2)+' Hz');count=0;start=performance.now();}}});const process=this.processes.task('topic '+action,t.id,()=>()=>{dispose();r.nodes.delete(node);this.onChange();});t.busy=true;t.foreground='process';t.stopTask=()=>this.processes.stop(process.id);return '';}
    throw Error('Use ros2 topic --help');
   }
   if(sub==='param'){const[action,node,name,...value]=args;if(action==='--help')return 'ros2 param list [ /node ]\nros2 param get /node name\nros2 param set /node name value';if(action==='list'&&args.length<=2)return [...r.parameters].filter(([n])=>!node||node===n).map(([n,p])=>n+'\n'+[...p.keys()].map(k=>'  '+k).join('\n')).join('\n');if(action==='get'&&args.length===3){if(!r.parameters.get(node)?.has(name))throw Error('Parameter not found');return JSON.stringify(r.parameters.get(node).get(name));}if(action==='set'&&args.length===4){r.setParameter(node,name,parseScalar(value[0]));return 'Set parameter successful';}throw Error('Use ros2 param --help');}
@@ -35,5 +43,3 @@ export class Lab{
   throw Error('Unsupported ROS command. Use ros2 --help');
  }
 }
-export function parseScalar(s){if(s==='true'||s==='True')return true;if(s==='false'||s==='False')return false;if(/^-?\d+(\.\d+)?$/.test(s))return Number(s);return s;}
-export function parseMapping(s){try{return JSON.parse(s);}catch{if(!/^\{.*\}$/.test(s))throw Error('Use a JSON or simple YAML flow mapping');const pairs=s.slice(1,-1).trim();if(!pairs)return {};const value={};for(const part of pairs.split(',')){const m=/^\s*([a-z][a-z0-9_]*):\s*(.*?)\s*$/.exec(part);if(!m)throw Error('Use a JSON mapping for nested values');value[m[1]]=parseScalar(m[2].replace(/^['"]|['"]$/g,''));}return value;}}

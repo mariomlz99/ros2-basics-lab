@@ -6,7 +6,7 @@ export function normalize(path,cwd=HOME){
 }
 const parent=p=>p.slice(0,p.lastIndexOf('/'))||'/';
 export class FileSystem{
- constructor(){this.entries=new Map([['/',{kind:'dir'}]]);this.revision=0;this.listeners=new Set();for(const p of [HOME,'/opt/ros/jazzy','/tmp'])this.mkdir(p,true);this.write('/opt/ros/jazzy/setup.bash','# Browser model of the Jazzy base environment\n');this.write(HOME+'/.bashrc','source /opt/ros/jazzy/setup.bash\n');}
+ constructor(){this.entries=new Map([['/',{kind:'dir'}]]);this.revision=0;this.listeners=new Set();for(const p of [HOME,'/opt/ros/jazzy','/tmp','/etc'])this.mkdir(p,true);this.write('/opt/ros/jazzy/setup.bash','# Browser model of the Jazzy base environment\n');this.write(HOME+'/.bashrc','source /opt/ros/jazzy/setup.bash\n');}
  changed(path){this.revision++;for(const fn of this.listeners)fn(path);}
  exists(p){return this.entries.has(normalize(p));}
  entry(p){p=normalize(p);const item=this.entries.get(p);if(!item)throw Error(p+': No such file or directory');return item;}

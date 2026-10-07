@@ -24,6 +24,7 @@ export class RuntimeAdapter{
    case 'unsubscribe':this.subscriptions.get(d.id)?.dispose();this.subscriptions.delete(d.id);this.mailbox.remove(d.id);break;
    case 'timer':{const dispose=r.every(d.period,()=>{if(this.worker)this.mailbox.offer('timer-'+d.id,()=>{this.worker?.postMessage({kind:'timer',id:d.id});this.watchdog(5000,'Timer callback took too long; stopped.');});});this.jobs.set(d.id,{node:d.node,dispose});break;}
    case 'timer_cancel':this.jobs.get(d.id)?.dispose();this.jobs.delete(d.id);this.mailbox.remove('timer-'+d.id);break;
+   case 'message_processed':{const sample=r.samples.get(d.sample);if(sample)for(const node of this.nodes)sample.receivedBy.add(node);break;}
    case 'frame_done':this.mailbox.done(d.subscription);if(!this.mailbox.inFlight.size)clearTimeout(this.timer);break;
    case 'service':{const name=this.mapTopic(d.name);if(r.services.has(name))throw Error('Service already exists: '+name);const worker=this.worker;r.services.set(name,{node:d.node,type:d.type,handler:request=>new Promise((resolve,reject)=>{const token=String(++r.sampleCounter);const timer=setTimeout(()=>{this.pendingServices.delete(token);reject(Error('Service response timed out'));},10000);this.pendingServices.set(token,{resolve,reject,timer});worker.postMessage({kind:'service_request',id:d.id,token,request});})});break;}
    case 'service_result':{const pending=this.pendingServices.get(d.token);if(pending){clearTimeout(pending.timer);this.pendingServices.delete(d.token);pending.resolve(d.response);}break;}

@@ -40,7 +40,17 @@ def _object(data):
     return data
 
 def _payload(msg):
-    return {k: _payload(v) if hasattr(v, '__dict__') else v for k, v in vars(msg).items()}
+    if isinstance(msg, (list, tuple)):
+        return [_payload(v) for v in msg]
+    if not hasattr(msg, '__dict__'):
+        return msg
+    return {k: _payload(v) for k, v in vars(msg).items()}
+
+def _from_payload(instance, payload):
+    for key, value in payload.items():
+        current = getattr(instance, key)
+        setattr(instance, key, _from_payload(current, value) if isinstance(value, dict) and hasattr(current, '__dict__') else [_object(v) for v in value] if isinstance(value, list) else value)
+    return instance
 
 class Publisher:
     def __init__(self, node, topic, cls):
@@ -65,7 +75,7 @@ class Node:
         return Publisher(self.name, topic, cls)
     def create_subscription(self, cls, topic, callback, qos):
         key = _id()
-        _subscriptions[key] = (self.name, callback)
+        _subscriptions[key] = (self.name, callback, cls)
         _send('subscribe', node=self.name, topic=topic, type=_type_name(cls), id=key)
         return key
     def destroy_subscription(self, key):
@@ -90,7 +100,7 @@ class Node:
     def get_logger(self):
         return types.SimpleNamespace(info=print, warning=print, error=print)
     def destroy_node(self):
-        for key, (node, _) in list(_subscriptions.items()):
+        for key, (node, _, _) in list(_subscriptions.items()):
             if node == self.name:
                 self.destroy_subscription(key)
         for key, (node, _) in list(_timers.items()):
@@ -124,7 +134,8 @@ def _run_student(source):
 
 def _dispatch_message(key, payload, sample):
     if key in _subscriptions:
-        _subscriptions[key][1](_object(json.loads(payload)))
+        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload)))
+        _send('message_processed', sample=sample)
 
 def _dispatch_timer(key):
     if key in _timers:

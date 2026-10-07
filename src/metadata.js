@@ -3,14 +3,14 @@ const PACKAGE=/^[a-z][a-z0-9_]*$/;
 function xmlNode(source){
   const root={name:'',children:[],text:''},stack=[root];let pos=0;
   for(const match of source.matchAll(/<\/?[A-Za-z_][^>]*>|<\?[^>]*\?>|<!--[^]*?-->/g)){
-    stack.at(-1).text+=source.slice(pos,match.index);pos=match.index+match[0].length;
+    const gap=source.slice(pos,match.index);if(gap.includes('<')||/&(?!amp;|lt;|gt;|quot;|apos;)/.test(gap))throw Error('Malformed package.xml');stack.at(-1).text+=gap;pos=match.index+match[0].length;
     const tag=match[0];if(tag.startsWith('<?')||tag.startsWith('<!--'))continue;
     if(tag.startsWith('</')){const name=tag.slice(2,-1).trim();if(stack.length===1||stack.at(-1).name!==name)throw Error('package.xml has mismatched XML tags.');stack.pop();continue;}
     const name=tag.slice(1).match(/^[A-Za-z_][\w:-]*/)?.[0];if(!name)throw Error('Invalid package.xml tag.');
     const node={name,attrs:Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*["']([^"']*)["']/g)].map(m=>[m[1],m[2]])),children:[],text:''};
     stack.at(-1).children.push(node);if(!tag.endsWith('/>'))stack.push(node);
   }
-  stack.at(-1).text+=source.slice(pos);if(stack.length!==1||root.children.length!==1||root.children[0].name!=='package')throw Error('package.xml must contain one <package> root.');
+  const tail=source.slice(pos);if(tail.includes('<')||root.text.trim())throw Error('Malformed package.xml');stack.at(-1).text+=tail;if(stack.length!==1||root.children.length!==1||root.children[0].name!=='package')throw Error('package.xml must contain one <package> root.');
   return root.children[0];
 }
 export function parsePackageXml(source){
@@ -22,9 +22,10 @@ export function parsePackageXml(source){
   const exportNode=root.children.find(n=>n.name==='export');
   const buildType=exportNode?.children.find(n=>n.name==='build_type')?.text.trim();
   if(!['ament_python','ament_cmake'].includes(buildType))throw Error('package.xml needs a supported <export><build_type>.');
-  if(!deps.has(buildType))throw Error('package.xml needs <buildtool_depend>'+buildType+'</buildtool_depend>.');
+  if(!root.children.some(n=>n.name==='buildtool_depend'&&n.text.trim()===buildType))throw Error('package.xml needs <buildtool_depend>'+buildType+'</buildtool_depend>.');
 
-  return {name,version,description,license,maintainer,maintainerEmail:root.children.find(n=>n.name==='maintainer')?.attrs.email??'',dependencies:deps,buildType};
+  const testDependencies=new Set(root.children.filter(n=>n.name==='test_depend').map(n=>n.text.trim()));
+  return {name,version,description,license,maintainer,testDependencies,maintainerEmail:root.children.find(n=>n.name==='maintainer')?.attrs.email??'',dependencies:deps,buildType};
 }
 
 export function cmakeCalls(source){
@@ -49,13 +50,14 @@ export function parseCmake(source,packageName){
   const found=new Set(calls.filter(c=>c.name==='find_package'&&c.args.includes('REQUIRED')).map(c=>c.args[0]));
   if(!found.has('ament_cmake'))throw Error('CMakeLists.txt needs find_package(ament_cmake REQUIRED).');
   if(!calls.some(c=>c.name==='ament_package'))throw Error('CMakeLists.txt needs ament_package().');
-  const targets=new Map();for(const c of calls.filter(c=>c.name==='add_executable'))targets.set(c.args[0],c.args.slice(1));
+  const targets=new Map();for(const c of calls.filter(c=>c.name==='add_executable')){if(targets.has(c.args[0]))throw Error('Duplicate CMake target '+c.args[0]);targets.set(c.args[0],c.args.slice(1).map(a=>a.replace(/^"|"$/g,'')));}
   const installed=new Set();let launchInstalled=false;for(const c of calls.filter(c=>c.name==='install')){
     if(c.args[0]==='DIRECTORY'&&c.args[1]==='launch'&&c.args[2]==='DESTINATION'&&c.args[3]===`share/\${PROJECT_NAME}`){launchInstalled=true;continue;}
     if(c.args[0]!=='TARGETS'||!c.args.includes('DESTINATION')||c.args.slice(c.args.indexOf('DESTINATION')+1).join(' ')!==`lib/\${PROJECT_NAME}`)throw Error('Supported install form: install(TARGETS name DESTINATION lib/${PROJECT_NAME}).');
     for(const name of c.args.slice(1,c.args.indexOf('DESTINATION')))installed.add(name);
   }
   const dependencies=new Map();for(const c of calls.filter(c=>c.name==='ament_target_dependencies'))dependencies.set(c.args[0],new Set(c.args.slice(1)));
+  for(const target of dependencies.keys())if(!targets.has(target))throw Error('Dependencies for unknown target '+target);
   return {found,targets,installed,dependencies,launchInstalled};
 }
 

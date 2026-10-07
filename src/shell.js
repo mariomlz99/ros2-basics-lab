@@ -25,7 +25,7 @@ export class Terminal{
   switch(cmd){
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.cwd=p;return '';}
-   case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?this.fs.list(full):[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':'-rw-r--r--')+' student '+String(e.content?.length??0).padStart(5)+' ':'')+e.name+(e.kind==='dir'?'/':'')).join(options.has('l')?'\n':'  ');}
+   case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?[...(options.has('a')?[{name:'.',kind:'dir'},{name:'..',kind:'dir'}]:[]),...this.fs.list(full)]:[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':'-rw-r--r--')+' student '+String(e.content?.length??0).padStart(5)+' ':'')+e.name+(e.kind==='dir'?'/':'')).join(options.has('l')?'\n':'  ');}
    case 'mkdir':flags('p');count(1);for(const p of paths)this.fs.mkdir(this.path(p),options.has('p'));return '';
    case 'touch':flags('');count(1);for(const p of paths)this.fs.touch(this.path(p));return '';
    case 'cat':flags('');count(1);return paths.map(p=>this.fs.read(this.path(p))).join('');

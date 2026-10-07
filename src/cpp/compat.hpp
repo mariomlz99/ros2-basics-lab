@@ -91,6 +91,7 @@ public:
  using SharedPtr=std::shared_ptr<Client<T>>;
  class SharedFuture{typename T::Response::SharedPtr value_;public:explicit SharedFuture(typename T::Response::SharedPtr v):value_(v){}typename T::Response::SharedPtr get(){return value_;}};
  Client(std::string node,std::string name):node_(node),name_(name){}
+ template<class Rep,class Period> bool wait_for_service(std::chrono::duration<Rep,Period>)const{if(!kn_service_available(name_.data(),name_.size()))kinenest::fail("Start the service server, then rerun this client. Blocking waits are not supported.");return true;}
  template<class Callback> int async_send_request(typename T::Request::SharedPtr request,Callback callback){
   const int id=++kinenest::next_id;
   kinenest::service_responses[id]=[callback](){callback(SharedFuture(std::make_shared<typename T::Response>(kinenest::MessageTraits<typename T::Response>::decode())));};

@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 `.replaceAll('\\\\"','\\"');
-export function pubsubFiles(language){const py=language==='python',name=py?'py_pubsub':'cpp_pubsub';return py?{[name+'/publisher.py']:pythonTalker,[name+'/subscriber.py']:pythonListener,'setup.py':setup(name,[`talker = ${name}.publisher:main`,`listener = ${name}.subscriber:main`])}:{'src/publisher.cpp':cppTalker,'src/subscriber.cpp':cppListener,'CMakeLists.txt':cmake(name,{talker:'src/publisher.cpp',listener:'src/subscriber.cpp'},['rclcpp','std_msgs'])};}
+export function pubsubFiles(language){const py=language==='python',name=py?'py_pubsub':'cpp_pubsub';return py?{[name+'/talker.py']:pythonTalker,[name+'/listener.py']:pythonListener,'setup.py':setup(name,[`talker = ${name}.talker:main`,`listener = ${name}.listener:main`])}:{'src/publisher_member_function.cpp':cppTalker,'src/subscriber_member_function.cpp':cppListener,'CMakeLists.txt':cmake(name,{talker:'src/publisher_member_function.cpp',listener:'src/subscriber_member_function.cpp'},['rclcpp','std_msgs'])};}
 export const parameterTalker=pythonTalker.replace("self.count = 0","self.declare_parameter('message_prefix', 'Hello World')\n        self.declare_parameter('publish_rate', 2.0)\n        self.count = 0\n        self.elapsed = 0.0").replace('self.create_timer(0.5,','self.create_timer(0.05,').replace('        message = String()',"        self.elapsed += 0.05\n        rate = self.get_parameter('publish_rate').value\n        if self.elapsed < 1.0 / rate:\n            return\n        self.elapsed = 0.0\n        message = String()").replace("message.data = f'Hello World: {self.count}'","prefix = self.get_parameter('message_prefix').value\n        message.data = f'{prefix}: {self.count}'");
 export const cppParameterTalker=cppTalker.replace('publisher_ = create_publisher',`declare_parameter<std::string>("message_prefix", "Hello World");\n    declare_parameter<double>("publish_rate", 2.0);\n    publisher_ = create_publisher`).replace('500ms','50ms').replace('      std_msgs::msg::String message;',`      elapsed_ += 0.05;\n      if (elapsed_ < 1.0 / get_parameter("publish_rate").as_double()) return;\n      elapsed_ = 0;\n      std_msgs::msg::String message;`).replace('"Hello World: " +',`get_parameter("message_prefix").as_string() + ": " +`).replace('int count_ = 0;','int count_ = 0;\n  double elapsed_ = 0;');
 export function launchSource(name){return `from launch import LaunchDescription
@@ -123,7 +123,7 @@ export function customFiles(){return {
 };}
 export function statusFiles(language){const py=language==='python',pkg=py?'py_pubsub':'cpp_pubsub';const publisher=py?pythonTalker.replace('from std_msgs.msg import String','from tutorial_interfaces.msg import StudentStatus').replaceAll('String','StudentStatus').replace("'topic'","'student_status'").replace("message.data = f'Hello World: {self.count}'","message.name = 'Ada'\n        message.counter = self.count\n        message.ready = True").replace('f\'Publishing: "{message.data}"\'',"f'{message.name}: {message.counter}, ready={message.ready}'"):
  cppTalker.replace('#include <std_msgs/msg/string.hpp>','#include <tutorial_interfaces/msg/student_status.hpp>').replaceAll('std_msgs::msg::String','tutorial_interfaces::msg::StudentStatus').replace('"topic"','"student_status"').replace('message.data = "Hello World: " + std::to_string(count_++);','message.name = "Ada"; message.counter = count_++; message.ready = true;').replace('message.data.c_str()','message.name.c_str()');
- return {[py?pkg+'/status_publisher.py':'src/status_publisher.cpp']:publisher,'package.xml':manifest(pkg,py?'ament_python':'ament_cmake',[py?'rclpy':'rclcpp','std_msgs','tutorial_interfaces']),[py?'setup.py':'CMakeLists.txt']:py?setup(pkg,[`talker = ${pkg}.publisher:main`,`listener = ${pkg}.subscriber:main`,`status = ${pkg}.status_publisher:main`]):cmake(pkg,{talker:'src/publisher.cpp',listener:'src/subscriber.cpp',status:'src/status_publisher.cpp'},['rclcpp','std_msgs','tutorial_interfaces'])};}
+ return {[py?pkg+'/status_publisher.py':'src/status_publisher.cpp']:publisher,'package.xml':manifest(pkg,py?'ament_python':'ament_cmake',[py?'rclpy':'rclcpp','std_msgs','tutorial_interfaces']),[py?'setup.py':'CMakeLists.txt']:py?setup(pkg,[`talker = ${pkg}.talker:main`,`listener = ${pkg}.listener:main`,`status = ${pkg}.status_publisher:main`]):cmake(pkg,{talker:'src/publisher_member_function.cpp',listener:'src/subscriber_member_function.cpp',status:'src/status_publisher.cpp'},['rclcpp','std_msgs','tutorial_interfaces'])};}
 export const pythonServer=`import rclpy
 from rclpy.node import Node
 from example_interfaces.srv import AddTwoInts
@@ -153,6 +153,7 @@ class Client(Node):
     def __init__(self):
         super().__init__('addition_client')
         self.client = self.create_client(AddTwoInts, 'add_two_ints')
+        self.client.wait_for_service(timeout_sec=5.0)
         request = AddTwoInts.Request()
         request.a = 2
         request.b = 3
@@ -194,6 +195,7 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("addition_client");
   auto client = node->create_client<Add>("add_two_ints");
+  if (!client->wait_for_service(std::chrono::seconds(5))) return 1;
   auto request = std::make_shared<Add::Request>();
   request->a = 2; request->b = 3;
   client->async_send_request(request, [node](rclcpp::Client<Add>::SharedFuture future) {
