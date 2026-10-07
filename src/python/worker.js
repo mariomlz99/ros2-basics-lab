@@ -1,3 +1,4 @@
+// Modified for ROS 2 Basics Lab: lean CPython load and finite program lifecycle.
 let pyodide, chain=Promise.resolve();
 const INDEX='https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
 let outputCount=0, outputTime=0;
@@ -15,11 +16,6 @@ async function preparePython(){
   const source=await teachingAPI();
   importScripts(INDEX+'pyodide.js');
   pyodide=await loadPyodide({indexURL:INDEX,stdout:output,stderr:output});
-  postMessage({kind:'loading',text:'Loading NumPy…'});
-  for(let attempt=0;attempt<3;attempt++){
-    try{await pyodide.loadPackage('numpy');pyodide.runPython('import numpy');break;}
-    catch(error){if(attempt===2)throw new Error('NumPy download failed. Check the connection and try again. '+error);await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));}
-  }
   await pyodide.runPythonAsync(source);
 }
 function installFiles(files){
@@ -50,6 +46,7 @@ async function handle(data){
     postMessage({kind:'executing'});
     pyodide.runPython('_run_student(student_source)');
     postMessage({kind:'ready'});
+    if(!pyodide.runPython('bool(_nodes)'))postMessage({kind:'shutdown'});
   }else if(data.kind==='image'){
     pyodide.globals.set('image_key',data.subscription);
     pyodide.globals.set('image_meta',JSON.stringify(data.meta));

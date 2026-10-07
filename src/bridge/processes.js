@@ -1,3 +1,4 @@
+// Modified from KineNest: remove robot coupling and carry installed worker artifacts.
 import {LANGUAGE_ADAPTERS} from '../runtime/languages.js';
 import {parseLaunch} from './launch.js';
 
@@ -26,7 +27,7 @@ export class ProcessManager {
       const Adapter=await factory();if(token!==this.generation||!this.processes.has(id))return null;
       const options={ros,output:text=>{process.output.push(text);if(process.output.length>100)process.output.shift();this.onOutput(process,text);},status:text=>{process.status=text;this.onChange();},onStop:()=>{process.state='stopped';this.processes.delete(id);if(group){const members=this.groups.get(group);members?.delete(id);if(members?.size===0)this.groups.delete(group);}this.onChange();}};
       const adapter=new Adapter(this.runtime,options);process.adapter=adapter;
-      const program=installed.type==='python'?{files:installed.files,entry}:entry.code;
+      const program=installed.type==='python'?{files:installed.files,entry}:{code:entry.code,module:entry.module,headers:installed.headers};
       adapter.run(program);process.state='running';this.onChange();return process;
     }catch(error){this.processes.delete(id);if(group){const members=this.groups.get(group);members?.delete(id);if(members?.size===0)this.groups.delete(group);}this.onChange();throw error;}
   }
@@ -45,6 +46,6 @@ export class ProcessManager {
   stop(id){const process=this.processes.get(id);if(!process)return;this.processes.delete(id);process.state='stopped';process.adapter?.stop();if(process.group){const members=this.groups.get(process.group);members?.delete(id);if(members?.size===0)this.groups.delete(process.group);}this.onChange();}
   stopGroup(group){for(const id of [...(this.groups.get(group)??[])])this.stop(id);this.groups.delete(group);this.onChange();}
   stopTerminal(terminal){for(const process of this.active())if(process.terminal===terminal)this.stop(process.id);}
-  stopAll(){this.generation++;for(const id of [...this.processes.keys()])this.stop(id);this.groups.clear();this.runtime.robot.command(0,0);this.onChange();}
+  stopAll(){this.generation++;for(const id of [...this.processes.keys()])this.stop(id);this.groups.clear();this.onChange();}
   reset(){this.stopAll();this.processes.clear();this.groups.clear();this.nextId=0;}
 }
