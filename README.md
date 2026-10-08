@@ -1,6 +1,6 @@
 # ROS 2 Basics Lab
 
-Designed for the ROS 2 exercise session at Diepenbeek. A static browser workstation with six lessons, Python and C++ learning paths, English/French/Dutch, and light/dark themes.
+Designed for the ROS 2 exercise session at Diepenbeek. A static browser workstation with seven lessons, Python and C++ learning paths, English/French/Dutch, and light/dark themes.
 
 ## Run locally
 
@@ -27,6 +27,7 @@ The browser suite uses Google Chrome at `google-chrome`. With `npm run dev` runn
 npm run test:acceptance
 LAB_LANGUAGE=cpp npm run test:acceptance
 npm run test:preferences
+node scripts/topics-lesson-check.mjs
 ```
 
 Set `LAB_URL` to test the same UI against another local server. To check the built site, run `npm run preview` instead of the development server. Tests write screenshots and acceptance results under ignored `artifacts/`.
@@ -50,3 +51,7 @@ The first review deployment is [ROS 2 Basics Lab on GitHub Pages](https://mariom
 `npm run build:public` generates the public artifact in `dist/`, excluding university logos and internal checkpoint/extraction notes. Publishing is a separate Git push to the deployment repository. The public build includes `build-info.json` with its source revision. Do not publish the ordinary development build instead.
 
 Browser checks accept `LAB_URL=https://mariomlz99.github.io/ros2-basics-lab/`; pass `--public` to the preferences check for the logo-free site. Browser sessions are scoped to their host, so localhost saves do not automatically transfer to the public URL.
+
+Lesson 3, **Talking ROS 2: Topics & Terminals**, introduces String and Twist messages before publisher/subscriber coding. It covers continuous, one-shot and fixed-count publishing, rates, matching subscribers, Ctrl+C and default volatile delivery. Compare the exercise with native Jazzy using `source /opt/ros/jazzy/setup.bash; python3 scripts/native-topics-check.py`.
+
+Terminal completion follows the default Bash interaction: Tab completes an unambiguous prefix; a second Tab displays sorted matches in vertical columns. Lists of 100 or more matches ask `Display all N possibilities? (y or n)`. Long lists use `--More--` (Space for a page, Enter for one line, q to stop); declining or quitting preserves the command. Browser check: `node scripts/completion-check.mjs` (`LAB_URL` selects another local server).

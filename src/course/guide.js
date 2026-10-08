@@ -5,6 +5,8 @@ export function guidePages(steps){
   if(step.kind==='commands'){
    for(const command of step.commands)pages.push([...context,{...step,commands:[command]}]);
    context=[];
+  }else if(step.kind==='terminal-action'){
+   pages.push([...context,step]);context=[];
   }else if(step.kind==='files'){
    for(const [path,source] of Object.entries(step.items))pages.push([...context,{...step,items:{[path]:source}}]);
    context=[];

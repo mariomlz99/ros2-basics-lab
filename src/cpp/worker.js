@@ -1,3 +1,4 @@
+import {CPP_RUNTIME_HEADERS} from '../runtime-catalog.js';
 // Modified from KineNest (Apache-2.0): generic registry-backed transport and built artifacts.
 import {loadToolchain} from './toolchain.js';
 import {InterfaceRegistry} from '../interfaces/registry.js';
@@ -11,7 +12,7 @@ async function handle(data){
  if(data.kind==='start'||data.kind==='build'){
   tool=await loadToolchain({output,stage:text=>postMessage({kind:'stage',text})});
   const headers={...new InterfaceRegistry(data.schema).cppHeaders()};
-  for(const [path,file]of [['/include/lab_types.hpp','types.hpp'],['/include/rclcpp/rclcpp.hpp','compat.hpp']]){const response=await fetch(new URL(file,import.meta.url));if(!response.ok)throw Error('Header load failed');headers[path]=await response.text();}
+  for(const [path,file]of Object.entries(CPP_RUNTIME_HEADERS)){const response=await fetch(new URL(file,import.meta.url));if(!response.ok)throw Error('Header load failed');headers[path]=await response.text();}
   const module=data.module??await tool.compile(data.code,headers);
   if(data.kind==='build'){postMessage({kind:'build_ok',module,bytes:tool.compiledBytes,metrics:tool.metrics});return;}
   const imports={kinenest:{service_available:(p,n)=>{const name=textAt(p,n);return (data.services??[]).some(s=>s===name||s==='/'+name)?1:0;},emit:(p,n)=>postMessage(JSON.parse(textAt(p,n))),spin:()=>{throw SPIN;},fail:(p,n)=>{throw Error(textAt(p,n));},field_length:(p,n)=>arrayLength(currentPayload,textAt(p,n)),field_kind:(p,n)=>({boolean:1,number:2,string:3}[typeof readField(currentPayload,textAt(p,n))]??0),field_bool:(p,n)=>boolField(currentPayload,textAt(p,n))?1:0,field_number:(p,n)=>numberField(currentPayload,textAt(p,n)),field_string_size:(p,n)=>encoder.encode(stringField(currentPayload,textAt(p,n))).length,field_string_copy:(p,n,dest,size)=>{const bytes=encoder.encode(stringField(currentPayload,textAt(p,n)));if(bytes.length>size)throw Error('String buffer too small');new Uint8Array(app.exports.memory.buffer,dest,bytes.length).set(bytes);return bytes.length;}}};

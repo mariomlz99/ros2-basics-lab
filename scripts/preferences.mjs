@@ -28,7 +28,7 @@ try{
  await page.locator('#resize-workspace').focus();await page.keyboard.press('ArrowDown');assert.equal((await page.locator('#workspace').boundingBox()).height,originalHeight+20);
  assert.equal(await page.locator('.command code').textContent(),'pwd','Resizing preserves the current step');
  await page.locator('#restore-layout').click();assert(Math.abs((await page.locator('#lesson').boundingBox()).width-originalWidth)<1);assert.equal((await page.locator('#workspace').boundingBox()).height,originalHeight);
- assert.equal(await page.locator('#nav button').count(),6);assert.equal(await page.locator('#exercise-nav button').count(),1);await page.locator('#nav button').nth(5).click();await page.locator('#guide-mode').click();const link=await page.locator('.native-handoff').boundingBox(),check=await page.locator('.complete').boundingBox();assert(check.y>=link.y+link.height+10,'Native handoff and check button are separated');
+ assert.equal(await page.locator('#nav button').count(),6);assert.equal(await page.locator('#exercise-nav button').count(),1);await page.locator('#nav button').nth(6).click();await page.locator('#guide-mode').click();const link=await page.locator('.native-handoff').boundingBox(),check=await page.locator('.complete').boundingBox();assert(check.y>=link.y+link.height+10,'Native handoff and check button are separated');
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Mobile layout should fit viewport');
  await page.screenshot({path:'artifacts/screenshots/diepenbeek-mobile.png',fullPage:true});

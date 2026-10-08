@@ -37,7 +37,7 @@ try{
  await page.locator('#locale').selectOption('nl');await page.getByRole('button',{name:'Ga naar les 2',exact:true}).waitFor();await page.locator('#locale').selectOption('en');
  await page.locator('#next-lesson').click();assert((await page.locator('#lesson-heading').textContent()).includes('Workspace & packages'));
  // Passing the final lesson without earlier checks must not claim the whole course is complete.
- await page.locator('#nav button').nth(5).click();while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
+ await page.locator('#nav button').nth(6).click();while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
  await command('mkdir -p ~/ros2_ws/src');await page.locator('#export').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('exported'));
  await page.locator('.complete').click();assert.equal(await page.locator('.lesson-onward strong').textContent(),'Final lesson complete.');
  await page.getByRole('button',{name:'Explore exercises',exact:true}).click();await page.getByRole('button',{name:'Start playground',exact:true}).waitFor();
@@ -63,7 +63,7 @@ try{
  await page.locator('#exercise-nav button').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();
  assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),1);await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1,'Both independent workspaces survive reload');
  console.log('PASS playground previews/live streams, guided steps and independent saved workspaces');
- await page.locator('#nav button').nth(4).click();
+ await page.locator('#nav button').nth(5).click();
  while(!await page.locator('#lesson details').count())await page.locator('#guide-next').click();
  await page.getByRole('button',{name:'Show package command',exact:true}).click();assert((await page.locator('.command code').textContent()).includes('ros2 pkg create'));
  await command('mkdir -p ~/ros2_ws/src');await command('cd ~/ros2_ws/src');await command(await page.locator('.command code').textContent());await page.locator('#guide-next').click();

@@ -4,13 +4,14 @@ import {lesson} from '../course.js';
 // Prerequisite source state is taken from the same visible course examples.
 // Existing packages are left untouched: preparing must never erase student work.
 export async function prepareLesson(lab,index,language,report=()=>{}){
- if(index<1||index>6)throw Error('Choose a later lesson to prepare.');
+ if(index<1||index>7)throw Error('Choose a later lesson to prepare.');
  if(lab.builder.controller||[...lab.terminals.values()].some(t=>t.busy))throw Error('Stop running commands before preparing a lesson.');
+ if(index===2)return [];
  lab.fs.mkdir(ROOT+'/src',true);
  const specs=new Map();
- // Lesson 2 teaches package creation itself; lesson 3 only needs the workspace.
+ // Lesson 2 teaches package creation itself; lesson 4 only needs the workspace.
  // Later lessons receive the final source state of the earlier lessons.
- for(let i=1;i<Math.min(index===6?1:index,5);i++)for(const step of lesson(i,language)){
+ for(let i=1;i<Math.min(index===7?1:index,6);i++)for(const step of lesson(i,language)){
   if(step.kind==='commands')for(const command of step.commands){
    if(!command.startsWith('ros2 pkg create '))continue;
    const words=command.split(' '),type=words[words.indexOf('--build-type')+1],node=words.includes('--node-name')?words[words.indexOf('--node-name')+1]:null;

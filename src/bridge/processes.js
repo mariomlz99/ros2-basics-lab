@@ -17,9 +17,9 @@ export class ProcessManager {
       p.adapter?.nodes.has(sample.publisher)&&s.adapter?.nodes.has(sample.receiver)&&
       (!topics||topics.has(sample.topic)))));
   }
-  async run(name,executable,{terminal=null,group=null,ros={}}={}){
-    const installed=this.workspace.installedPackage(name),entry=installed.executables.get(executable);
-    if(!entry)throw Error('Executable '+executable+' is not installed in '+name+'.');
+  async run(name,executable,{terminal=null,group=null,ros={},installedRecord=null}={}){
+    const installed=installedRecord??this.workspace.installedPackage(name),entry=installed.executables.get(executable);
+    if(!entry||!this.workspace.executableExists(name,executable,installed))throw Error('Executable '+executable+' is not installed in '+name+'.');
     const id=++this.nextId,token=this.generation;
     const process={id,name,executable,terminal,group,ros,state:'loading',language:installed.type,adapter:null,output:[],sampleStart:this.runtime.sampleCounter};
     this.processes.set(id,process);if(group)this.groups.get(group)?.add(id);this.onChange();
@@ -32,15 +32,15 @@ export class ProcessManager {
       adapter.run(program);process.state='running';this.onChange();return process;
     }catch(error){this.processes.delete(id);if(group){const members=this.groups.get(group);members?.delete(id);if(members?.size===0)this.groups.delete(group);}this.onChange();throw error;}
   }
-  async launch(name,file,{terminal=null}={}){
-    const installed=this.workspace.installedPackage(name);
+  async launch(name,file,{terminal=null,resolvePackage=name=>this.workspace.installedPackage(name)}={}){
+    const installed=resolvePackage(name);
     if(!installed.launch.includes('launch/'+file))throw Error('Launch file '+file+' is not installed in '+name+'. Rebuild after editing it.');
     const actions=parseLaunch(installed.files['launch/'+file]);
-    for(const action of actions){const packageRecord=this.workspace.installedPackage(action.package);if(!packageRecord.executables.has(action.executable))throw Error('Launch executable '+action.package+'/'+action.executable+' is not installed.');}
+    for(const action of actions){const packageRecord=resolvePackage(action.package);if(!packageRecord.executables.has(action.executable))throw Error('Launch executable '+action.package+'/'+action.executable+' is not installed.');}
     const group='launch-'+(++this.nextId);this.groups.set(group,new Set());
     try{
       const started=[];
-      for(const action of actions){const process=await this.run(action.package,action.executable,{terminal,group,ros:action});if(!process)throw Error('Launch was cancelled.');started.push(process);}
+      for(const action of actions){const process=await this.run(action.package,action.executable,{terminal,group,ros:action,installedRecord:resolvePackage(action.package)});if(!process)throw Error('Launch was cancelled.');started.push(process);}
       return {group,processes:started};
     }catch(error){this.stopGroup(group);throw error;}
   }

@@ -1,3 +1,4 @@
+import {seedInstallation} from './ros-installation.js';
 export const HOME='/home/student';
 export function normalize(path,cwd=HOME){
  if(typeof path!=='string'||!path||path.includes('\0'))throw Error('Invalid path');
@@ -6,13 +7,13 @@ export function normalize(path,cwd=HOME){
 }
 const parent=p=>p.slice(0,p.lastIndexOf('/'))||'/';
 export class FileSystem{
- constructor(){this.entries=new Map([['/',{kind:'dir'}]]);this.revision=0;this.listeners=new Set();for(const p of [HOME,'/opt/ros/jazzy','/tmp','/etc'])this.mkdir(p,true);this.write('/opt/ros/jazzy/setup.bash','# Browser model of the Jazzy base environment\n');this.write(HOME+'/.bashrc','source /opt/ros/jazzy/setup.bash\n');}
+ constructor(){this.entries=new Map([['/',{kind:'dir'}]]);this.revision=0;this.listeners=new Set();for(const p of [HOME,'/opt/ros/jazzy','/tmp','/etc'])this.mkdir(p,true);seedInstallation(this);this.write(HOME+'/.bashrc','# Load ROS 2 in each new interactive terminal.\nsource /opt/ros/jazzy/setup.bash\n');}
  changed(path){this.revision++;for(const fn of this.listeners)fn(path);}
  exists(p){return this.entries.has(normalize(p));}
  entry(p){p=normalize(p);const item=this.entries.get(p);if(!item)throw Error(p+': No such file or directory');return item;}
  dir(p){if(this.entry(p).kind!=='dir')throw Error(p+': Not a directory');}
  mkdir(p,parents=false){p=normalize(p);if(this.exists(p)){if(parents){this.dir(p);return;}throw Error(p+': File exists');}if(parents&&!this.exists(parent(p)))this.mkdir(parent(p),true);this.dir(parent(p));this.entries.set(p,{kind:'dir'});this.changed(p);}
- write(p,content){p=normalize(p);this.dir(parent(p));if(this.exists(p)&&this.entry(p).kind==='dir')throw Error(p+': Is a directory');this.entries.set(p,{kind:'file',content:String(content)});this.changed(p);}
+ write(p,content){p=normalize(p);this.dir(parent(p));if(this.exists(p)&&this.entry(p).kind==='dir')throw Error(p+': Is a directory');const executable=this.entries.get(p)?.executable??false;this.entries.set(p,{kind:'file',content:String(content),executable});this.changed(p);}
  touch(p){if(this.exists(p)){this.changed(normalize(p));return;}this.write(p,'');}
  read(p){const e=this.entry(p);if(e.kind!=='file')throw Error(p+': Is a directory');return e.content;}
  list(p){p=normalize(p);this.dir(p);return [...this.entries].filter(([key])=>key!==p&&parent(key)===p).map(([path,e])=>({path,name:path.split('/').at(-1),...e})).sort((a,b)=>a.name.localeCompare(b.name));}
@@ -26,7 +27,7 @@ export class FileSystem{
   const entries=[...this.entries].filter(([p])=>p===from||p.startsWith(from+'/'));
   // Validate collisions before mutation.
   for(const [p,e]of entries){const dest=to+p.slice(from.length);if(this.exists(dest)&&this.entry(dest).kind!==e.kind)throw Error(dest+': Incompatible destination');}
-  for(const [p,e]of entries){const dest=to+p.slice(from.length);if(e.kind==='dir')this.mkdir(dest,true);else this.write(dest,e.content);}if(move)this.remove(from,{recursive:true});return to;
+  for(const [p,e]of entries){const dest=to+p.slice(from.length);if(e.kind==='dir')this.mkdir(dest,true);else{this.write(dest,e.content);this.entries.set(dest,{...e});}}if(move)this.remove(from,{recursive:true});return to;
  }
  move(from,to){return this.copy(from,to,{recursive:true,move:true});}
  tree(p,indent=''){p=normalize(p);if(this.entry(p).kind==='file')return p.split('/').at(-1);return this.list(p).map(e=>indent+e.name+(e.kind==='dir'?'/\n'+this.tree(e.path,indent+'  '):'')).filter(Boolean).join('\n');}

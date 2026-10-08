@@ -7,8 +7,8 @@ export function t(text){
  if(locale==='en')return text;
  const column=locale==='fr'?0:1;
  if(translations[text])return translations[text][column];
- const progress=/^(\d+) \/ 6 completed$/.exec(text);
- if(progress)return `${progress[1]} / 6 ${locale==='fr'?'terminées':'voltooid'}`;
+ const progress=/^(\d+) \/ 7 completed$/.exec(text);
+ if(progress)return `${progress[1]} / 7 ${locale==='fr'?'terminées':'voltooid'}`;
  const graph=/^(\d+) nodes · (\d+) topics$/.exec(text);
  if(graph)return `${graph[1]} ${locale==='fr'?'nœuds':'nodes'} · ${graph[2]} topics`;
  const decorated=/^(\d+[. ]+|↗  |[✓○] )(.*)$/.exec(text);

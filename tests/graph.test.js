@@ -11,9 +11,9 @@ test('base ROS topics expose real types, events, counts and cleanup',async()=>{
  let log='',event='';logs.output=s=>log=s;events.output=s=>event=s;
  await logs.execute('ros2 topic echo /rosout');await events.execute('ros2 topic echo /parameter_events');assert.equal(log,'');assert.equal(event,'');
  const adapter=new RuntimeAdapter(lab.runtime);adapter.worker={postMessage(){},terminate(){}};adapter.handle({kind:'node',node:'/demo'});
- adapter.handle({kind:'log',node:'/demo',level:30,text:'Real warning'});assert.match(log,/Real warning/);assert.match(log,/"level": 30/);
- adapter.handle({kind:'parameter_declare',node:'/demo',name:'rate',value:2,value_type:3});assert.match(event,/"new_parameters"/);assert.match(event,/"double_value": 2/);
- await inspect.execute('ros2 param set /demo rate 3.5');const value=JSON.parse(event.split('\n---')[0]);assert.equal(value.changed_parameters[0].value.double_value,3.5);
+ adapter.handle({kind:'log',node:'/demo',level:30,text:'Real warning'});assert.match(log,/Real warning/);assert.match(log,/level: 30/);
+ adapter.handle({kind:'parameter_declare',node:'/demo',name:'rate',value:2,value_type:3});assert.match(event,/new_parameters:/);assert.match(event,/double_value: 2/);
+ await inspect.execute('ros2 param set /demo rate 3.5');assert.match(event,/double_value: 3.5/);const value=[...lab.runtime.samples.values()].at(-1).message;assert.equal(value.changed_parameters[0].value.double_value,3.5);
  adapter.stop();lab.stop(logs.id);lab.close(events.id);
  assert.equal(await inspect.execute('ros2 topic info /rosout'),'Type: rcl_interfaces/msg/Log\nPublisher count: 1\nSubscription count: 0');assert.equal(lab.runtime.nodes.size,0);
  lab.reset();assert.equal(lab.runtime.topics.size,2);assert.equal(lab.runtime.listeners.size,0);
