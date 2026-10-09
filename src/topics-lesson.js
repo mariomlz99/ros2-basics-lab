@@ -28,7 +28,7 @@ export function topicsLesson(){return [
  text('Terminal 2 — join the topic. echo --once exits after receiving its first message. Both commands should now finish. This is why waiting for a subscriber helps a one-shot message reach its listener.'),commands(2,'ros2 topic echo /lab_wait std_msgs/msg/String --once'),
  text('Terminal 1 — explicitly skip that wait with -w 0. This sends once even when no subscriber exists. Start the listener afterwards in Terminal 2: it will wait silently. With the default volatile durability, a topic does not store old messages for future subscribers.'),
  commands(1,`ros2 topic pub -1 -w 0 /lab_unheard std_msgs/msg/String "{data: 'No replay'}"`),commands(2,'ros2 topic echo /lab_unheard std_msgs/msg/String'),stop(2),
- text('You have now used publishers and subscribers without writing them. In the next lesson, your Python or C++ programs take those roles: choose the same topic name and message type, publish data, and receive it in a callback.')
+ text('You have now used publishers and subscribers without writing them. Next, create a workspace and run your own hello executable. In the publishers and subscribers lesson, your Python or C++ programs take those roles: choose the same topic name and message type, publish data, and receive it in a callback.')
 ];}
 export function topicsChecks(lab){const values=[...lab.runtime.cliTopicEvidence.values()];const check=(label,passed)=>({label,passed:!!passed});return [
  check('Receive a String message in another terminal',values.some(e=>e.kind==='received'&&e.topic==='/lab_chat'&&e.type==='std_msgs/msg/String'&&e.publisherTerminal!==undefined&&e.publisherTerminal!==e.terminal)),

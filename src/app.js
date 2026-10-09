@@ -54,7 +54,7 @@ function renderPlayground(){
  $('#playground-start').onclick=()=>{playground.start();$('#playground-status').textContent='Live sensor streams';};
  $('#playground-stop').onclick=()=>{playground.stop();$('#playground-status').textContent='Paused · simulator stopped';};
 }
-function renderLesson(){renderPlayground();$('#prepare-lesson').hidden=lessonIndex===0||lessonIndex===2;if(!lessonSnapshots.has(lessonIndex))lessonSnapshots.set(lessonIndex,snapshotLesson(lab));const root=$('#lesson');exampleUpdates=[];root.replaceChildren();$('#lesson-heading').textContent=lessonIndex===7?'Robotics Playground':`${lessonIndex+1}. ${LESSON_NAMES[lessonIndex]}`;for(const b of document.querySelectorAll('#nav button, #exercise-nav button'))b.classList.toggle('active',Number(b.dataset.index)===lessonIndex);$('#workspace').classList.toggle('intro',lessonIndex===0);
+function renderLesson(){renderPlayground();$('#prepare-lesson').hidden=lessonIndex===0||lessonIndex===1;if(!lessonSnapshots.has(lessonIndex))lessonSnapshots.set(lessonIndex,snapshotLesson(lab));const root=$('#lesson');exampleUpdates=[];root.replaceChildren();$('#lesson-heading').textContent=lessonIndex===7?'Robotics Playground':`${lessonIndex+1}. ${LESSON_NAMES[lessonIndex]}`;for(const b of document.querySelectorAll('#nav button, #exercise-nav button'))b.classList.toggle('active',Number(b.dataset.index)===lessonIndex);$('#workspace').classList.toggle('intro',lessonIndex===0);
  const allSteps=lesson(lessonIndex,language),pages=guidePages(allSteps.filter(step=>step.kind!=='playground')),key=lessonIndex+':'+language;
  const position=Math.min(guidePositions.get(key)||0,pages.length-1),guided=!overview;
  {

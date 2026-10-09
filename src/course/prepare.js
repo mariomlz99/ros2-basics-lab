@@ -6,10 +6,10 @@ import {lesson} from '../course.js';
 export async function prepareLesson(lab,index,language,report=()=>{}){
  if(index<1||index>7)throw Error('Choose a later lesson to prepare.');
  if(lab.builder.controller||[...lab.terminals.values()].some(t=>t.busy))throw Error('Stop running commands before preparing a lesson.');
- if(index===2)return [];
+ if(index===1)return [];
  lab.fs.mkdir(ROOT+'/src',true);
  const specs=new Map();
- // Lesson 2 teaches package creation itself; lesson 4 only needs the workspace.
+ // Lesson 3 teaches package creation itself; lesson 4 only needs the workspace.
  // Later lessons receive the final source state of the earlier lessons.
  for(let i=1;i<Math.min(index===7?1:index,6);i++)for(const step of lesson(i,language)){
   if(step.kind==='commands')for(const command of step.commands){
