@@ -1,6 +1,6 @@
 import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
-const language=process.env.LAB_LANGUAGE||'python',pkg=language==='cpp'?'cpp_pubsub':'py_pubsub';
+const language=process.env.LAB_LANGUAGE||'python',pkg='my_first_package';
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
 try{
  const page=await browser.newPage({viewport:{width:1440,height:1000}});
