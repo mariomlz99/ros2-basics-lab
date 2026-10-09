@@ -38,6 +38,14 @@ test('invalid commands and interrupted waiters leave no nodes or timers',async()
 });
 test('curriculum insertion preserves existing progress and selection exactly once',()=>{
  const old={ui:{lessonIndex:2,progress:[0,1,2,5],guidePositions:[['2:python',4],['6:cpp',2]]},other:{ui:{unitIndex:6,progress:[]}}};
- migrateCurriculum(old);assert.equal(old.ui.lessonIndex,3);assert.deepEqual(old.ui.progress,[0,1,3,6]);assert.deepEqual(old.ui.guidePositions,[['3:python',4],['7:cpp',2]]);assert.equal(old.other.ui.unitIndex,7);
+ migrateCurriculum(old);assert.equal(old.ui.lessonIndex,3);assert.deepEqual(old.ui.progress,[0,2,3,6]);assert.deepEqual(old.ui.guidePositions,[['3:python',4],['7:cpp',2]]);assert.equal(old.other.ui.unitIndex,7);
  const once=structuredClone(old);migrateCurriculum(old);assert.deepEqual(old,once);
+});
+
+test('topics/workspace swap preserves both saved selections, progress and guide positions',()=>{
+ for(const key of ['lessonIndex','unitIndex']){
+  const record={curriculumVersion:2,ui:{[key]:1,progress:[0,1],guidePositions:[['1:python',4],['2:cpp',6]]},other:{curriculumVersion:2,ui:{[key]:2,progress:[2]}}};
+  migrateCurriculum(record);assert.equal(record.ui[key],2);assert.equal(record.other.ui[key],1);assert.deepEqual(record.ui.progress,[0,2]);assert.deepEqual(record.other.ui.progress,[1]);assert.deepEqual(record.ui.guidePositions,[['2:python',4],['1:cpp',6]]);
+  const once=structuredClone(record);migrateCurriculum(record);assert.deepEqual(record,once);
+ }
 });

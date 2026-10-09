@@ -12,7 +12,7 @@ try{
  assert.equal(await page.locator('.command:visible').count(),1);
  assert.equal(await page.locator('.command code').textContent(),'pwd');
  await page.locator('#guide-next').click();assert.equal(await page.locator('.command code').textContent(),'ls -a');
- await page.locator('#nav button').nth(1).click();await page.locator('#nav button').nth(0).click();assert.equal(await page.locator('.command code').textContent(),'ls -a');
+ await page.locator('#nav button').nth(2).click();await page.locator('#nav button').nth(0).click();assert.equal(await page.locator('.command code').textContent(),'ls -a');
  await page.locator('#guide-back').click();assert.equal(await page.locator('.command code').textContent(),'pwd');
  await page.locator('#guide-mode').click();assert.equal(await page.locator('.command:visible').count(),15);await page.locator('#guide-mode').click();assert.equal(await page.locator('.command:visible').count(),1);
  // A canceled shortcut must never reach the browser's inspector handler.
@@ -41,7 +41,7 @@ try{
  await command('mkdir -p ~/ros2_ws/src');await page.locator('#export').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('exported'));
  await page.locator('.complete').click();assert.equal(await page.locator('.lesson-onward strong').textContent(),'Final lesson complete.');
  await page.getByRole('button',{name:'Explore exercises',exact:true}).click();await page.getByRole('button',{name:'Start playground',exact:true}).waitFor();
- await page.locator('#nav button').nth(1).click();
+ await page.locator('#nav button').nth(2).click();
  await command('echo course > course-only.txt');
  await page.locator('#exercise-nav button').click();assert.equal(await page.locator('#guide-next').count(),1);
  assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),0);
@@ -59,9 +59,9 @@ try{
  await page.locator('.stream-expand').nth(0).click();await page.locator('#restore-layout').click();assert.equal(await page.locator('figure.expanded').count(),0);assert.equal((await cameraView.boundingBox()).height,originalHeight);assert.equal(await page.locator('#playground-status').textContent(),'Live sensor streams');
 
  await page.screenshot({path:'artifacts/screenshots/playground-streams.png',fullPage:true});
- await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),0);assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1);
+ await page.locator('#nav button').nth(2).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),0);assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1);
  await page.locator('#exercise-nav button').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();
- assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),1);await page.locator('#nav button').nth(1).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1,'Both independent workspaces survive reload');
+ assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),1);await page.locator('#nav button').nth(2).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1,'Both independent workspaces survive reload');
  console.log('PASS playground previews/live streams, guided steps and independent saved workspaces');
  await page.locator('#nav button').nth(5).click();
  while(!await page.locator('#lesson details').count())await page.locator('#guide-next').click();

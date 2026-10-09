@@ -1,3 +1,7 @@
+# Lesson order updated — 9 October 2026
+
+The first three lessons are now: 1. ROS 2 environment; 2. Talking ROS 2: Topics & Terminals; 3. Workspace & packages. Curriculum version 3 migrates existing selections, progress and guide positions by content. Later lessons retain their indices. The lab review locks on lessons 4–7 and the playground remain in effect; KineNest has no review locks. Shared source changes are mirrored locally; only the lab is deployed for this update. Both automated suites pass; lab Chrome checks cover topics, workspace build/source/run, onward navigation, locks and saved work.
+
 # Colleague review access — 9 October 2026
 
 At the user's request, only lessons 1–3 are open for review. Lessons 4–7 and the playground remain visible with lock icons and disabled buttons. Lesson 3's onward button is also locked, and saved sessions reopen an available lesson while preserving course and playground workspaces. The temporary restriction is controlled by `isReviewLocked` in `src/app.js`; it applies only to ROS 2 Basics Lab, not KineNest. Browser coverage: `scripts/review-lock-check.mjs` and `scripts/topics-lesson-check.mjs`.

@@ -3,7 +3,7 @@ import {BUILTIN} from '../interfaces/builtin.js';
 import {seedInstallation,baseEnvironment} from '../ros-installation.js';
 import{ROOT}from'../workspace.js';
 export function lessonChecks(lab,index){const w=lab.workspace,r=lab.runtime,ts=[...lab.terminals.values()],commands=ts.flatMap(t=>t.history);const check=(label,passed)=>({label,passed:!!passed});const current=[...w.installed.keys()].filter(n=>w.current(n));
- if(index===2)return topicsChecks(lab);if(index>2)index--;
+ if(index===1)return topicsChecks(lab);if(index>1)index--;
  switch(index){
  case 0:return [check('Inspect your directory with pwd',commands.some(s=>s.trim()==='pwd')),check('Inspect the ROS distribution',commands.some(s=>s.includes('$ROS_DISTRO')||s==='printenv ROS_DISTRO')),check('Inspect the node graph',commands.some(s=>s==='ros2 node list'))];
  case 1:return [check('Create workspace src/',[...lab.fs.entries].some(([path,entry])=>entry.kind==='dir'&&path.startsWith('/home/student/')&&path.endsWith('/src')&&(path.endsWith('/ros2_ws/src')||ts.some(t=>t.cwd===path||t.cwd===path.slice(0,-4))||[...w.sourcePaths.values()].some(source=>source.startsWith(path+'/'))))),check('Build a package',current.length),check('Source the workspace in a terminal',ts.some(t=>w.visible(t).length))];
