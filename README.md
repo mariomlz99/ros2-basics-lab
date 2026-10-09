@@ -34,7 +34,7 @@ Set `LAB_URL` to test the same UI against another local server. To check the bui
 
 ## Static hosting
 
-`npm run build` writes `dist/`. Serve its contents at `/ros2-basics-lab/` (including `src/` and its workers). All application assets use relative URLs. HTTPS is needed for browser clipboard access on public hosting. GitHub Pages can serve the artifact without a backend. This repository is local; no remote repository or deployment is configured.
+`npm run build` writes `dist/`. Serve its contents at `/ros2-basics-lab/` (including `src/` and its workers). All application assets use relative URLs. HTTPS is needed for browser clipboard access on public hosting. This source repository is local; publish the public artifact through the separate deployment repository described below.
 
 ## Teaching model
 
@@ -46,7 +46,7 @@ Source provenance and required license notices are retained in LICENSE, NOTICE a
 
 ## Public colleague preview
 
-The first review deployment is [ROS 2 Basics Lab on GitHub Pages](https://mariomlz99.github.io/ros2-basics-lab/). The [public deployment repository](https://github.com/mariomlz99/ros2-basics-lab) contains generated static files. Development source and internal checkpoints remain in this workspace.
+The classroom deployment is [ROS 2 Basics Lab on GitHub Pages](https://mariomlz99.github.io/ros2-basics-lab/). The [public deployment repository](https://github.com/mariomlz99/ros2-basics-lab) contains generated static files. Development source and internal checkpoints remain in this workspace. Continue course work here and transfer shared bug fixes to `../ros2learn/`. This URL must serve this lab's public artifact; KineNest keeps its separate “Build it. Run it. Understand it.” homepage and build.
 
 `npm run build:public` generates the public artifact in `dist/`, excluding university logos and internal checkpoint/extraction notes. Publishing is a separate Git push to the deployment repository. The public build includes `build-info.json` with its source revision. Do not publish the ordinary development build instead.
 

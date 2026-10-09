@@ -1,3 +1,11 @@
+# Standalone lab restored — 9 October 2026
+
+The user confirmed that classroom development continues in `ros2-basics-lab/`, with shared bug fixes carried into `ros2learn/`. KineNest keeps its separate “Build it. Run it. Understand it.” product homepage.
+
+Restored https://mariomlz99.github.io/ros2-basics-lab/ from the latest local source checkpoint `e3c8415`, using `npm run build:public`. Deployment commit `ba1c9d7` replaces the KineNest artifact previously published there. GitHub Pages run `37910132768` succeeded; live build-info and homepage verified. All 15 automated tests passed, and the topics lesson Chrome check passed both locally and on the live site. KineNest was not deployed or modified in this restoration.
+
+Always publish this lab's own public artifact to the lab deployment repository. The earlier local-review notes below describe the restored source checkpoint.
+
 # Local review checkpoint — 9 October 2026
 
 Resume the ROS 2 Basics Lab classroom review at the terminal-topics lesson, then continue publisher/subscriber coding. The user asked to pause until tomorrow and save everything locally. This checkpoint supersedes older status notes below.
