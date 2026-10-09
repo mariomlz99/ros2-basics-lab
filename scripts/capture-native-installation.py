@@ -18,9 +18,16 @@ for p in sorted(paths):
   encoding='z';payload=base64.b64encode(zlib.compress(raw,9)).decode('ascii');total+=len(raw)
  except (UnicodeError,AssertionError):encoding='b';payload=''
  rows.append([str(p),encoding,mode&0o777,len(raw),hashlib.sha256(raw).hexdigest(),payload,link])
-content='// Generated native installation inventory; see scripts/capture-native-installation.py.\nexport const NATIVE_INSTALLATION='+json.dumps(rows,separators=(',',':'))+';\n'
-target=pathlib.Path(__file__).resolve().parents[1]/'src/native-installation-data.js'
-if '--check' in sys.argv:
- assert target.read_text()==content, 'Native inventory has changed; recapture and review.'
-else:target.write_text(content)
-print('Captured/verified',len(rows),'paths;',total,'text bytes; compressed JS',len(content),'bytes')
+chunks=[];chunk=[];size=0
+for row in rows:
+ text=json.dumps(row,separators=(',',':'))
+ if size+len(text)>6_000_000 and chunk:chunks.append(chunk);chunk=[];size=0
+ chunk.append(row);size+=len(text)+1
+chunks.append(chunk)
+root=pathlib.Path(__file__).resolve().parents[1]/'src'
+files={root/'native-installation-parts'/f'part-{i}.js':'export default '+json.dumps(chunk,separators=(',',':'))+';\n' for i,chunk in enumerate(chunks)}
+files[root/'native-installation-data.js']='// Generated native installation inventory, split for static hosting limits.\n'+''.join(f"import part{i} from './native-installation-parts/part-{i}.js';\n" for i in range(len(chunks)))+'export const NATIVE_INSTALLATION=['+','.join(f'...part{i}' for i in range(len(chunks)))+'];\n'
+for target,content in files.items():
+ if '--check' in sys.argv:assert target.read_text()==content,'Native inventory changed: '+str(target)
+ else:target.parent.mkdir(exist_ok=True);target.write_text(content)
+print('Captured/verified',len(rows),'paths in',len(chunks),'parts;',total,'text bytes')
