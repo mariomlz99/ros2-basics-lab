@@ -32,3 +32,16 @@ test('ls uses bare directory names, including dot entries, as native ls does',as
  assert.equal(await t.execute('ls -a'),'.  ..  .hidden  directory  file');
  assert.deepEqual((await t.execute('ls -la')).split('\n').map(line=>line.split(' ').at(-1)),['.','..','.hidden','directory','file']);
 });
+
+test('tree draws native branches, omits hidden entries and counts directories and files',async()=>{
+ const fs=new FileSystem(),t=new Terminal(fs,1);
+ await t.execute('mkdir -p practice/aa');await t.execute('cd practice');await t.execute('touch notes.txt .hidden');
+ assert.equal(await t.execute('tree'),'.\n├── aa\n└── notes.txt\n\n2 directories, 1 file');
+ assert.equal(await t.execute('tree aa'),'aa\n\n0 directories, 0 files');
+ await t.execute('mkdir aa/nested');await t.execute('touch aa/inner.txt');
+ assert.equal(await t.execute('tree'),'.\n├── aa\n│   ├── inner.txt\n│   └── nested\n└── notes.txt\n\n3 directories, 2 files');
+ assert.equal(await t.execute('tree notes.txt'),'notes.txt  [error opening dir]\n\n0 directories, 1 file');
+ t.color=true;const plain=s=>s.replace(/\x1b\[[0-9;]*m/g,'');
+ const listing=await t.execute('ls -a');assert(listing.includes('\x1b[1;34maa\x1b[0m'));assert.equal(plain(listing),'.  ..  .hidden  aa  notes.txt');
+ const tree=await t.execute('tree');assert(tree.includes('├── \x1b[1;34maa\x1b[0m'));assert(plain(tree).includes('│   └── nested'));assert(!tree.includes('\x1b[1;34mnotes.txt'));
+});

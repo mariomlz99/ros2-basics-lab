@@ -31,6 +31,6 @@ export const environmentHints={
   "echo $ROS_DISTRO": "The shell expands this environment variable. The result should be jazzy.",
   "which ros2": "Locate the ros2 executable supplied by the base environment.",
   "ros2 --help": "Read the available command groups before trying the graph commands.",
-  "ros2 node list": "An empty result is expected: you have not started a student node yet.",
+  "ros2 node list": "An empty result means no non-hidden nodes were discovered. Use ros2 node list --all to include hidden nodes.",
   "ros2 topic list": "Find /parameter_events and /rosout. System topics can exist before your own nodes start."
 };

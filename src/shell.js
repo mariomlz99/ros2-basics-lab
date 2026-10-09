@@ -37,9 +37,27 @@ function expandPattern(word,fs,cwd){
  return paths.length?paths:[word.value];
 }
 export class Terminal{
- constructor(fs,id,{output=()=>{},dispatch=null,startup=true}={}){this.fs=fs;this.id=id;this.cwd=HOME;this.env=baseEnvironment(HOME);this.overlays=new Set();this.history=[];this.output=output;this.dispatch=dispatch;this.stopTask=null;this.busy=false;this.vars={};this.sourceStack=[];this.ready=startup?this.startup():Promise.resolve();}
+ constructor(fs,id,{output=()=>{},dispatch=null,startup=true}={}){this.fs=fs;this.id=id;this.cwd=HOME;this.env=baseEnvironment(HOME);this.overlays=new Set();this.history=[];this.output=output;this.dispatch=dispatch;this.stopTask=null;this.busy=false;this.vars={};this.sourceStack=[];this.jobs=new Map();this.nextJob=0;this.currentJob=null;this.ready=startup?this.startup():Promise.resolve();}
+ registerJob(control){const job={command:this.history.at(-1),state:'Running',...control};this.currentJob=job;return job;}
+ finishJob(job){if(job.id)this.jobs.delete(job.id);if(this.currentJob===job){this.currentJob=null;this.finishForeground();}}
+ suspend(){
+  if(!this.busy)return '';
+  const job=this.currentJob;if(!job)throw Error('Suspension is currently supported for ros2 topic pub, echo and hz. Use Ctrl+C to stop this command.');
+  job.pause();job.state='Stopped';job.id??=++this.nextJob;this.jobs.set(job.id,job);this.currentJob=null;this.busy=false;this.foreground=null;this.stopTask=null;
+  return '['+job.id+']+  Stopped                 '+job.command;
+ }
+ jobCommand(cmd,args){
+  if(cmd==='jobs'){if(args.length)throw Error('Usage: jobs');return [...this.jobs.values()].map(job=>'['+job.id+']'+(job.id===Math.max(...this.jobs.keys())?'+':'-')+'  '+job.state.padEnd(24)+job.command).join('\n');}
+  if(args.length>1)throw Error('Usage: '+cmd+' [%job]');
+  const id=args.length?Number(args[0].replace(/^%/,'')):Math.max(...this.jobs.keys()),job=this.jobs.get(id);
+  if(!job)throw Error('bash: '+cmd+': '+(args[0]||'current')+': no such job');
+  if(cmd==='kill'){job.stop();this.jobs.delete(id);return '';}
+  job.state='Running';if(cmd==='fg'){this.currentJob=job;this.busy=true;this.foreground='process';this.stopTask=job.stop;this.output(job.command);}else this.output('['+id+']+ '+job.command+' &');
+  job.resume();return '';
+ }
  finishForeground(){this.busy=false;this.foreground=null;this.stopTask=null;this.onForegroundEnd?.();}
  path(p){return normalize(p,this.cwd);}
+ formatEntry(name,entry){return this.color&&(entry.kind==='dir'||entry.executable)?'\x1b[1;'+(entry.kind==='dir'?'34':'32')+'m'+name+'\x1b[0m':name;}
  stop(){this.stopTask?.();this.stopTask=null;this.busy=false;}
  async startup(){if(this.fs.exists(HOME+'/.bashrc'))try{await this.sourceFile(HOME+'/.bashrc');}catch(error){this.output('bash: '+error.message);}}
  findFile(name,{executable=false}={}){
@@ -76,12 +94,13 @@ export class Terminal{
   if(!line.trim())return '';if(recordHistory)this.history.push(line);
   const words=tokenize(line,{...this.env,...this.vars},{redirects:true,patterns:true}).flatMap(word=>expandPattern(word,this.fs,this.cwd));if(!words.length)return '';
   if(words.every(word=>typeof word==='string'&&/^[A-Za-z_][A-Za-z_0-9]*=/.test(word))){for(const word of words){const at=word.indexOf('='),key=word.slice(0,at),value=word.slice(at+1);if(Object.hasOwn(this.env,key))this.env[key]=value;else this.vars[key]=value;}return '';}
-  const builtins=new Set(['cd','pwd','echo','history','source','.','export','unset']);
+  const builtins=new Set(['cd','pwd','echo','history','source','.','export','unset','jobs','fg','bg','kill']);
   const requested=words[0];
   if(!builtins.has(requested)){
    const path=this.findFile(requested,{executable:true});
    if(!path){if(requested.includes('/')&&this.fs.exists(this.path(requested)))throw Error(requested+': Permission denied');throw Error(requested+': command not found');}
    const entry=this.fs.entry(path);
+   if(entry.nativeExecutable)throw Error(requested+': installed native executable (inspection only); execution is not implemented in this browser lab.');
    if(entry.package&&entry.program&&this.dispatch)return this.dispatch(this,['__installed__',path,...words.slice(1)]);
    if(entry.command)words[0]=entry.command;
    else if(/^#!.*(?:bash|\/sh)(?:\s|$)/.test(entry.content))return this.runScript(path,words.slice(1));
@@ -95,6 +114,7 @@ export class Terminal{
   const flags=allowed=>{for(const f of options)if(!allowed.includes(f))throw Error(cmd+': unsupported option -'+f);};
   const count=(min,max=Infinity)=>{if(paths.length<min||paths.length>max)throw Error(cmd+': expected '+(min===max?min:`${min} or more`)+' operand(s)');};
   switch(cmd){
+   case 'jobs':case 'fg':case 'bg':case 'kill':return this.jobCommand(cmd,args);
    case 'export':{for(const arg of args){const match=/^([A-Za-z_][A-Za-z_0-9]*)(?:=(.*))?$/s.exec(arg);if(!match)throw Error('export: invalid identifier '+arg);const key=match[1];this.env[key]=match[2]??this.vars[key]??this.env[key]??'';delete this.vars[key];}return args.length?'':Object.entries(this.env).map(([key,value])=>'declare -x '+key+'='+JSON.stringify(value)).join('\n');}
    case 'unset':{for(const key of args){if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key))throw Error('unset: invalid identifier '+key);delete this.env[key];delete this.vars[key];}return '';}
    case 'source':case '.':{if(args.length!==1)throw Error('Usage: source <file>');if(this.dispatch)return this.dispatch(this,words);const p=this.path(args[0]);this.fs.read(p);if(/^\/opt\/ros\/jazzy\/(?:local_)?setup\.(?:bash|sh)$/.test(p)){sourceBase(this.env,this.vars);return '';}return this.sourceFile(args[0]);}
@@ -104,14 +124,14 @@ export class Terminal{
    case 'vim':case 'vi':throw Error('Vim is not implemented in this lab. Use nano <file> or gedit <file>.');
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.env.OLDPWD=this.cwd;this.cwd=p;this.env.PWD=p;return '';}
-   case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?[...(options.has('a')?[{name:'.',kind:'dir'},{name:'..',kind:'dir'}]:[]),...this.fs.list(full)]:[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':e.executable?'-rwxr-xr-x':'-rw-r--r--')+' student '+String(e.content?.length??0).padStart(5)+' ':'')+e.name).join(options.has('l')?'\n':'  ');}
+   case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?[...(options.has('a')?[{name:'.',kind:'dir'},{name:'..',kind:'dir'}]:[]),...this.fs.list(full)]:[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':e.executable?'-rwxr-xr-x':'-rw-r--r--')+' student '+String(e.nativeSize??e.content?.length??0).padStart(5)+' ':'')+this.formatEntry(e.name,e)).join(options.has('l')?'\n':'  ');}
    case 'mkdir':flags('p');count(1);for(const p of paths)this.fs.mkdir(this.path(p),options.has('p'));return '';
    case 'touch':flags('');count(1);for(const p of paths)this.fs.touch(this.path(p));return '';
    case 'cat':flags('');count(1);return paths.map(p=>this.fs.read(this.path(p))).join('');
    case 'cp':flags('r');count(2,2);this.fs.copy(this.path(paths[0]),this.path(paths[1]),{recursive:options.has('r')});return '';
    case 'mv':flags('');count(2,2);this.fs.move(this.path(paths[0]),this.path(paths[1]));return '';
    case 'rm':flags('rf');if(!options.has('f'))count(1);for(const p of paths)this.fs.remove(this.path(p),{recursive:options.has('r'),force:options.has('f')});return '';
-   case 'tree':flags('');count(0,1);return (paths[0]||'.')+'\n'+this.fs.tree(this.path(paths[0]||'.'));
+   case 'tree':flags('');count(0,1);return this.fs.tree(this.path(paths[0]||'.'),{label:paths[0]||'.',format:(name,entry)=>this.formatEntry(name,entry)});
    case 'echo':{const noNewline=args[0]==='-n',text=(noNewline?args.slice(1):args).join(' ');if(!redirect)return text;const previous=redirect.append&&this.fs.exists(redirect.path)?this.fs.read(redirect.path):'';this.fs.write(redirect.path,previous+text+(noNewline?'':'\n'));return '';}
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');
    case 'clear':flags('');count(0,0);return '\x1bc';

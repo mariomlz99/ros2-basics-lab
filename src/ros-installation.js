@@ -1,3 +1,4 @@
+import {seedNativeInstallation} from './native-installation.js';
 import {seedEcosystem} from './ros-ecosystem.js';
 // Shared, inspectable installation used by every browser terminal.
 export const ROS_PREFIX='/opt/ros/jazzy';
@@ -23,5 +24,6 @@ export function seedInstallation(fs){
  for(const name of SYSTEM_COMMANDS)for(const dir of ['/usr/bin','/bin'])file(dir+'/'+name,'# Command implemented by the browser terminal: '+name+'\n',name);
  for(const lib of ['libc.so.6','libm.so.6','libstdc++.so.6','libpython3.12.so'])file('/lib/'+lib,'SIMULATED SYSTEM LIBRARY '+lib+'\nProvided by browser Python/C++ runtimes; not a native binary.\n');
  seedEcosystem(fs);
+ seedNativeInstallation(fs);
  file('/bin/bash','# Browser terminal shell model.\n');
 }

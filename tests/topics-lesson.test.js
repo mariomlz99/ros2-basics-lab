@@ -1,3 +1,4 @@
+import {formatPublishedMessage} from '../src/topic-cli.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Lab} from '../src/lab.js';
@@ -14,11 +15,11 @@ test('every terminal-topic lesson command delivers, waits and stops as taught',a
    for(const command of step.commands){
     const terminal=terminals[step.terminal-1];assert(!terminal.busy,command+' requires a free terminal');
     const output=await terminal.execute(command);
-    if(command.includes('pub --once /lab_chat')){await until(()=>!terminal.busy);assert.match(logs[1].join('\n'),/data: Hello from Terminal 1/);}
+    if(command.includes('pub --once /lab_chat')){await until(()=>!terminal.busy);assert.equal(output,'');assert.equal(logs[0].at(-2),'publisher: beginning loop');assert.equal(logs[0].at(-1),"publishing #1: std_msgs.msg.String(data='Hello from Terminal 1')\n");assert.match(logs[1].join('\n'),/data: Hello from Terminal 1/);}
     if(command.includes('pub /lab_chat')){await sleep(1100);assert(logs[1].filter(s=>s.includes('A message every second')).length>=2);}
-    if(command.includes('pub --times')){await until(()=>!terminal.busy);assert.equal(logs[1].filter(s=>s.includes('Three messages')).length,3);}
+    if(command.includes('pub --times')){await until(()=>!terminal.busy);assert.equal(output,'');assert.deepEqual(logs[0].filter(line=>line.includes("std_msgs.msg.String(data='Three messages')")),[1,2,3].map(n=>"publishing #"+n+": std_msgs.msg.String(data='Three messages')\n"));assert.equal(logs[1].filter(s=>s.includes('Three messages')).length,3);}
     if(command==='ros2 topic info /lab_chat')assert.match(output,/Publisher count: 1\nSubscription count: 1/);
-    if(command==='ros2 topic echo /lab_twist'){await sleep(250);assert.match(logs[1].join('\n'),/linear:\n  x: 0.2/);assert.match(logs[1].join('\n'),/angular:\n  x: 0\n  y: 0\n  z: 0.5/);}
+    if(command==='ros2 topic echo /lab_twist'){await sleep(250);assert.match(logs[1].join('\n'),/linear:\n  x: 0.2/);assert.match(logs[1].join('\n'),/angular:\n  x: 0.0\n  y: 0.0\n  z: 0.5/);}
     if(command==='ros2 topic hz /lab_twist'){await until(()=>logs[2].some(s=>s.includes('average rate:')));const rate=[...lab.runtime.cliTopicEvidence.values()].find(e=>e.kind==='rate');assert(rate.rate>3&&rate.rate<7);}
     if(command.includes('pub --once /lab_wait')){assert.match(output,/Waiting/);await sleep(150);assert(terminal.busy);assert.equal(logs[0].filter(s=>s.includes('Ready when you are')).length,0);}
     if(command.includes('echo /lab_wait')){await until(()=>!terminal.busy&&!terminals[0].busy);assert.match(logs[1].at(-1),/Ready when you are/);}
@@ -48,4 +49,12 @@ test('topics/workspace swap preserves both saved selections, progress and guide 
   migrateCurriculum(record);assert.equal(record.ui[key],2);assert.equal(record.other.ui[key],1);assert.deepEqual(record.ui.progress,[0,2]);assert.deepEqual(record.other.ui.progress,[1]);assert.deepEqual(record.ui.guidePositions,[['2:python',4],['1:cpp',6]]);
   const once=structuredClone(record);migrateCurriculum(record);assert.deepEqual(record,once);
  }
+});
+
+test('publisher representation matches native nested Twist and String while echo stays YAML',()=>{
+ const lab=new Lab();try{
+  const type='geometry_msgs/msg/Twist',message=lab.runtime.registry.complete(type,{linear:{x:0.2},angular:{z:0.5}});
+  assert.equal(formatPublishedMessage(lab.runtime.registry,type,message),'geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.2, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.5))');
+  assert.equal(formatPublishedMessage(lab.runtime.registry,'std_msgs/msg/String',{data:'line\nnext'}),"std_msgs.msg.String(data='line\\nnext')");
+ }finally{lab.reset();}
 });

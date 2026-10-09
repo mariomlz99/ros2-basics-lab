@@ -21,10 +21,10 @@ test('CLI nodes are hidden by default and keep topic endpoints until stopped',as
  const lab=new Lab(),echo=lab.terminal(),pub=lab.terminal(),inspect=lab.terminal();try{
   await echo.execute('ros2 topic echo /hidden_check std_msgs/msg/String');await pub.execute("ros2 topic pub /hidden_check std_msgs/msg/String '{data: hello}'");
   assert.equal(await inspect.execute('ros2 node list'),'');assert.equal(await inspect.execute('ros2 node list -c'),'0');
-  assert.match(await inspect.execute('ros2 node list --all'),/_ros2cli_/);assert.equal(await inspect.execute('ros2 node list -a --count-nodes'),'2');
+  assert.match(await inspect.execute('ros2 node list --all'),/_ros2cli_/);assert.equal(await inspect.execute('ros2 node list -a --count-nodes'),'3');
   lab.runtime.addNode('/student');lab.runtime.addNode('/namespace/_private');lab.runtime.addNode('/_namespace/visible');
   assert.equal(await inspect.execute('ros2 node list'),'/_namespace/visible\n/student');
   assert.match(await inspect.execute('ros2 topic info /hidden_check'),/Publisher count: 1\nSubscription count: 1/);
-  lab.stop(pub.id);lab.stop(echo.id);assert.doesNotMatch(await inspect.execute('ros2 node list --all'),/_ros2cli_/);assert.equal(lab.runtime.jobs.size,0);
+  lab.stop(pub.id);lab.stop(echo.id);assert.equal(await inspect.execute('ros2 node list --all'),['/namespace/_private','/_namespace/visible',lab.runtime.systemNode,'/student'].sort().join('\n'));assert.equal(lab.runtime.jobs.size,0);
  }finally{lab.reset();}
 });

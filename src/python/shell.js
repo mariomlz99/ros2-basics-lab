@@ -11,7 +11,7 @@ export async function runPythonShell(lab,terminal,args){
  const close=()=>{if(closed)return;closed=true;clearTimeout(timer);worker.terminate();terminal.pythonShell=null;terminal.busy=false;terminal.foreground=null;terminal.stopTask=null;pending?.();pending=null;};
  const send=data=>new Promise(resolve=>{pending=resolve;baseline=new Map(entries());terminal.busy=true;timer=setTimeout(()=>{terminal.output('Python timed out.');close();},180000);worker.postMessage({...data,entries:[...baseline],cwd:terminal.cwd});});
  const shell={more:false,send:code=>send({mode:'line',code}),interrupt:()=>{shell.more=false;return send({mode:'interrupt'});},close};terminal.pythonShell=shell;terminal.foreground='python';terminal.stopTask=close;
- worker.onerror=event=>{terminal.output(event.message);close();};
+ worker.onerror=event=>{terminal.output(event.message||'Python worker failed to load. Save your session, reload the page and retry.');close();};
  worker.onmessage=({data})=>{
   if(data.kind==='output'){terminal.output(data.text);return;}
   if(data.kind==='fatal'){terminal.output(data.text);close();return;}

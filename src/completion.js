@@ -1,6 +1,6 @@
 import {sortedCompletions} from './completion-display.js';
 import {BASE_PACKAGES} from './workspace.js';
-const verbs={pkg:['create','list','executables','prefix'],node:['list','info'],topic:['list','info','type','echo','hz','pub'],interface:['list','show'],param:['list','get','set'],service:['list','type','call'],run:[],launch:[]};
+const verbs={daemon:['start','status','stop'],pkg:['create','list','executables','prefix'],node:['list','info'],topic:['list','info','type','echo','hz','pub'],interface:['list','show'],param:['list','get','set'],service:['list','type','call'],run:[],launch:[]};
 export function rosCompletions(lab,terminal,prefix){
  const words=prefix.trimStart().split(/\s+/),partial=words.at(-1);
  if(words[0]!=='ros2'||words.length<2)return null;

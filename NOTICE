@@ -24,3 +24,9 @@ Original ROS Jazzy interface comments and CLI help text are preserved in
 src/interfaces/native-text.js and src/native-topic-help.js. Interface sources
 retain the upstream licenses noted above; ros2cli/ros2topic help is from
 Open Source Robotics Foundation ROS 2 packages (Apache License 2.0).
+
+The native installation reference captures locally installed ROS 2 Jazzy and Graphviz files.
+Original source headers and package license/copyright files are retained in the reference.
+Native binary payloads are represented by size/hash metadata, not redistributed binaries.
+Runtime-backed files retain the lab implementations; reference presence does not imply execution support.
+fflate is MIT licensed; see src/vendor/fflate-LICENSE.

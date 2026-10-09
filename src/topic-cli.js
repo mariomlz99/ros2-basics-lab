@@ -1,3 +1,5 @@
+import {formatPublishedMessage,formatEchoMessage} from './message-format.js';
+export {formatPublishedMessage} from './message-format.js';
 import {parseMapping} from './literals.js';
 
 import {nativeTopicHelp} from './native-topic-help.js';
@@ -35,25 +37,26 @@ export function topicCLI(lab,t,args){
   if(type.split('/')[1]!=='msg')throw Error('Topics require a message type');
   const message=r.registry.complete(type,parseMapping(payload));r.ensureTopic(topic,type);
   waitFor??=limit===null?0:1;
-  const node='/_ros2cli_pub_'+t.id;let timer=null,waitTimer=null,finishTimer=null,stopped=false,process;
+  const node='/_ros2cli_pub_'+t.id;let timer=null,waitTimer=null,finishTimer=null,stopped=false,process,job,finishPending=false;
   const record={kind:'published',terminal:t.id,topic,type,rate,limit,count:0,finished:false};
-  const stop=()=>{if(process)lab.processes.stop(process.id);t.finishForeground();};
+  const stop=()=>{if(process)lab.processes.stop(process.id);t.finishJob(job);};
   const send=()=>{
-   if(stopped)return;
+   if(stopped||job?.state==='Stopped')return;
    record.count++;r.publish(topic,type,message,{node,terminal:t.id});
-   output('publishing #'+record.count+': '+formatMessage(message)+'\n');
-   if(limit!==null&&record.count>=limit){timer?.();timer=null;record.finished=true;finishTimer=setTimeout(stop,keepAlive*1000);}
+   output('publishing #'+record.count+': '+formatPublishedMessage(r.registry,type,message)+'\n');
+   if(limit!==null&&record.count>=limit){timer?.();timer=null;record.finished=true;finishTimer=setTimeout(()=>{if(job?.state==='Stopped')finishPending=true;else stop();},keepAlive*1000);}
   };
-  const begin=()=>{waitTimer?.();waitTimer=null;if(limit===null||limit>1)timer=r.every(1/rate,send);send();};
+  const begin=()=>{waitTimer?.();waitTimer=null;output('publisher: beginning loop');if(limit===null||limit>1)timer=r.every(1/rate,send);send();};
   t.busy=true;t.foreground='process';
+  job=t.registerJob({pause:()=>{process.state='suspended';},resume:()=>{process.state='running';if(finishPending)stop();},stop});
   process=lab.processes.task('topic pub',t.id,()=>{
    r.ensureTopic(topic,type).publishers.add(node);r.addNode(node);
    if(r.topics.get(topic).subscribers.size>=waitFor)begin();
-   else waitTimer=r.every(.1,()=>{if((r.topics.get(topic)?.subscribers.size??0)>=waitFor)begin();});
-   return()=>{stopped=true;timer?.();waitTimer?.();clearTimeout(finishTimer);r.removeNode(node);r.removeEmptyTopics();};
+   else waitTimer=r.every(1,()=>{if(job.state==='Stopped')return;if((r.topics.get(topic)?.subscribers.size??0)>=waitFor)begin();else output('Waiting for at least '+waitFor+' matching subscription(s)...');});
+   return()=>{stopped=true;timer?.();waitTimer?.();clearTimeout(finishTimer);r.removeNode(node);r.removeEmptyTopics();t.finishJob(job);};
   });
   evidence('pub:'+process.id,record);t.stopTask=()=>lab.processes.stop(process.id);
-  return waitTimer?'Waiting for at least '+waitFor+' matching subscription(s)...':'Publishing at '+rate+' Hz. '+(limit===null?'Ctrl+C stops the publisher.':'The publisher exits after '+limit+' message(s).');
+  return waitTimer?'Waiting for at least '+waitFor+' matching subscription(s)...':'';
  }
  if(action==='echo'||action==='hz'){
   const positional=[];let once=false;
@@ -65,25 +68,28 @@ export function topicCLI(lab,t,args){
   if(type&&type.split('/')[1]!=='msg')throw Error('Topics require a message type');
   if(action==='echo'&&!type)throw Error('Could not determine the type for '+topic+'. Start a publisher or specify the message type: ros2 topic echo /topic package/msg/Type');
   if(type){r.registry.get(type);r.ensureTopic(topic,type);}
-  const node='/_ros2cli_'+t.id;let dispose=null,discover=null,report=null,process,received=0;const times=[];
-  const complete=()=>{lab.processes.stop(process.id);t.finishForeground();};
+  const node='/_ros2cli_'+t.id;let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
+  const complete=()=>{lab.processes.stop(process.id);t.finishJob(job);};
+  let deliver;
   const subscribe=resolvedType=>{
    discover?.();discover=null;
-   dispose=r.subscribe(topic,node,(message,publisher,sample)=>{
+   deliver=(message,publisher,sample)=>{
     received++;r.samples.get(sample)?.receivedBy.add(node);
     if(action==='echo'){
-     output(formatMessage(message)+'\n---');
+     output(formatEchoMessage(r.registry,resolvedType,message)+'\n---');
      evidence('echo:'+t.id+':'+topic,{kind:'received',terminal:t.id,publisherTerminal:publisher?.terminal,topic,type:resolvedType,count:received});
      if(once)complete();
-    }else{times.push(performance.now());if(times.length>10000)times.shift();}
-   },{type:resolvedType});
+    }else{times.push(performance.now());if(times.length>10001)times.shift();}
+   };
+   dispose=r.subscribe(topic,node,(...args)=>{if(job.state==='Stopped'){pending.push(args);if(pending.length>10)pending.shift();}else deliver(...args);},{type:resolvedType});
   };
   t.busy=true;t.foreground='process';
+  job=t.registerJob({pause:()=>{process.state='suspended';},resume:()=>{process.state='running';for(const args of pending.splice(0)){if(!lab.processes.processes.has(process.id))break;deliver(...args);}},stop:()=>lab.processes.stop(process.id)});
   process=lab.processes.task('topic '+action,t.id,()=>{
    r.addNode(node);
-   if(type)subscribe(type);else discover=r.every(.1,()=>{const known=r.topics.get(topic)?.type;if(known)subscribe(known);});
-   if(action==='hz')report=r.every(1,()=>{if(times.length<2)return;const rate=(times.length-1)*1000/(times.at(-1)-times[0]);output('average rate: '+rate.toFixed(3)+' Hz');evidence('hz:'+t.id+':'+topic,{kind:'rate',terminal:t.id,topic,rate,samples:times.length});});
-   return()=>{dispose?.();discover?.();report?.();r.removeNode(node);r.removeEmptyTopics();};
+   if(type)subscribe(type);else discover=r.every(.1,()=>{if(job.state==='Stopped')return;const known=r.topics.get(topic)?.type;if(known)subscribe(known);});
+   if(action==='hz')report=r.every(1,()=>{if(job.state==='Stopped'||times.length<2||lastReported===times.at(-1))return;lastReported=times.at(-1);const rate=(times.length-1)*1000/(times.at(-1)-times[0]);output(formatHzStatistics(times));evidence('hz:'+t.id+':'+topic,{kind:'rate',terminal:t.id,topic,rate,samples:times.length});});
+   return()=>{dispose?.();discover?.();report?.();r.removeNode(node);r.removeEmptyTopics();t.finishJob(job);};
   });t.stopTask=()=>lab.processes.stop(process.id);return type?'':'Waiting for topic '+topic+' to become available...';
  }
  if(['info','type'].includes(action)&&!rest.length)missingArguments(action,['topic_name']);
@@ -94,8 +100,9 @@ export function topicCLI(lab,t,args){
  throw Error('Use ros2 topic --help');
 }
 
-export function formatMessage(value,indent=0){
- const padding=' '.repeat(indent),scalar=x=>typeof x==='string'?(/^[A-Za-z][A-Za-z0-9 _.-]*$/.test(x)&&!['true','false','null'].includes(x)?x:JSON.stringify(x)):String(x);
- if(Array.isArray(value))return value.length?value.map(item=>padding+'- '+(item&&typeof item==='object'?'\n'+formatMessage(item,indent+2):scalar(item))).join('\n'):padding+'[]';
- return Object.entries(value).map(([key,item])=>padding+key+':'+(item&&typeof item==='object'?(Array.isArray(item)&&!item.length?' []':'\n'+formatMessage(item,indent+2)):' '+scalar(item))).join('\n');
+export function formatHzStatistics(times){
+ const intervals=times.slice(1).map((time,i)=>(time-times[i])/1000),n=intervals.length;
+ if(!n)return '';
+ const mean=intervals.reduce((a,b)=>a+b,0)/n,std=Math.sqrt(intervals.reduce((sum,x)=>sum+(x-mean)**2,0)/n);
+ return 'average rate: '+(1/mean).toFixed(3)+'\n\tmin: '+Math.min(...intervals).toFixed(3)+'s max: '+Math.max(...intervals).toFixed(3)+'s std dev: '+std.toFixed(5)+'s window: '+n;
 }

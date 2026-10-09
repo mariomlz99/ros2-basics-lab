@@ -18,11 +18,12 @@ try{
    await focus(step.terminal-1);await page.keyboard.insertText(command);await page.keyboard.press('Enter');await page.waitForTimeout(200);
    if(command.includes('pub /lab_chat'))await page.waitForTimeout(1100);
    if(command.includes('pub --times'))await page.waitForTimeout(1200);
-   if(command.includes('hz /lab_twist')){await page.waitForTimeout(1300);assert.match(await transcript(2),/average rate:/);}
+   if(command.includes('hz /lab_twist')){await page.waitForTimeout(1300);assert.match(await transcript(2),/average rate: \d+\.\d{3}\n\tmin: \d+\.\d{3}s max: \d+\.\d{3}s std dev: \d+\.\d{5}s window: \d+/);}
    if(command.includes('pub --once /lab_wait'))assert.match(await transcript(0),/Waiting for at least 1/);
-   if(command.includes('echo /lab_wait'))await page.waitForTimeout(300);
+   if(command.includes('echo /lab_wait'))await page.waitForTimeout(1100);
   }
  }
+ const publisher=await transcript(0);assert(publisher.includes("publisher: beginning loop\npublishing #1: std_msgs.msg.String(data='Hello from Terminal 1')"));assert(!publisher.includes('Publishing at 1 Hz.'));assert(!publisher.includes('Publishing at 2 Hz.'));for(const n of [1,2,3])assert(publisher.includes("publishing #"+n+": std_msgs.msg.String(data='Three messages')\n\n"));
  const output=await transcript(1);assert.match(output,/data: Hello from Terminal 1/);assert.equal((output.match(/data: Three messages/g)||[]).length,3);assert.match(output,/data: Ready when you are/);assert.doesNotMatch(output,/data: No replay/);
  await page.locator('.complete').click();assert.equal(await page.locator('.checks > p').count(),5);assert((await page.locator('.checks > p').allTextContents()).every(s=>s.startsWith('✓')));assert.deepEqual(errors,[]);
  assert(await page.locator('#next-lesson').isEnabled());await page.locator('#next-lesson').click();assert.match(await page.locator('#lesson-heading').textContent(),/Workspace & packages/);await page.locator('#nav button').nth(1).click();

@@ -55,7 +55,7 @@ for(const language of ['python','cpp'])test(`${language}: editing and failed reb
  const {lab,t}=await packageFixture(language),programs=[];
  lab.processes.factories=new Map([[language,async()=>class{run(program){programs.push(program);}stop(){}}]]);
  const record=lab.workspace.installed.get('demo'),path=ROOT+'/src/demo/'+(language==='python'?'demo/hello.py':'src/hello.cpp');
- const original=lab.fs.read(path),changed=original.replace('Hi from demo.','Rebuilt demo.');
+ const original=lab.fs.read(path),changed=original.replace(language==='python'?'Hi from demo.':'hello world demo package','Rebuilt demo.');
  await t.execute('ros2 run demo hello');lab.stop(t.id);
  lab.fs.write(path,changed);assert.equal(lab.workspace.current('demo'),false);assert.equal(await t.execute('ros2 pkg prefix demo'),ROOT+'/install/demo');
  await t.execute('ros2 run demo hello');lab.stop(t.id);assert.equal(lab.workspace.installed.get('demo'),record);

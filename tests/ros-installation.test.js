@@ -70,3 +70,22 @@ test('old saved schemas cannot hide newly supported built-in interfaces',()=>{
  assert.equal(restored.fs.read('/opt/ros/jazzy/share/std_msgs/msg/String.msg'),interfaceSource(BUILTIN['std_msgs/msg/String']));
  lab.reset();restored.reset();
 });
+
+import {nativeEntries,nativeContent} from '../src/native-installation.js';
+import {seedInstallation} from '../src/ros-installation.js';
+test('complete native inventory is inspectable, executable references are explicit and saves preserve edits',async()=>{
+ const lab=new Lab(),t=lab.terminal();
+ try{
+  for(const [path,row]of nativeEntries){assert(lab.fs.exists(path),path);assert.equal(lab.fs.entry(path).kind,row[1]==='d'?'dir':'file',path);}
+  const nativeBin=[...nativeEntries.keys()].filter(path=>path.startsWith('/opt/ros/jazzy/bin/')&&!path.slice('/opt/ros/jazzy/bin/'.length).includes('/')).map(path=>path.split('/').at(-1)).sort();
+  assert.deepEqual(lab.fs.list('/opt/ros/jazzy/bin').map(e=>e.name).sort(),nativeBin);
+  assert.equal(await t.execute('which rviz2'),'/opt/ros/jazzy/bin/rviz2');assert.equal(await t.execute('which dot'),'/usr/bin/dot');
+  await assert.rejects(()=>t.execute('rviz2'),/inspection only/);await assert.rejects(()=>t.execute('dot'),/inspection only/);
+  assert.match(lab.fs.read('/opt/ros/jazzy/bin/rviz2'),/SIMULATED NATIVE ARTIFACT/);
+  const path='/opt/ros/jazzy/bin/ament_index',source=nativeContent(path);assert.match(source,/python3/);assert.equal(lab.fs.read(path),source);
+  assert(!Object.keys(lab.fs.entry(path)).includes('content'),'Snapshots keep a compact native reference');
+  lab.fs.write(path,'# my edit');seedInstallation(lab.fs);assert.equal(lab.fs.read(path),'# my edit');
+  const saved=structuredClone(captureSession(lab,{}));saved.workspace.entries.delete('/opt/ros/jazzy/bin/rqt_graph');
+  const restored=new Lab();restoreSession(restored,saved);assert.equal(restored.fs.read(path),'# my edit');assert(restored.fs.exists('/opt/ros/jazzy/bin/rqt_graph'));assert.match(restored.fs.read('/opt/ros/jazzy/bin/ament_cpplint'),/python3/);restored.reset();
+ }finally{lab.reset();}
+});
