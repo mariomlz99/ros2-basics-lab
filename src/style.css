@@ -38,3 +38,17 @@
 .command button{min-width:64px}
 
 #resize-streams{display:block;margin:-10px 0 12px}#playground-stage[hidden]+#resize-streams{display:none}.playground-streams figure{position:relative}.playground-streams figcaption{padding-right:100px;min-height:26px;overflow-wrap:anywhere}.stream-expand{position:absolute;right:0;top:0;font-size:11px;padding:3px 8px}.playground-streams canvas{height:var(--stream-height,200px)}.playground-streams figure.expanded{grid-column:1 / -1;order:-1}.playground-streams figure.expanded canvas{height:max(var(--stream-height,200px),min(60vh,560px))}@media(max-width:700px){.playground-streams canvas{height:var(--stream-height,180px)}}
+
+/* Local code completion and call signatures, with no language server. */
+.cm-tooltip {background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
+.cm-tooltip-autocomplete ul li[aria-selected] {background:var(--accent)!important;color:var(--bg)!important}
+.cm-completionInfo,.code-signature {padding:8px 12px;max-width:min(560px,80vw);white-space:pre-wrap;overflow-wrap:anywhere}
+.code-signature strong {display:block;font-family:monospace}.code-signature div {max-height:140px;overflow:auto;color:var(--muted)}
+
+#terminals {position:relative}
+.terminal-column-divider {position:absolute;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:2;border-radius:5px}
+.terminal-column-divider::after {content:'';position:absolute;top:12px;bottom:12px;left:4px;width:4px;border-radius:3px;background:var(--line)}
+.terminal-column-divider:hover::after,.terminal-column-divider:focus-visible::after {background:var(--accent)}
+.terminal-column-divider:focus-visible {outline:2px solid var(--accent)}
+
+.editor-help {padding:3px 10px;color:var(--muted);font-size:11px;background:var(--panel)}

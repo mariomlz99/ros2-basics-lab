@@ -30,3 +30,5 @@ Original source headers and package license/copyright files are retained in the 
 Native binary payloads are represented by size/hash metadata, not redistributed binaries.
 Runtime-backed files retain the lab implementations; reference presence does not imply execution support.
 fflate is MIT licensed; see src/vendor/fflate-LICENSE.
+
+Editor NumPy completion summaries derive from NumPy documentation (BSD-3-Clause). See src/numpy-LICENSE. Completion runs locally and uses a curated static catalog; it is not a Python or C++ language server.
