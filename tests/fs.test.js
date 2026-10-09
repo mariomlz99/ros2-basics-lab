@@ -22,5 +22,13 @@ test('unquoted wildcards expand for recursive removal without matching hidden fi
  await t.execute('rm *.txt');assert.equal(fs.exists(HOME+'/practice/notes.txt'),false);
  await t.execute('touch notes.txt');await t.execute('rm -rf *');assert.equal(await t.execute('ls'),'');assert.equal(fs.exists(HOME+'/practice/.hidden'),true);
  await t.execute('rm -rf *');await t.execute('mkdir -p one/nested two/nested');await t.execute('touch one/nested/x two/nested/y');await t.execute('rm -rf */nested');assert.equal(await t.execute('ls one'),'');assert.equal(await t.execute('ls two'),'');
- await t.execute('touch a.txt b.txt cc.txt');await t.execute('rm ?.txt');assert.equal(await t.execute('ls'),'cc.txt  one/  two/');
+ await t.execute('touch a.txt b.txt cc.txt');await t.execute('rm ?.txt');assert.equal(await t.execute('ls'),'cc.txt  one  two');
+});
+
+test('ls uses bare directory names, including dot entries, as native ls does',async()=>{
+ const fs=new FileSystem(),t=new Terminal(fs,1);
+ await t.execute('mkdir -p listing/directory');await t.execute('cd listing');await t.execute('touch file .hidden');
+ assert.equal(await t.execute('ls'),'directory  file');
+ assert.equal(await t.execute('ls -a'),'.  ..  .hidden  directory  file');
+ assert.deepEqual((await t.execute('ls -la')).split('\n').map(line=>line.split(' ').at(-1)),['.','..','.hidden','directory','file']);
 });
