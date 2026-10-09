@@ -1,6 +1,6 @@
 # Canonical interface registry
 
-`src/interfaces/builtin.js` contains Jazzy message/service records and the Fibonacci action transcribed from the locally installed upstream `.msg` and `.srv` definitions. Definitions follow the installed files under `/opt/ros/jazzy/share`. Fibonacci includes `order`, result `sequence`, and feedback `partial_sequence`.
+`src/interfaces/builtin.js` contains 147 Jazzy message/service records transcribed from the locally installed upstream `.msg` and `.srv` definitions. `scripts/import-jazzy-interfaces.py` regenerates this file from `/opt/ros/jazzy/share`; it is a maintenance tool, not an application dependency.
 
 Installed source package versions used for this snapshot:
 
@@ -15,4 +15,6 @@ These are upstream ROS interface definitions maintained by their ROS contributor
 
 The registry is shared by CLI inspection, Python classes, C++ headers and runtime validation. Service request and response constants are separate. CLI inspection expands nested fields. Coverage of an interface does not imply implementation of the corresponding ROS action, navigation, sensor driver or middleware API.
 
-Custom interfaces use this registry after a successful build. Their deliberately bounded scalar syntax is described in SUPPORTED.md.
+Custom interfaces use this registry after a successful build. Their deliberately bounded scalar syntax is described in HANDOFF.md.
+
+`src/interfaces/native-text.js` preserves the original installed source text and native `ros2 interface show` output (default, `--all-comments`, and `--no-comments`). This includes upstream comments, blank lines, constants, nested definitions and tab indentation. Simulated `/opt/ros/jazzy/share` interface files use the same original sources. After adding or updating a built-in interface, source Jazzy and run `python3 scripts/capture-interface-text.py`; `--check` verifies all captures against the local installation. Tests require native text coverage for every built-in interface. Generated bindings still use the parsed schema.

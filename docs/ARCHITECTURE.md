@@ -1,13 +1,7 @@
 # Architecture
 
-The landing page opens BASICS. `src/app.js` owns the UI and saved workspaces; `src/units.js` defines the six units and playground. `src/units/` supplies guided steps, prerequisites and behavior checks. Visible examples in `src/examples.js` and `src/action-examples.js` are also the build/runtime test inputs.
+Independent static application extracted from the KineNest source snapshot recorded in EXTRACTION.json. The source checkout is read-only and is not a dependency at runtime or build time.
 
-The causal chain is files → package metadata → build → installed artifacts → sourced terminal → process → shared graph. `Lab` connects the filesystem, shell, workspace, builder and process manager. Terminals share files and a graph while retaining independent shell environments. BASICS and Playground use independent Lab instances and saved slots.
+The lab owns its virtual filesystem, per-terminal shell environment, package model and beginner curriculum. Execution workers reuse the proven lazy Pyodide and Clang/LLD/WASM loaders. Worker adapters connect real learner code to one shared educational ROS graph. ProcessManager owns worker termination and launch groups. No backend, host shell execution, DDS or native ROS installation is implied.
 
-Python workers run CPython/Pyodide with a bounded rclpy compatibility API. C++ workers run Clang/LLD and execute WebAssembly with a bounded rclcpp API. InterfaceRegistry supplies matching Python classes, C++ headers, CLI inspection and wire validation. RuntimeAdapter registers nodes, publishers, subscriptions, timers, services and actions on a browser graph. Stopping a process cleans up its owned endpoints and pending work.
-
-Actions use explicit server registration, per-goal ownership and typed goal/feedback/result payloads. Server callbacks execute in the chosen language worker. The transport enforces acceptance, cancellation and terminal states. Fibonacci is the supplied action interface. No action server runs until the user starts its executable.
-
-Autosave stores versioned records in IndexedDB. Installed C++ bytes are recompiled into WebAssembly modules on restore. Running processes are never serialized. Build output versions executable assets by content hash; HTML points to that version so releases do not mix worker/header generations.
-
-This is not Linux, DDS, RMW or a native ROS executor. See SUPPORTED.md for supported boundaries.
+The extracted compatibility layers contain older API internals; only the documented beginner subset will be exposed. Robotics is opt-in and will never populate the required course graph.
