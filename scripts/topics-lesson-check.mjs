@@ -25,7 +25,8 @@ try{
  }
  const output=await transcript(1);assert.match(output,/data: Hello from Terminal 1/);assert.equal((output.match(/data: Three messages/g)||[]).length,3);assert.match(output,/data: Ready when you are/);assert.doesNotMatch(output,/data: No replay/);
  await page.locator('.complete').click();assert.equal(await page.locator('.checks > p').count(),5);assert((await page.locator('.checks > p').allTextContents()).every(s=>s.startsWith('✓')));assert.deepEqual(errors,[]);
+ assert(await page.locator('#next-lesson').isDisabled());assert.equal(await page.locator('#next-lesson .lock-icon').textContent(),'🔒');
  await page.locator('#save-session').click();await page.waitForTimeout(400);await page.reload();await page.locator('#start').click();await page.locator('.xterm').first().waitFor();assert.match(await page.locator('#lesson-heading').textContent(),/Talking ROS 2/);
- await page.locator('#nav button').nth(3).click();assert.match(await page.locator('#lesson-heading').textContent(),/Publisher/i);
+ assert(await page.locator('#nav button').nth(3).isDisabled());assert(await page.locator('#exercise-nav button').isDisabled());
  console.log('PASS visible topic lesson: all commands, three terminals, Ctrl+C, delivery, rate, no replay, checks and saved selection');
 }finally{await browser.close();}

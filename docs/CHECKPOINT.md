@@ -1,3 +1,7 @@
+# Colleague review access — 9 October 2026
+
+At the user's request, only lessons 1–3 are open for review. Lessons 4–7 and the playground remain visible with lock icons and disabled buttons. Lesson 3's onward button is also locked, and saved sessions reopen an available lesson while preserving course and playground workspaces. The temporary restriction is controlled by `isReviewLocked` in `src/app.js`; it applies only to ROS 2 Basics Lab, not KineNest. Browser coverage: `scripts/review-lock-check.mjs` and `scripts/topics-lesson-check.mjs`.
+
 # Standalone lab restored — 9 October 2026
 
 The user confirmed that classroom development continues in `ros2-basics-lab/`, with shared bug fixes carried into `ros2learn/`. KineNest keeps its separate “Build it. Run it. Understand it.” product homepage.

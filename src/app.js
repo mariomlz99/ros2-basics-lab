@@ -8,6 +8,9 @@ import{lessonChecks,snapshotLesson,restoreLesson}from'./course/checks.js';
 import{Lab}from'./lab.js';import{ROOT}from'./workspace.js';import{LESSON_NAMES,lesson}from'./course.js';
 let exampleUpdates=[];let preparing=false;let overview=false;const guidePositions=new Map();
 const sessionSlots=new Map();
+// Colleague review: retain later lessons, but open only the first three.
+const isReviewLocked=index=>index>=3;
+function lockForReview(button){button.disabled=true;button.classList.add('review-locked');button.title=t('Locked during review');const icon=el('span','🔒','lock-icon');icon.setAttribute('aria-hidden','true');button.prepend(icon);button.setAttribute('aria-label',button.textContent.replace('🔒','').trim()+': '+t('Locked during review'));}
 let playground;let lessonSnapshots=new Map();const collapsed=new Set([ROOT+'/build',ROOT+'/install',ROOT+'/log']);
 let lab,editor,views=[],activeFile=null,saved='',lessonIndex=0,language='python',progress=new Set(),refreshPending=false;
 const $=s=>document.querySelector(s),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -21,6 +24,7 @@ function renderFiles(){const root=$('#file-tree');root.replaceChildren();const e
 function addTerminal(state){if(views.length>=6){status('The lab supports up to six terminals. Close one to add another.');return;}const t=lab.terminal(state);const view=new (window.TerminalView)(lab,t,$('#terminals'),()=>{view.destroy();views=views.filter(v=>v!==view);},openFromTerminal);views.push(view);view.xterm.focus();}
 function currentSessionUI(){return {lessonIndex,language,progress:[...progress],guidePositions:[...guidePositions],activeFile,draft:activeFile&&editor.value!==saved?editor.value:null};}
 function changeLesson(index){
+ if(isReviewLocked(index))return;
  if(preparing)return;
  if((index===7)!==(lessonIndex===7)){
   overview=false;const from=lessonIndex===7?'playground':'course',to=index===7?'playground':'course';
@@ -105,15 +109,17 @@ function renderLesson(){renderPlayground();$('#prepare-lesson').hidden=lessonInd
  onward.append(el('strong',progress.size===7?'Course complete!':lessonIndex===6?'Final lesson complete.':'Lesson complete!'));
  if(lessonIndex===6)onward.append(el('p',progress.size===7?'Continue with the optional exercises to practise what you learned.':'You can explore the exercises now, or return to finish the earlier lessons.'));
  const nextLesson=lessonIndex+1;const next=el('button',lessonIndex===6?'Explore exercises':`Move to lesson ${nextLesson+1}`);next.id='next-lesson';
+ if(isReviewLocked(nextLesson))lockForReview(next);
  next.onclick=()=>{overview=false;changeLesson(nextLesson);$('#lesson').scrollTop=0;$('#lesson-heading').setAttribute('tabindex','-1');$('#lesson-heading').focus({preventScroll:true});status('');};
  onward.append(next);checks.append(onward);onward.scrollIntoView({block:'nearest',behavior:'smooth'});
  }else status('Keep exploring: the checklist shows what remains.');};root.append(finish,checks);}
 
 }
-async function start(){const stored=await restoreCompiledModules(await loadSession());const [{CodeEditor},{TerminalView}]=await Promise.all([import('./vendor/ui.js'),import('./terminal-view.js')]);window.TerminalView=TerminalView;
+async function start(){let stored=await restoreCompiledModules(await loadSession());if(stored?.ui.lessonIndex===7){const {other,...playgroundRecord}=stored;sessionSlots.set('playground',{record:playgroundRecord});stored=other??null;}const [{CodeEditor},{TerminalView}]=await Promise.all([import('./vendor/ui.js'),import('./terminal-view.js')]);window.TerminalView=TerminalView;
  $('#app').innerHTML=`<aside><div class="eyebrow">LESSONS</div><nav id="nav" aria-label="Lessons"></nav><div class="eyebrow exercise-heading">EXERCISES</div><nav id="exercise-nav" aria-label="Exercises"></nav><div id="progress">0 / 7 completed</div><label>Learning path<select id="language"><option value="python">Python</option><option value="cpp">C++</option></select></label><p class="disclosure">Designed for the ROS 2 exercise session at Diepenbeek.</p><button id="prepare-lesson">Prepare this lesson</button><button id="reset-lesson">Restart lesson</button><button id="reset">Reset workspace</button><button id="save-session">Save session</button><p id="session-state" role="status"></p><button id="export">Export source workspace</button></aside><section class="workarea"><div class="workspace-top"><h1 id="lesson-heading"></h1><span id="graph-state">0 nodes · 0 topics</span><button id="restore-layout">Restore layout</button></div><section id="playground-stage" hidden></section><div id="workspace"><article id="lesson"></article><section id="files"><div class="panel-title">Workspace files <button id="new-file">New file</button></div><div class="editor-layout"><div id="file-tree"></div><div class="editor-pane"><div class="editor-title"><span id="active-file">Choose a file</span><button id="save">Save</button><button id="revert">Revert</button></div><div id="editor"></div></div></div></section></div><div class="terminal-toolbar"><strong>Terminals</strong><span>Shared files & graph · separate environments</span><button id="add-terminal">+ Terminal</button></div><div id="terminals"></div><footer id="status" role="status"></footer></section>`;
  $('#app').className='lab';initLayout();lab=new Lab({onChange:refresh,onOutput:(id,s)=>{const match=/(?:controller\.cpp|\.py)["']?[:,](?: line )?(\d+)/.exec(s);if(match&&activeFile)editor.diagnostic(Number(match[1]),s);}});editor=new CodeEditor($('#editor'),fileTitle,save);document.addEventListener('lab-diagnostic',event=>{if(!activeFile)return;const text=event.detail.text;const cpp=/([\w./-]+\.cpp):(\d+):/.exec(text),python=/File ["']([^"']+\.py)["'], line (\d+)/.exec(text),m=cpp??python;if(m&&(activeFile.endsWith(m[1])||m[1]==='controller.cpp'))editor.diagnostic(Number(m[2]),text);});
- LESSON_NAMES.concat('Robotics Playground · optional').forEach((name,index)=>{const b=el('button',(index<7?`${index+1}  `:'↗  ')+name);b.dataset.index=index;b.onclick=()=>changeLesson(index);$(index<7?'#nav':'#exercise-nav').append(b);});
+ LESSON_NAMES.concat('Robotics Playground · optional').forEach((name,index)=>{const b=el('button',(index<7?`${index+1}  `:'↗  ')+name);b.dataset.index=index;b.onclick=()=>changeLesson(index);if(isReviewLocked(index))lockForReview(b);$(index<7?'#nav':'#exercise-nav').append(b);});
+ $('#nav').before(el('p','Review access: lessons 1–3. Later lessons and the playground are locked.','review-note'));
  $('#language').onchange=e=>{language=e.target.value;renderLesson();};$('#save').onclick=save;$('#revert').onclick=()=>{if(activeFile){saved=lab.fs.read(activeFile);editor.open(activeFile,saved);fileTitle();}};$('#new-file').onclick=()=>{const p=prompt(t('New file path (absolute or relative to ~/ros2_ws):'),'src/');if(!p)return;try{const path=p.startsWith('/')?p:ROOT+'/'+p;lab.fs.touch(path);openFile(path);}catch(e){status(e.message);}};$('#add-terminal').onclick=()=>addTerminal();
  $('#reset').onclick=()=>{if(!confirm(t('Delete the virtual workspace and stop all processes?')))return;for(const v of views)v.destroy();views=[];playground?.stop();playground=null;lab.reset();lab=new Lab({onChange:refresh});lessonSnapshots=new Map();for(const key of [...guidePositions.keys()])if((lessonIndex===7)===key.startsWith('7:'))guidePositions.delete(key);if(lessonIndex!==7)progress.clear();$('#progress').textContent=`${progress.size} / 7 completed`;activeFile=null;saved='';editor.open('','');fileTitle();addTerminal();renderLesson();refresh();status('Workspace reset.');};
  $('#reset-lesson').onclick=()=>{if(!confirm(t('Restore files and environments to when you first opened this lesson? Current lesson edits will be replaced.')))return;playground?.stop();playground=null;restoreLesson(lab,lessonSnapshots.get(lessonIndex));activeFile=null;saved='';editor.open('','');fileTitle();for(const v of views){v.output('Lesson restored.');v.prompt();}guidePositions.delete(lessonIndex+':'+language);progress.delete(lessonIndex);$('#progress').textContent=`${progress.size} / 7 completed`;renderLesson();status('Restored this lesson’s starting files and environments.');};
@@ -124,12 +130,12 @@ async function start(){const stored=await restoreCompiledModules(await loadSessi
   preparing=true;const controls=[...document.querySelectorAll('#nav button,#exercise-nav button,#language,#reset,#reset-lesson,#prepare-lesson,#add-terminal')];controls.forEach(node=>node.disabled=true);
   status('Preparing prerequisite files and builds. Existing files are kept.');
   try{await prepareLesson(lab,lessonIndex,language,line=>{status(line);views[0]?.output(line);});lessonSnapshots.set(lessonIndex,snapshotLesson(lab));guidePositions.delete(lessonIndex+':'+language);for(const view of views)view.prompt();renderLesson();refresh();status('Lesson ready. Prerequisites are available; earlier lessons were not marked complete.');}
-  catch(error){status(error.message);}finally{preparing=false;controls.forEach(node=>node.disabled=false);}
+  catch(error){status(error.message);}finally{preparing=false;controls.forEach(node=>node.disabled=node.dataset.index!==undefined&&isReviewLocked(Number(node.dataset.index)));}
  };
  $('#export').onclick=async()=>{try{const{downloadWorkspace}=await import('./export.js');downloadWorkspace(lab.fs);lab.exported=true;status('Source workspace exported. Native compatibility applies to validated reference examples.');}catch(e){status(e.message);}};
  if(stored){
   if(stored.other)sessionSlots.set(stored.other.ui.lessonIndex===7?'playground':'course',{record:stored.other});
-  const terminals=restoreSession(lab,stored);lessonIndex=stored.ui.lessonIndex;language=stored.ui.language;progress=new Set(stored.ui.progress);for(const [key,value]of stored.ui.guidePositions)guidePositions.set(key,value);
+  const terminals=restoreSession(lab,stored);lessonIndex=isReviewLocked(stored.ui.lessonIndex)?2:stored.ui.lessonIndex;language=stored.ui.language;progress=new Set(stored.ui.progress);for(const [key,value]of stored.ui.guidePositions)guidePositions.set(key,value);
   $('#language').value=language;$('#progress').textContent=`${progress.size} / 7 completed`;
   for(const terminal of terminals)addTerminal(terminal);if(!terminals.length)addTerminal();
   if(stored.ui.activeFile&&lab.fs.exists(stored.ui.activeFile)){openFile(stored.ui.activeFile);if(stored.ui.draft!==null){editor.open(activeFile,stored.ui.draft);fileTitle();}}
