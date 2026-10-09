@@ -18,6 +18,6 @@ export function seedNativeInstallation(fs){
   // Runtime-backed files and user edits take precedence over reference captures.
   if(old&&!old.nativeKey)continue;
   fs.mkdir(path.slice(0,path.lastIndexOf('/')),true);
-  fs.entries.set(path,attachNativeContent({kind:'file',nativeKey:path,nativeHash:hash,nativeSize:size,nativeLink:link||undefined,executable:old?.executable??!!(mode&0o111),nativeExecutable:!!(mode&0o111)}));
+  fs.entries.set(path,attachNativeContent({kind:'file',nativeKey:path,nativeMode:mode,nativeHash:hash,nativeSize:size,nativeLink:link||undefined,...(old?Object.fromEntries(['mode','owner','group','mtime'].filter(key=>old[key]!==undefined).map(key=>[key,old[key]])):{}),executable:old?.executable??!!(mode&0o111),nativeExecutable:!!(mode&0o111)}));
  }
 }

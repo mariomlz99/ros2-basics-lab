@@ -30,7 +30,7 @@ test('ls uses bare directory names, including dot entries, as native ls does',as
  await t.execute('mkdir -p listing/directory');await t.execute('cd listing');await t.execute('touch file .hidden');
  assert.equal(await t.execute('ls'),'directory  file');
  assert.equal(await t.execute('ls -a'),'.  ..  .hidden  directory  file');
- assert.deepEqual((await t.execute('ls -la')).split('\n').map(line=>line.split(' ').at(-1)),['.','..','.hidden','directory','file']);
+ assert.deepEqual((await t.execute('ls -la')).split('\n').slice(1).map(line=>line.split(' ').at(-1)),['.','..','.hidden','directory','file']);
 });
 
 test('tree draws native branches, omits hidden entries and counts directories and files',async()=>{

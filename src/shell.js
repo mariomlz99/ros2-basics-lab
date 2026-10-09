@@ -1,3 +1,4 @@
+import {listDirectory} from './ls.js';
 import {baseEnvironment,sourceBase} from './ros-installation.js';
 import {HOME,normalize} from './fs.js';
 // Bounded tokenizer: quoted strings and variable expansion, never eval or Bash.
@@ -119,12 +120,12 @@ export class Terminal{
    case 'unset':{for(const key of args){if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key))throw Error('unset: invalid identifier '+key);delete this.env[key];delete this.vars[key];}return '';}
    case 'source':case '.':{if(args.length!==1)throw Error('Usage: source <file>');if(this.dispatch)return this.dispatch(this,words);const p=this.path(args[0]);this.fs.read(p);if(/^\/opt\/ros\/jazzy\/(?:local_)?setup\.(?:bash|sh)$/.test(p)){sourceBase(this.env,this.vars);return '';}return this.sourceFile(args[0]);}
    case 'bash':{if(args[0]==='-c'&&args.length===2)return this.runScript(null,[],args[1]);if(args.length===1&&!args[0].startsWith('-'))return this.runScript(this.path(args[0]));throw Error('Supported: bash <script> or bash -c "command". Use + Terminal for a new interactive shell.');}
-   case 'chmod':{if(args.length!==2||!['+x','-x','u+x','u-x','755','644'].includes(args[0]))throw Error('Supported: chmod +x|-x|755|644 <file>');const entry=this.fs.entry(this.path(args[1]));if(entry.kind!=='file')throw Error('chmod: expected a file');entry.executable=['+x','u+x','755'].includes(args[0]);this.fs.changed(this.path(args[1]));return '';}
+   case 'chmod':{if(args.length!==2||!['+x','-x','u+x','u-x','755','644'].includes(args[0]))throw Error('Supported: chmod +x|-x|755|644 <file>');const entry=this.fs.entry(this.path(args[1]));if(entry.kind!=='file')throw Error('chmod: expected a file');const meta=this.fs.metadata(this.path(args[1]));meta.mode=args[0]==='755'?0o755:args[0]==='644'?0o644:args[0]==='u+x'?meta.mode|0o100:args[0]==='u-x'?meta.mode&~0o100:args[0]==='+x'?meta.mode|0o111:meta.mode&~0o111;entry.executable=!!(meta.mode&0o111);this.fs.changed(this.path(args[1]));return '';}
    case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file> — Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file> — opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');await this.editFile(cmd,path);return '';}
    case 'vim':case 'vi':throw Error('Vim is not implemented in this lab. Use nano <file> or gedit <file>.');
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.env.OLDPWD=this.cwd;this.cwd=p;this.env.PWD=p;return '';}
-   case 'ls':flags('la');{const list=(paths.length?paths:['.']).flatMap(p=>{const full=this.path(p);return this.fs.entry(full).kind==='dir'?[...(options.has('a')?[{name:'.',kind:'dir'},{name:'..',kind:'dir'}]:[]),...this.fs.list(full)]:[{name:p,...this.fs.entry(full)}];}).filter(e=>options.has('a')||!e.name.startsWith('.'));return list.map(e=>(options.has('l')?(e.kind==='dir'?'drwxr-xr-x':e.executable?'-rwxr-xr-x':'-rw-r--r--')+' student '+String(e.nativeSize??e.content?.length??0).padStart(5)+' ':'')+this.formatEntry(e.name,e)).join(options.has('l')?'\n':'  ');}
+   case 'ls':flags('la');return listDirectory(this,paths,options);
    case 'mkdir':flags('p');count(1);for(const p of paths)this.fs.mkdir(this.path(p),options.has('p'));return '';
    case 'touch':flags('');count(1);for(const p of paths)this.fs.touch(this.path(p));return '';
    case 'cat':flags('');count(1);return paths.map(p=>this.fs.read(this.path(p))).join('');
