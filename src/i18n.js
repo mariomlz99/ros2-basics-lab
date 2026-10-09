@@ -44,9 +44,9 @@ export function initPreferences(){
  let theme=read('ros2lab.theme',matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
  if(!['light','dark'].includes(theme))theme='dark';
  document.documentElement.classList.toggle('light',theme==='light');
- const controls=document.createElement('div');controls.className='preferences';
- controls.innerHTML='<label><span>Theme</span><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><span>Language</span><select id="locale"><option value="en">EN</option><option value="nl">NL</option><option value="fr">FR</option></select></label>';
- document.querySelector('header').append(controls);
+ const controls=document.querySelector('header .preferences')||document.createElement('div');controls.className='preferences';
+ if(!controls.children.length)controls.innerHTML='<label><span>Theme</span><select id="theme"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><span>Language</span><select id="locale"><option value="en">EN</option><option value="nl">NL</option><option value="fr">FR</option></select></label>';
+ if(!controls.isConnected)document.querySelector('header').append(controls);controls.querySelectorAll('select').forEach(select=>select.disabled=false);
  controls.querySelector('#theme').value=theme;
  controls.querySelector('#theme').onchange=e=>{document.documentElement.classList.toggle('light',e.target.value==='light');save('ros2lab.theme',e.target.value);};
  controls.querySelector('#locale').value=locale;

@@ -52,3 +52,6 @@
 .terminal-column-divider:focus-visible {outline:2px solid var(--accent)}
 
 .editor-help {padding:3px 10px;color:var(--muted);font-size:11px;background:var(--panel)}
+
+/* Avoid mobile focus zoom while retaining normal browser pinch zoom. */
+@media(pointer:coarse){select,input,textarea,.nano-text{font-size:16px}.xterm-helper-textarea,.cm-editor{font-size:16px!important}}
