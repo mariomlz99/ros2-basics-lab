@@ -1,0 +1,110 @@
+[
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon start",
+    "status": 0,
+    "stdout": "The daemon has been started\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon start",
+    "status": 0,
+    "stdout": "The daemon is already running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 node list --all",
+    "status": 0,
+    "stdout": "/_ros2cli_daemon_213_40738f0f6c164d0da88915287c045ea6\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon stop",
+    "status": 0,
+    "stdout": "The daemon has been stopped\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon stop",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 node list --all",
+    "status": 0,
+    "stdout": "/_ros2cli_68431\n/_ros2cli_daemon_213_5628f3a054da46c3974b4fd760f771de\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon stop",
+    "status": 0,
+    "stdout": "The daemon has been stopped\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 node list --all --no-daemon",
+    "status": 0,
+    "stdout": "/_ros2cli_68528\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 node list --a",
+    "status": 0,
+    "stdout": "/_ros2cli_68577\n/_ros2cli_daemon_213_12d89aaf88a74d62b552ee91ff8883de\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is running\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon stop",
+    "status": 0,
+    "stdout": "The daemon has been stopped\n",
+    "stderr": ""
+  },
+  {
+    "command": "ros2 daemon status",
+    "status": 0,
+    "stdout": "The daemon is not running\n",
+    "stderr": ""
+  }
+]

@@ -18,5 +18,6 @@ export function rosCompletions(lab,terminal,prefix){
   if(verb==='service'&&['type','call'].includes(action))choices=[...lab.runtime.services.keys()];
   if(verb==='interface'&&action==='show')choices=[...lab.workspace.registry.definitions.keys()].filter(name=>lab.workspace.baseVisible(terminal,name.split('/')[0])||lab.workspace.visible(terminal).includes(name.split('/')[0]));
  }else if(words.length===5&&verb==='param'&&['get','set'].includes(action))choices=[...(lab.runtime.parameters.get(words[3])?.keys()??[])];
+ if(verb==='node'&&action==='list'&&words.length>=4)choices=['--all','--count-nodes','--no-daemon','--help'];
  return sortedCompletions(choices.filter(value=>value.startsWith(partial)));
 }

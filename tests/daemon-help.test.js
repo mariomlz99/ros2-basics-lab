@@ -19,3 +19,27 @@ test('daemon visibility, stop/start/status and discovery restart do not stop oth
   assert.deepEqual(rosCompletions(lab,t,'ros2 daemon st'),['start','status','stop']);await assert.rejects(()=>t.execute('ros2 daemon unknown'));
  }finally{lab.reset();}
 });
+
+test('native direct discovery, abbreviations and repeated daemon lifecycle',async()=>{
+ const lab=new Lab(),t=lab.terminal(),other=lab.terminal();try{
+  await assert.rejects(()=>t.execute('ros2 node list --invalid'));
+  assert.equal(await other.execute('ros2 daemon status'),'The daemon is not running');
+  assert.match(await t.execute('ros2 node list --all --no-daemon'),/^\/_ros2cli_\d+$/);
+  assert.equal(await other.execute('ros2 daemon status'),'The daemon is not running');
+  const first=await t.execute('ros2 node list --a');assert.match(first,/^\/_ros2cli_\d+\n\/_ros2cli_daemon_0_[a-f0-9]{32}$/);
+  const daemon=lab.runtime.systemNode;assert.equal(await t.execute('ros2 node list --all'),daemon);
+  assert.equal(lab.runtime.nodes.size,0);
+  await t.execute('ros2 daemon stop');assert.equal(await other.execute('ros2 daemon status'),'The daemon is not running');
+  assert.equal(await other.execute('ros2 daemon stop'),'The daemon is not running');
+  await t.execute('ros2 daemon start');assert.notEqual(lab.runtime.systemNode,daemon);
+  assert.equal(await other.execute('ros2 daemon start'),'The daemon is already running');
+ }finally{lab.reset();}
+});
+
+// Captured against native Jazzy in isolated domain 213; IDs are ephemeral.
+test('daemon transcript matches native Jazzy command by command',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const records=JSON.parse(await readFile(new URL('./fixtures/native-daemon.json',import.meta.url),'utf8'));
+ const normalize=s=>s.trim().replace(/_ros2cli_daemon_\d+_[a-f0-9]+/g,'_ros2cli_daemon_DOMAIN_ID').replace(/_ros2cli_\d+/g,'_ros2cli_PID');
+ const lab=new Lab(),terminal=lab.terminal();try{for(const record of records){assert.equal(record.status,0);assert.equal(normalize(await terminal.execute(record.command)),normalize(record.stdout),record.command);}}finally{lab.reset();}
+});

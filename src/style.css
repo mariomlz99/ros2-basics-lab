@@ -55,3 +55,5 @@
 
 /* Avoid mobile focus zoom while retaining normal browser pinch zoom. */
 @media(pointer:coarse){select,input,textarea,.nano-text{font-size:16px}.xterm-helper-textarea,.cm-editor{font-size:16px!important}}
+
+#nav button{position:relative;padding-right:2.5rem}#nav .completion-mark{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);color:var(--accent,#a4e8c9);font-size:1.15rem;font-weight:700;line-height:1}
