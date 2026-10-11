@@ -2,7 +2,10 @@
 export function guidePages(steps){
  const pages=[];let context=[];
  for(const step of steps){
-  if(step.kind==='commands'){
+  if(step.kind==='section'){
+   if(context.length)pages.push(context);context=[step];
+  }else if(step.kind==='simulator-action'){pages.push([...context,step]);context=[];
+  }else if(step.kind==='commands'){
    for(const command of step.commands)pages.push([...context,{...step,commands:[command]}]);
    context=[];
   }else if(step.kind==='terminal-action'){

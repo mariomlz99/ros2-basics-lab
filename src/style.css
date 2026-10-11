@@ -32,7 +32,7 @@
 
 #session-state{font-size:11px;color:var(--muted);margin:8px 0}
 
-#playground-stage{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:16px}#playground-stage[hidden]{display:none}.playground-streams{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px}.playground-streams figure{margin:0;min-width:0}.playground-streams figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}.playground-streams canvas{display:block;width:100%;height:200px;object-fit:contain;background:#14252b;border:1px solid var(--line);border-radius:5px;image-rendering:pixelated}.playground-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.playground-controls span{font-size:12px;color:var(--muted)}@media(max-width:700px){.playground-streams{grid-template-columns:1fr}.playground-streams canvas{height:180px}}
+#playground-stage{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:16px}#playground-stage[hidden]{display:none}.playground-streams{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px}.playground-streams figure{margin:0;min-width:0}.playground-streams figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}.playground-streams canvas{display:block;width:100%;height:200px;object-fit:contain;background:#14252b;border:1px solid var(--line);border-radius:5px;image-rendering:auto}.playground-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.playground-controls span{font-size:12px;color:var(--muted)}@media(max-width:700px){.playground-streams{grid-template-columns:1fr}.playground-streams canvas{height:180px}}
 
 .command button{min-width:64px}
 
@@ -62,3 +62,5 @@
 #files .editor-layout{grid-template-columns:minmax(0,var(--file-tree-width,160px)) 12px minmax(0,1fr)}#resize-file-tree{display:block;min-height:0;align-self:stretch}#resize-file-tree::after{height:48px;top:calc(50% - 24px)}#file-tree{min-width:0}
 
 .bug-report{padding:12px 24px;border-top:1px solid var(--line);font-size:12px;line-height:1.7;overflow-wrap:anywhere}.bug-report a{color:var(--accent);text-underline-offset:2px}.bug-report code{font-size:inherit}
+
+.playground-exercises{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.playground-exercises button{font-size:12px;padding:6px 9px;border-color:var(--line)}.exercise-title{font-size:18px;font-weight:600;margin:12px 0}.frame-tree{font:12px/1.8 ui-monospace,monospace;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}

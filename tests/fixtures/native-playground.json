@@ -1,0 +1,125 @@
+{
+  "distro": "jazzy",
+  "cases": [
+    {
+      "command": "ros2 topic type /odom",
+      "stdout": "nav_msgs/msg/Odometry",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field header",
+      "stdout": "stamp:\n  sec: 123\n  nanosec: 500000000\nframe_id: odom\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field child_frame_id",
+      "stdout": "base_link\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field pose.pose",
+      "stdout": "position:\n  x: 1.0\n  y: 0.0\n  z: 0.0\norientation:\n  x: 0.0\n  y: 0.0\n  z: 0.29552020666133955\n  w: 0.955336489125606\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field twist.twist",
+      "stdout": "linear:\n  x: 0.2\n  y: 0.0\n  z: 0.0\nangular:\n  x: 0.0\n  y: 0.0\n  z: 0.4\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field pose.pose.position",
+      "stdout": "x: 1.0\ny: 0.0\nz: 0.0\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 interface show tf2_msgs/msg/TFMessage",
+      "stdout": "geometry_msgs/TransformStamped[] transforms\n\t#\n\t#\n\tstd_msgs/Header header\n\t\tbuiltin_interfaces/Time stamp\n\t\t\tint32 sec\n\t\t\tuint32 nanosec\n\t\tstring frame_id\n\tstring child_frame_id\n\tTransform transform\n\t\tVector3 translation\n\t\t\tfloat64 x\n\t\t\tfloat64 y\n\t\t\tfloat64 z\n\t\tQuaternion rotation\n\t\t\tfloat64 x 0\n\t\t\tfloat64 y 0\n\t\t\tfloat64 z 0\n\t\t\tfloat64 w 1",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /tf --once",
+      "stdout": "transforms:\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: odom\n  child_frame_id: base_link\n  transform:\n    translation:\n      x: 1.0\n      y: 0.0\n      z: 0.0\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.29552020666133955\n      w: 0.955336489125606\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /tf_static --once --qos-durability transient_local --qos-reliability reliable",
+      "stdout": "transforms:\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: base_link\n  child_frame_id: laser_link\n  transform:\n    translation:\n      x: 0.12\n      y: 0.0\n      z: 0.15\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.0\n      w: 1.0\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: base_link\n  child_frame_id: camera_link\n  transform:\n    translation:\n      x: 0.1\n      y: 0.0\n      z: 0.5\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.0\n      w: 1.0\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: camera_link\n  child_frame_id: camera_optical_frame\n  transform:\n    translation:\n      x: 0.0\n      y: 0.0\n      z: 0.0\n    rotation:\n      x: -0.5\n      y: 0.5\n      z: -0.5\n      w: 0.5\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field pose.pose.orientation",
+      "stdout": "x: 0.0\ny: 0.0\nz: 0.29552020666133955\nw: 0.955336489125606\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic type /scan",
+      "stdout": "sensor_msgs/msg/LaserScan",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /scan --once --field header",
+      "stdout": "stamp:\n  sec: 123\n  nanosec: 500000000\nframe_id: laser_link\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /scan --once",
+      "stdout": "header:\n  stamp:\n    sec: 123\n    nanosec: 500000000\n  frame_id: laser_link\nangle_min: -3.1415927410125732\nangle_max: 3.0892326831817627\nangle_increment: 0.05235987901687622\ntime_increment: 0.0\nscan_time: 0.10000000149011612\nrange_min: 0.05000000074505806\nrange_max: 10.0\nranges:\n- 3.754884958267212\n- 3.8998639583587646\n- 4.068086624145508\n- 4.263689041137695\n- 4.49198579788208\n- 4.759898662567139\n- 5.076592922210693\n- 4.943119525909424\n- 4.777049541473389\n- 4.634064674377441\n- 4.511396408081055\n- 4.406822204589844\n- 4.3185553550720215\n- 4.245161533355713\n- 4.185501575469971\n- 4.138681888580322\n- 4.10402250289917\n- 4.081031799316406\n- 4.0693888664245605\n- 4.068933010101318\n- 4.079658031463623\n- 4.101712226867676\n- 4.135402202606201\n- 4.181206226348877\n- 4.239786624908447\n- 4.312019348144531\n- 4.399021625518799\n- 4.502202033996582\n- 4.623315334320068\n- 4.76454496383667\n- 4.928609848022461\n- 5.1189069747924805\n- 5.3397135734558105\n- 5.596458911895752\n- 5.8961181640625\n- 6.247776508331299\n- 6.66346549987793\n- 7.159433841705322\n- 7.758145332336426\n- 7.861701488494873\n- 7.653594970703125\n- 7.476184844970703\n- 7.326439380645752\n- 1.9838651418685913\n- 1.9559845924377441\n- 1.934104561805725\n- 1.9179073572158813\n- 1.9071632623672485\n- 1.9017221927642822\n- 1.901509165763855\n- 1.9065213203430176\n- 1.91682767868042\n- 1.9325720071792603\n- 1.953977108001709\n- 7.192808628082275\n- 7.3153510093688965\n- 7.462951183319092\n- 7.637996673583984\n- 7.843465328216553\n- 7.552217960357666\n- 6.9641289710998535\n- 6.47748327255249\n- 6.069958686828613\n- 5.7254414558410645\n- 5.432020664215088\n- 5.180716037750244\n- 4.96464204788208\n- 4.778442859649658\n- 4.617905616760254\n- 4.479684352874756\n- 4.36110258102417\n- 4.260012626647949\n- 4.174685955047607\n- 4.1037373542785645\n- 4.046064853668213\n- 4.000804901123047\n- 3.9673001766204834\n- 3.945075273513794\n- 3.9338202476501465\n- 3.933379650115967\n- 3.9437475204467773\n- 3.96506667137146\n- 3.9976346492767334\n- 4.04191255569458\n- 4.098541259765625\n- 4.168367385864258\n- 4.252471923828125\n- 4.352214813232422\n- 4.469293117523193\n- 4.605817794799805\n- 4.764416694641113\n- 4.9483747482299805\n- 4.7837958335876465\n- 4.512278079986572\n- 4.281030178070068\n- 4.082974433898926\n- 3.912684440612793\n- 3.765939235687256\n- 3.639418125152588\n- 3.530484437942505\n- 3.4370288848876953\n- 3.357358694076538\n- 3.290112018585205\n- 3.234196901321411\n- 3.18874454498291\n- 3.1530747413635254\n- 3.12666916847229\n- 3.1091535091400146\n- 3.10028338432312\n- 3.099936008453369\n- 3.108107089996338\n- 3.1249091625213623\n- 3.150576114654541\n- 3.185471773147583\n- 3.2301018238067627\n- 3.28513240814209\n- 3.3514158725738525\n- 3.4300241470336914\n- 3.5222949981689453\n- 3.6298913955688477\nintensities: []\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic type /camera/image_raw",
+      "stdout": "sensor_msgs/msg/Image",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /camera/image_raw --once --field header",
+      "stdout": "stamp:\n  sec: 123\n  nanosec: 500000000\nframe_id: camera_optical_frame\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /camera/image_raw --once --field width",
+      "stdout": "320\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /camera/image_raw --once --field height",
+      "stdout": "240\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /camera/image_raw --once --field encoding",
+      "stdout": "rgb8\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /camera/image_raw --once --field step",
+      "stdout": "960\n---",
+      "stderr": "",
+      "code": 0
+    },
+    {
+      "command": "ros2 topic echo /odom --once --field missing",
+      "stdout": "",
+      "stderr": "Invalid field 'missing': 'Odometry' object has no attribute 'missing'",
+      "code": 1
+    }
+  ]
+}

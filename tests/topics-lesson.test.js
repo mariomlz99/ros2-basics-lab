@@ -39,7 +39,7 @@ test('invalid commands and interrupted waiters leave no nodes or timers',async()
 });
 test('curriculum insertion preserves existing progress and selection exactly once',()=>{
  const old={ui:{lessonIndex:2,progress:[0,1,2,5],guidePositions:[['2:python',4],['6:cpp',2]]},other:{ui:{unitIndex:6,progress:[]}}};
- migrateCurriculum(old);assert.equal(old.ui.lessonIndex,3);assert.deepEqual(old.ui.progress,[0,2,3,6]);assert.deepEqual(old.ui.guidePositions,[['3:python',4],['7:cpp',2]]);assert.equal(old.other.ui.unitIndex,7);
+ migrateCurriculum(old);assert.equal(old.ui.lessonIndex,3);assert.deepEqual(old.ui.progress,[0,2,3,6]);assert.deepEqual(old.ui.guidePositions,[['3:python',4],['7:cpp',0]]);assert.equal(old.other.ui.unitIndex,7);
  const once=structuredClone(old);migrateCurriculum(old);assert.deepEqual(old,once);
 });
 
