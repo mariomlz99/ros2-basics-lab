@@ -25,7 +25,7 @@ try{
   const heading=await page.locator('#lesson-heading').textContent();assert(index===7?heading==='Robotics Playground':heading.startsWith(`${index+1}.`));
   assert.equal(await page.locator('#playground-stage').isVisible(),index===7);
   await page.locator('#save-session').click();await page.waitForTimeout(200);
-  const preserved=await page.evaluate(async()=>{const {loadSession}=await import('./src/session.js');const record=await loadSession();return [JSON.stringify(record.workspace.entries),JSON.stringify(record.other.workspace.entries)];});
+  const preserved=await page.evaluate(async()=>{const {loadSession}=await import('./src/session.js');const record=await loadSession();return [JSON.stringify([...record.workspace.entries]),JSON.stringify([...record.other.workspace.entries])];});
   assert(preserved[0].includes('review-preserved.txt'));assert(preserved[1].includes('other-preserved.txt'));
   await buttons.nth(index===7?2:7).click();assert(await page.locator('#file-tree').textContent().then(text=>text.includes('other-preserved.txt')));
   await buttons.nth(index).click();assert(await page.locator('#file-tree').textContent().then(text=>text.includes('review-preserved.txt')));
