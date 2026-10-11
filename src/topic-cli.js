@@ -64,9 +64,15 @@ export function topicCLI(lab,t,args){
   if(!positional.length)missingArguments(action,['topic_name']);
   if(positional.length>(action==='echo'?2:1))throw Error('Use ros2 topic '+action+' /topic'+(action==='echo'?' [package/msg/Type] [--once]':''));
   const topic=topicName(positional[0]),type=positional[1]??r.topics.get(topic)?.type;
-  if(type&&!visible(type))throw Error('Interface package not found; source its installation in this terminal');
-  if(type&&type.split('/')[1]!=='msg')throw Error('Topics require a message type');
-  if(action==='echo'&&!type)throw Error('Could not determine the type for '+topic+'. Start a publisher or specify the message type: ros2 topic echo /topic package/msg/Type');
+  if(action==='echo'){
+   if(!type){output('WARNING: topic ['+positional[0]+'] does not appear to be published yet');throw Error('Could not determine the type for the passed topic');}
+   let valid=visible(type)&&type.split('/')[1]==='msg';
+   try{r.registry.get(type);}catch{valid=false;}
+   if(!valid)throw Error(positional[1]?'The passed message type is invalid':"The message type '"+type+"' is invalid");
+  }else{
+   if(type&&!visible(type))throw Error('Interface package not found; source its installation in this terminal');
+   if(type&&type.split('/')[1]!=='msg')throw Error('Topics require a message type');
+  }
   if(type){r.registry.get(type);r.ensureTopic(topic,type);}
   const node='/_ros2cli_'+t.id;let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
   const complete=()=>{lab.processes.stop(process.id);t.finishJob(job);};

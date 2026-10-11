@@ -1,4 +1,7 @@
 export const translations = {
+
+"Leave the status publisher running. In a second terminal, source the workspace again to make the newly installed custom message package available, then echo its topic. Sourcing one terminal does not update the others.":["Laissez l’éditeur de statut actif. Dans un deuxième terminal, sourcez à nouveau l’espace de travail pour rendre le nouveau paquet de messages disponible, puis utilisez echo sur son topic. Sourcer un terminal ne met pas les autres à jour.", "Laat de statuspublisher draaien. Source de werkruimte opnieuw in een tweede terminal zodat het nieuw geïnstalleerde berichtenpakket beschikbaar wordt. Gebruik daar echo op het topic. Sourcen in één terminal werkt de andere terminals niet bij."],
+
 "What you will run":["Ce que vous allez exécuter", "Wat je gaat uitvoeren"],
 "Publisher node":["Nœud éditeur", "Publicerende node"],
 "Topic · message type":["Topic · type de message", "Topic · berichttype"],
