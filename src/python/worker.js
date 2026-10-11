@@ -32,16 +32,16 @@ async function handle(data){
     await preparePython();
     pyodide.globals.set('available_json',JSON.stringify(data.services??[]));pyodide.runPython('_available_services = set(json.loads(available_json))');
     if(data.schema){pyodide.globals.set("schema_json",JSON.stringify(data.schema));pyodide.runPython("_install_interfaces(json.loads(schema_json))");}
-    const sources=data.files?Object.entries(data.files).filter(([path])=>path.endsWith('.py')).map(([,source])=>source).join('\n'):(data.code??'');
-    await pyodide.loadPackagesFromImports(sources,{messageCallback:output,errorCallback:output});
     if(data.kind==='build'){
-      installFiles(data.files);
       pyodide.globals.set('bridge_files',data.files);
-      pyodide.globals.set('bridge_entries',data.entries);
       pyodide.globals.set('bridge_name',data.name);
-      const imports=pyodide.runPython(`import ast, importlib, json\n_imports = set()\nfor _path, _source in bridge_files.to_py().items():\n    if _path.endswith('.py'):\n        _tree = ast.parse(_source, filename=_path)\n        compile(_tree, _path, 'exec')\n        for _node in ast.walk(_tree):\n            if not _path.startswith(bridge_name + '/'):\n                continue\n            if isinstance(_node, ast.Import):\n                _imports.update(_alias.name for _alias in _node.names)\n            elif isinstance(_node, ast.ImportFrom) and _node.module and _node.level == 0:\n                _imports.add(_node.module)\nfor _entry in bridge_entries.to_py():\n    _module = importlib.import_module(_entry['module'])\n    if not callable(getattr(_module, _entry['function'], None)):\n        raise ValueError('Entry point ' + _entry['module'] + ':' + _entry['function'] + ' is not callable')\njson.dumps(sorted(_imports))`);
+      const imports=pyodide.runPython(`import ast, json\n_imports = set()\nfor _path, _source in bridge_files.to_py().items():\n    if _path.endswith('.py'):\n        _tree = ast.parse(_source, filename=_path)\n        compile(_tree, _path, 'exec')\n        for _node in ast.walk(_tree):\n            if not _path.startswith(bridge_name + '/'):\n                continue\n            if isinstance(_node, ast.Import):\n                _imports.update(_alias.name for _alias in _node.names)\n            elif isinstance(_node, ast.ImportFrom) and _node.module and _node.level == 0:\n                _imports.add(_node.module)\njson.dumps(sorted(_imports))`);
       postMessage({kind:'build_ok',imports:JSON.parse(imports)});return;
     }
+    // Packaging checks compile source without importing or executing it.
+    // setup.py is build metadata, not a runtime dependency of the executable.
+    const sources=data.files?Object.entries(data.files).filter(([path])=>path.endsWith('.py')&&path!=='setup.py').map(([,source])=>source).join('\n'):(data.code??'');
+    await pyodide.loadPackagesFromImports(sources,{messageCallback:output,errorCallback:output});
     if(data.files&&data.entry){
       installFiles(data.files);
       const {module, function:callable}=data.entry;

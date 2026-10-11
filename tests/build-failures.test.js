@@ -2,7 +2,7 @@ import test from'node:test';import assert from'node:assert/strict';import{parseP
 const fixture=()=>{const f=new FileSystem();f.mkdir(ROOT+'/src',true);const w=new Workspace(f);return {f,w};};
 test('malformed package metadata is rejected',()=>{const good=manifest('demo','ament_python');for(const bad of [good.replace('<name>demo</name>',''),good.replace('demo</name>','BAD</name>'),good.replace('</package>',''),good+'junk',good.replace('<name>','<name broken>'),good.replace('ament_python','unknown'),'<bad'+good])assert.throws(()=>parsePackageXml(bad));assert.equal(parsePackageXml(good.replace('<export>','<test_depend>pytest</test_depend><export>')).testDependencies.has('pytest'),true);});
 test('CMake rejects unknown instructions, duplicate targets and undeclared targets',()=>{const good=cmake('demo',{hello:'src/hello.cpp'});for(const bad of [good+'\nexecute_process(COMMAND anything)',good.replace('ament_package()',''),good+'\nadd_executable(hello other.cpp)',good+'\nament_target_dependencies(missing rclcpp)'])assert.throws(()=>parseCmake(bad,'demo'));});
-test('missing source, dependency, install target and manifest fail build',async()=>{const{f,w}=fixture();w.create('demo','ament_cmake',{node:'hello'});const source=ROOT+'/src/demo/';f.write(source+'src/hello.cpp','#include <std_msgs/msg/string.hpp>\nint main(){}');assert.throws(()=>w.inspect('demo'),/requires/);f.write(source+'src/hello.cpp','int main(){}');f.write(source+'CMakeLists.txt',cmake('demo',{hello:'src/hello.cpp'}).replace('install(TARGETS hello DESTINATION lib/${PROJECT_NAME})',''));assert.throws(()=>w.inspect('demo'),/not installed/);f.write(source+'CMakeLists.txt',cmake('demo',{hello:'src/absent.cpp'}));assert.throws(()=>w.inspect('demo'),/existing source/);f.remove(source+'package.xml');await assert.rejects(()=>new Builder(w).build(),/Missing package.xml/);assert.equal(w.installed.size,0);});
+test('missing source, dependency and manifest fail build',async()=>{const{f,w}=fixture();w.create('demo','ament_cmake',{node:'hello'});const source=ROOT+'/src/demo/';f.write(source+'src/hello.cpp','#include <std_msgs/msg/string.hpp>\nint main(){}');assert.throws(()=>w.inspect('demo'),/requires/);f.write(source+'src/hello.cpp','int main(){}');f.write(source+'CMakeLists.txt',cmake('demo',{hello:'src/hello.cpp'}).replace('install(TARGETS hello DESTINATION lib/${PROJECT_NAME})',''));assert.equal(w.inspect('demo').executables.get('hello').install,false);f.write(source+'CMakeLists.txt',cmake('demo',{hello:'src/absent.cpp'}));assert.throws(()=>w.inspect('demo'),/existing source/);f.remove(source+'package.xml');await assert.rejects(()=>new Builder(w).build(),/Missing package.xml/);assert.equal(w.installed.size,0);});
 test('wrong build cwd and lesson reset restore the causal chain',async()=>{const lab=new Lab(),t=lab.terminal();assert.match(await t.execute('colcon build'),/Summary: 0 packages finished/);const snap=snapshotLesson(lab);await t.execute('mkdir -p ~/ros2_ws/src');await t.execute('cd ~/ros2_ws/src');await t.execute('ros2 pkg create --build-type ament_cmake demo');await t.execute('cd ..');await t.execute('colcon build');await t.execute('source install/setup.bash');assert.equal(lab.workspace.visible(t).length,1);restoreLesson(lab,snap);assert.equal(lab.fs.exists(ROOT),false);assert.equal(t.cwd,'/home/student');assert.equal(t.overlays.size,0);assert.equal(lab.workspace.installed.size,0);lab.reset();});
 
 test('browser compiler retains real worker diagnostics in build errors',async()=>{
@@ -13,4 +13,19 @@ test('browser compiler retains real worker diagnostics in build errors',async()=
 test('workspace dependency edits invalidate consumers until rebuilt',async()=>{
  const{f,w}=fixture();w.create('base','ament_python');w.create('consumer','ament_python',{dependencies:['base']});const builder=new Builder(w,async()=>({imports:[]}));await builder.build();assert.equal(w.current('consumer'),true);
  f.write(ROOT+'/src/base/base/__init__.py','# changed');assert.equal(w.current('consumer'),false);await builder.build(['base']);assert.equal(w.current('consumer'),false);await builder.build(['consumer']);assert.equal(w.current('consumer'),true);
+});
+
+
+test('CMake compiles uninstalled targets but ros2 run cannot discover them',async()=>{
+ const {f,w}=fixture();w.create('demo','ament_cmake',{node:'hello'});
+ f.write(ROOT+'/src/demo/CMakeLists.txt',cmake('demo',{hello:'src/hello.cpp'}).replace('install(TARGETS hello DESTINATION lib/${PROJECT_NAME})',''));
+ let compiled=0;await new Builder(w,async()=>{compiled++;return {};}).build();
+ assert.equal(compiled,1);assert.equal(w.installed.get('demo').executables.size,0);
+ assert.equal(w.hasInstall('demo'),true);assert.equal(f.exists(ROOT+'/install/demo/lib/demo/hello'),false);
+});
+
+test('Python entry point modules are resolved at run time, not packaging time',()=>{
+ const {f,w}=fixture();w.create('demo','ament_python',{node:'hello'});
+ f.write(ROOT+'/src/demo/setup.py',f.read(ROOT+'/src/demo/setup.py').replace('demo.hello:main','demo.absent:missing'));
+ assert.equal(w.inspect('demo').executables.get('hello').module,'demo.absent');
 });
