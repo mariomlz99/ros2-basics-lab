@@ -55,3 +55,5 @@ Browser checks accept `LAB_URL=https://mariomlz99.github.io/ros2-basics-lab/`; p
 Lesson 3, **Talking ROS 2: Topics & Terminals**, introduces String and Twist messages before publisher/subscriber coding. It covers continuous, one-shot and fixed-count publishing, rates, matching subscribers, Ctrl+C and default volatile delivery. Compare the exercise with native Jazzy using `source /opt/ros/jazzy/setup.bash; python3 scripts/native-topics-check.py`.
 
 Terminal completion follows the default Bash interaction: Tab completes an unambiguous prefix; a second Tab displays sorted matches in vertical columns. Lists of 100 or more matches ask `Display all N possibilities? (y or n)`. Long lists use `--More--` (Space for a page, Enter for one line, q to stop); declining or quitting preserves the command. Browser check: `node scripts/completion-check.mjs` (`LAB_URL` selects another local server).
+
+Local rebuilds retain previous versioned assets so already-open student tabs can load workers and run installed programs. New HTML is published after its assets are ready. Verify with `node scripts/rebuild-session-check.mjs`. Clear `dist/` only when no sessions depend on it.
