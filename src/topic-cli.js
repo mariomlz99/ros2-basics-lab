@@ -1,4 +1,4 @@
-import {formatPublishedMessage,formatEchoMessage} from './message-format.js';
+import {formatPublishedMessage,formatEchoMessage,echoField} from './message-format.js';
 export {formatPublishedMessage} from './message-format.js';
 import {parseMapping} from './literals.js';
 
@@ -59,8 +59,15 @@ export function topicCLI(lab,t,args){
   return waitTimer?'Waiting for at least '+waitFor+' matching subscription(s)...':'';
  }
  if(action==='echo'||action==='hz'){
-  const positional=[];let once=false;
-  for(const arg of rest){if(action==='echo'&&arg==='--once')once=true;else if(arg.startsWith('-'))throw Error('Unsupported topic '+action+' option '+arg);else positional.push(arg);}
+  const positional=[];let once=false,field=null,durability=null;
+  for(let i=0;i<rest.length;i++){
+   const arg=rest[i];
+   if(action==='echo'&&arg==='--once')once=true;
+   else if(action==='echo'&&['--field','--qos-durability','--qos-reliability'].includes(arg)){
+    const value=rest[++i];if(value===undefined||value.startsWith('--'))throw Error('Expected a value after '+arg);
+    if(arg==='--field')field=value;else if(arg==='--qos-reliability'){if(!['reliable','best_effort'].includes(value))throw Error('Choose reliable or best_effort reliability');}else{if(!['volatile','transient_local'].includes(value))throw Error('Choose volatile or transient_local durability');durability=value;}
+   }else if(arg.startsWith('-'))throw Error('Unsupported topic '+action+' option '+arg);else positional.push(arg);
+  }
   if(!positional.length)missingArguments(action,['topic_name']);
   if(positional.length>(action==='echo'?2:1))throw Error('Use ros2 topic '+action+' /topic'+(action==='echo'?' [package/msg/Type] [--once]':''));
   const topic=topicName(positional[0]),type=positional[1]??r.topics.get(topic)?.type;
@@ -74,6 +81,8 @@ export function topicCLI(lab,t,args){
    if(type&&type.split('/')[1]!=='msg')throw Error('Topics require a message type');
   }
   if(type){r.registry.get(type);r.ensureTopic(topic,type);}
+  const selected=field!==null?echoField(r.registry,type,field):null;
+  if(durability===null){const publishers=r.topics.get(topic)?.publishers;durability=publishers?.size&&[...publishers].every(node=>r.retained.has(JSON.stringify([topic,node])))?'transient_local':'volatile';}
   const node='/_ros2cli_'+t.id;let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
   const complete=()=>{lab.processes.stop(process.id);t.finishJob(job);};
   let deliver;
@@ -82,12 +91,12 @@ export function topicCLI(lab,t,args){
    deliver=(message,publisher,sample)=>{
     received++;r.samples.get(sample)?.receivedBy.add(node);
     if(action==='echo'){
-     output(formatEchoMessage(r.registry,resolvedType,message)+'\n---');
+     output((selected?selected(message):formatEchoMessage(r.registry,resolvedType,message))+'\n---');
      evidence('echo:'+t.id+':'+topic,{kind:'received',terminal:t.id,publisherTerminal:publisher?.terminal,topic,type:resolvedType,count:received});
      if(once)complete();
     }else{times.push(performance.now());if(times.length>10001)times.shift();}
    };
-   dispose=r.subscribe(topic,node,(...args)=>{if(job.state==='Stopped'){pending.push(args);if(pending.length>10)pending.shift();}else deliver(...args);},{type:resolvedType});
+   dispose=r.subscribe(topic,node,(...args)=>{if(job.state==='Stopped'){pending.push(args);if(pending.length>10)pending.shift();}else deliver(...args);},{type:resolvedType,durability});
   };
   t.busy=true;t.foreground='process';
   job=t.registerJob({pause:()=>{process.state='suspended';},resume:()=>{process.state='running';for(const args of pending.splice(0)){if(!lab.processes.processes.has(process.id))break;deliver(...args);}},stop:()=>lab.processes.stop(process.id)});

@@ -65,7 +65,7 @@ export function formatEchoMessage(registry,type,message){
   if(base==='byte')return yamlString(String.fromCharCode(value),indent);
   if(base==='string'||base==='wstring')return yamlString(value,indent);
   if(base==='bool')return value?'true':'false';
-  if(base.startsWith('float'))return pythonFloat(value).replace(/^([^\.e]+)e/,'$1.0e');
+  if(base.startsWith('float'))return pythonFloat(base==='float32'?Math.fround(value):value).replace(/^([^\.e]+)e/,'$1.0e');
   return String(value);
  };
  const mapping=(owner,value,indent)=>{
@@ -84,4 +84,24 @@ export function formatEchoMessage(registry,type,message){
   }).join('\n');
  };
  return mapping(type,message,0);
+}
+
+// ros2 topic echo selects attributes, not array indexes or expressions.
+export function echoField(registry,type,field){
+ const path=field.split('.').filter(Boolean);if(!path.length)throw Error(`Invalid field value '${field}'`);
+ let selected={base:type,array:false};
+ for(const name of path){
+  const member=!selected.array&&!PRIMITIVES[selected.base]&&registry.get(selected.base).fields.find(f=>f.name===name);
+  if(!member)throw Error(`Invalid field '${path.join('.')}': '${selected.base.split('/').at(-1)}' object has no attribute '${name}'`);
+  selected=splitType(member.type,selected.base);
+ }
+ // Composite and scalar selections cover the introductory inspection exercises.
+ if(selected.array)throw Error('Array field selection is not modeled; echo the full message to inspect its array.');
+ return message=>{
+  const value=path.reduce((part,name)=>part[name],message);
+  if(!PRIMITIVES[selected.base])return formatEchoMessage(registry,selected.base,value);
+  if(selected.base==='bool')return value?'True':'False';
+  if(selected.base.startsWith('float'))return pythonFloat(selected.base==='float32'?Math.fround(value):value);
+  return String(value);
+ };
 }
