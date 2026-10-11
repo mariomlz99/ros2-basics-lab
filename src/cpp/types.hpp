@@ -62,8 +62,8 @@ template<class T> std::string encode_value(const T& v){
  else if constexpr(std::is_arithmetic<T>::value)return number(v);
  else return MessageTraits<T>::encode(v);
 }
-template<class T> std::string encode_value(const std::vector<T>& v){std::string s="[";for(size_t i=0;i<v.size();i++){if(i)s+=",";s+=encode_value(v[i]);}return s+"]";}
-template<class T,size_t N> std::string encode_value(const std::array<T,N>& v){std::string s="[";for(size_t i=0;i<N;i++){if(i)s+=",";s+=encode_value(v[i]);}return s+"]";}
+template<class T> std::string encode_value(const std::vector<T>& v){std::string s="[";for(size_t i=0;i<v.size();i++){if(i)s+=",";if constexpr(std::is_same<T,bool>::value)s+=encode_value(bool(v[i]));else s+=encode_value(v[i]);}return s+"]";}
+template<class T,size_t N> std::string encode_value(const std::array<T,N>& v){std::string s="[";for(size_t i=0;i<N;i++){if(i)s+=",";if constexpr(std::is_same<T,bool>::value)s+=encode_value(bool(v[i]));else s+=encode_value(v[i]);}return s+"]";}
 inline std::map<int,std::function<void()>> subscriptions,timers,service_responses;
 inline std::map<int,std::function<void(const std::string&)>> service_handlers;
 }
