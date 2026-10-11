@@ -1,0 +1,39 @@
+{
+  "distribution": "jazzy",
+  "cases": [
+    {
+      "name": "cmake_empty",
+      "node": null,
+      "dependencies": [],
+      "command": "ros2 pkg create --build-type ament_cmake --license Apache-2.0 cmake_empty",
+      "cmake": "cmake_minimum_required(VERSION 3.8)\nproject(cmake_empty)\n\nif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n  add_compile_options(-Wall -Wextra -Wpedantic)\nendif()\n\n# find dependencies\nfind_package(ament_cmake REQUIRED)\n# uncomment the following section in order to fill in\n# further dependencies manually.\n# find_package(<dependency> REQUIRED)\n\nif(BUILD_TESTING)\n  find_package(ament_lint_auto REQUIRED)\n  # the following line skips the linter which checks for copyrights\n  # comment the line when a copyright and license is added to all source files\n  set(ament_cmake_copyright_FOUND TRUE)\n  # the following line skips cpplint (only works in a git repo)\n  # comment the line when this package is in a git repo and when\n  # a copyright and license is added to all source files\n  set(ament_cmake_cpplint_FOUND TRUE)\n  ament_lint_auto_find_test_dependencies()\nendif()\n\nament_package()\n"
+    },
+    {
+      "name": "cmake_empty_deps",
+      "node": null,
+      "dependencies": [
+        "rclcpp",
+        "std_msgs"
+      ],
+      "command": "ros2 pkg create --build-type ament_cmake --license Apache-2.0 cmake_empty_deps --dependencies rclcpp std_msgs",
+      "cmake": "cmake_minimum_required(VERSION 3.8)\nproject(cmake_empty_deps)\n\nif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n  add_compile_options(-Wall -Wextra -Wpedantic)\nendif()\n\n# find dependencies\nfind_package(ament_cmake REQUIRED)\nfind_package(rclcpp REQUIRED)\nfind_package(std_msgs REQUIRED)\n\nif(BUILD_TESTING)\n  find_package(ament_lint_auto REQUIRED)\n  # the following line skips the linter which checks for copyrights\n  # comment the line when a copyright and license is added to all source files\n  set(ament_cmake_copyright_FOUND TRUE)\n  # the following line skips cpplint (only works in a git repo)\n  # comment the line when this package is in a git repo and when\n  # a copyright and license is added to all source files\n  set(ament_cmake_cpplint_FOUND TRUE)\n  ament_lint_auto_find_test_dependencies()\nendif()\n\nament_package()\n"
+    },
+    {
+      "name": "cmake_node",
+      "node": "hello",
+      "dependencies": [],
+      "command": "ros2 pkg create --build-type ament_cmake --license Apache-2.0 --node-name hello cmake_node",
+      "cmake": "cmake_minimum_required(VERSION 3.8)\nproject(cmake_node)\n\nif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n  add_compile_options(-Wall -Wextra -Wpedantic)\nendif()\n\n# find dependencies\nfind_package(ament_cmake REQUIRED)\n# uncomment the following section in order to fill in\n# further dependencies manually.\n# find_package(<dependency> REQUIRED)\n\nadd_executable(hello src/hello.cpp)\ntarget_include_directories(hello PUBLIC\n  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>\n  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)\ntarget_compile_features(hello PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17\n\ninstall(TARGETS hello\n  DESTINATION lib/${PROJECT_NAME})\n\nif(BUILD_TESTING)\n  find_package(ament_lint_auto REQUIRED)\n  # the following line skips the linter which checks for copyrights\n  # comment the line when a copyright and license is added to all source files\n  set(ament_cmake_copyright_FOUND TRUE)\n  # the following line skips cpplint (only works in a git repo)\n  # comment the line when this package is in a git repo and when\n  # a copyright and license is added to all source files\n  set(ament_cmake_cpplint_FOUND TRUE)\n  ament_lint_auto_find_test_dependencies()\nendif()\n\nament_package()\n"
+    },
+    {
+      "name": "cmake_node_deps",
+      "node": "hello",
+      "dependencies": [
+        "rclcpp",
+        "std_msgs"
+      ],
+      "command": "ros2 pkg create --build-type ament_cmake --license Apache-2.0 --node-name hello cmake_node_deps --dependencies rclcpp std_msgs",
+      "cmake": "cmake_minimum_required(VERSION 3.8)\nproject(cmake_node_deps)\n\nif(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n  add_compile_options(-Wall -Wextra -Wpedantic)\nendif()\n\n# find dependencies\nfind_package(ament_cmake REQUIRED)\nfind_package(rclcpp REQUIRED)\nfind_package(std_msgs REQUIRED)\n\nadd_executable(hello src/hello.cpp)\ntarget_include_directories(hello PUBLIC\n  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>\n  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)\ntarget_compile_features(hello PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17\nament_target_dependencies(\n  hello\n  \"rclcpp\"\n  \"std_msgs\"\n)\n\ninstall(TARGETS hello\n  DESTINATION lib/${PROJECT_NAME})\n\nif(BUILD_TESTING)\n  find_package(ament_lint_auto REQUIRED)\n  # the following line skips the linter which checks for copyrights\n  # comment the line when a copyright and license is added to all source files\n  set(ament_cmake_copyright_FOUND TRUE)\n  # the following line skips cpplint (only works in a git repo)\n  # comment the line when this package is in a git repo and when\n  # a copyright and license is added to all source files\n  set(ament_cmake_cpplint_FOUND TRUE)\n  ament_lint_auto_find_test_dependencies()\nendif()\n\nament_package()\n"
+    }
+  ]
+}
