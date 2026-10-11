@@ -60,3 +60,5 @@
 .pubsub-diagram{margin:10px 0;text-align:left;font:inherit}.pubsub-diagram>strong{font-size:13px}.pubsub-flow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0}.pubsub-role{display:flex;flex-direction:column;gap:5px;min-width:0}.pubsub-role>span{font:11px system-ui;color:var(--muted)}.pubsub-role code{font:12px ui-monospace,monospace;overflow-wrap:anywhere}.pubsub-arrow{color:var(--accent)}.pubsub-diagram figcaption p{margin:8px 0 0!important;font-size:12px!important}@media(max-width:650px){.pubsub-flow{flex-direction:column;align-items:flex-start}.pubsub-arrow{transform:rotate(90deg)}}
 
 #files .editor-layout{grid-template-columns:minmax(0,var(--file-tree-width,160px)) 12px minmax(0,1fr)}#resize-file-tree{display:block;min-height:0;align-self:stretch}#resize-file-tree::after{height:48px;top:calc(50% - 24px)}#file-tree{min-width:0}
+
+.bug-report{padding:12px 24px;border-top:1px solid var(--line);font-size:12px;line-height:1.7;overflow-wrap:anywhere}.bug-report a{color:var(--accent);text-underline-offset:2px}.bug-report code{font-size:inherit}

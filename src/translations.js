@@ -1,4 +1,8 @@
 export const translations = {
+"Report an issue":["Signaler un problème", "Een probleem melden"],
+"Found a bug or issue?":["Vous avez trouvé un bug ou un problème ?", "Een bug of probleem gevonden?"],
+"Report it to":["Signalez-le à", "Meld het aan"],
+"Subject:":["Objet :", "Onderwerp:"],
 "Resize file tree and code editor":["Redimensionner l’arborescence et l’éditeur de code", "Bestandsboom en code-editor vergroten of verkleinen"],
 
 "Leave the status publisher running. In a second terminal, source the workspace again to make the newly installed custom message package available, then echo its topic. Sourcing one terminal does not update the others.":["Laissez l’éditeur de statut actif. Dans un deuxième terminal, sourcez à nouveau l’espace de travail pour rendre le nouveau paquet de messages disponible, puis utilisez echo sur son topic. Sourcer un terminal ne met pas les autres à jour.", "Laat de statuspublisher draaien. Source de werkruimte opnieuw in een tweede terminal zodat het nieuw geïnstalleerde berichtenpakket beschikbaar wordt. Gebruik daar echo op het topic. Sourcen in één terminal werkt de andere terminals niet bij."],

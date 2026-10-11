@@ -7,7 +7,8 @@ const output=await mkdtemp('dist.staging-');
 for(const name of ['index.html','src','LICENSE','NOTICE'])await cp(name,output+'/'+name,{recursive:true});
 if(publicBuild){
  const html=await readFile(output+'/index.html','utf8');
- await writeFile(output+'/index.html',html.replace(/<div class="university-logos">.*?<\/div>/s,''));
+ const report='<footer class="bug-report" aria-label="Report an issue"><span>Found a bug or issue?</span> <span>Report it to</span> <a href="https://www.linkedin.com/in/mario-malizia/" target="_blank" rel="noopener noreferrer">Mario Malizia</a>: <a href="mailto:mario.malizia@kuleuven.be?subject=%5BROS2%20basics%20lab%5D">mario.malizia@kuleuven.be</a> · <span>Subject:</span> <code>[ROS2 basics lab]</code></footer>';
+ await writeFile(output+'/index.html',html.replace(/<div class="university-logos">.*?<\/div>/s,'').replace('</body>',report+'</body>'));
  await rm(output+'/src/assets',{recursive:true,force:true});
  await mkdir(output+'/docs',{recursive:true});
  for(const name of ['HANDOFF.md','ARCHITECTURE.md','INTERFACES.md'])await cp('docs/'+name,output+'/docs/'+name);
