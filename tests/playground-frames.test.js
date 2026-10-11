@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Lab} from '../src/lab.js';
+import {HOME} from '../src/fs.js';
 import {Robot} from '../src/playground/robot.js';
 import {dynamicTransforms,staticTransforms,odometry} from '../src/playground/frames.js';
 import {Playground} from '../src/playground/playground.js';
@@ -71,12 +72,12 @@ test('playground sections are navigable and remain outside all seven required le
 import {captureSession,restoreSession} from '../src/session.js';
 import {migrateCurriculum} from '../src/curriculum-session.js';
 test('old playground sessions gain TF installation entries and restart only their old guide position',()=>{
- const lab=new Lab();lab.terminal();lab.fs.write('/home/student/keep.txt','my work');
+ const lab=new Lab();lab.terminal();lab.fs.write(HOME+'/keep.txt','my work');
  const saved=captureSession(lab,{lessonIndex:7,progress:[0,1,2],guidePositions:[['3:python',5],['7:python',18]]});saved.curriculumVersion=3;
  delete saved.workspace.schema['tf2_msgs/msg/TFMessage'];
  for(const path of [...saved.workspace.entries.keys()])if(path.includes('/tf2_msgs/'))saved.workspace.entries.delete(path);
  const record=migrateCurriculum(saved),restored=new Lab();restoreSession(restored,record);
- assert.deepEqual(record.ui.guidePositions,[['3:python',5],['7:python',0]]);assert.deepEqual(record.ui.progress,[0,1,2]);assert.equal(restored.fs.read('/home/student/keep.txt'),'my work');
+ assert.deepEqual(record.ui.guidePositions,[['3:python',5],['7:python',0]]);assert.deepEqual(record.ui.progress,[0,1,2]);assert.equal(restored.fs.read(HOME+'/keep.txt'),'my work');
  assert(restored.fs.exists('/opt/ros/jazzy/share/tf2_msgs/msg/TFMessage.msg'));assert(restored.fs.exists('/opt/ros/jazzy/include/tf2_msgs/msg/tf_message.hpp'));assert(restored.workspace.registry.definitions.has('tf2_msgs/msg/TFMessage'));
  record.ui.guidePositions[1][1]=6;migrateCurriculum(record);assert.equal(record.ui.guidePositions[1][1],6);lab.reset();restored.reset();
 });
