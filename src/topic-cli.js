@@ -37,7 +37,7 @@ export function topicCLI(lab,t,args){
   if(type.split('/')[1]!=='msg')throw Error('Topics require a message type');
   const message=r.registry.complete(type,parseMapping(payload));r.ensureTopic(topic,type);
   waitFor??=limit===null?0:1;
-  const node='/_ros2cli_pub_'+t.id;let timer=null,waitTimer=null,finishTimer=null,stopped=false,process,job,finishPending=false;
+  const node='/_ros2cli_pub_'+t.id+'_'+(++r.discoverySequence);let timer=null,waitTimer=null,finishTimer=null,stopped=false,process,job,finishPending=false;
   const record={kind:'published',terminal:t.id,topic,type,rate,limit,count:0,finished:false};
   const stop=()=>{if(process)lab.processes.stop(process.id);t.finishJob(job);};
   const send=()=>{
@@ -83,7 +83,7 @@ export function topicCLI(lab,t,args){
   if(type){r.registry.get(type);r.ensureTopic(topic,type);}
   const selected=field!==null?echoField(r.registry,type,field):null;
   if(durability===null){const publishers=r.topics.get(topic)?.publishers;durability=publishers?.size&&[...publishers].every(node=>r.retained.has(JSON.stringify([topic,node])))?'transient_local':'volatile';}
-  const node='/_ros2cli_'+t.id;let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
+  const node='/_ros2cli_'+t.id+'_'+(++r.discoverySequence);let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
   const complete=()=>{lab.processes.stop(process.id);t.finishJob(job);};
   let deliver;
   const subscribe=resolvedType=>{
