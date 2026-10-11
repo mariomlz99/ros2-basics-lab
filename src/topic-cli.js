@@ -111,7 +111,7 @@ export function topicCLI(lab,t,args){
  const name=rest[0]&&topicName(rest[0]),verbose=action==='info'&&rest.length===2&&['-v','--verbose'].includes(rest[1]);
  if(rest.length!==1&&!verbose)throw Error('Use ros2 topic --help');const topic=r.topics.get(name);if(!topic)throw Error('Unknown topic: '+name);
  if(action==='type')return topic.type;
- if(action==='info')return `Type: ${topic.type}\nPublisher count: ${topic.publishers.size}\nSubscription count: ${topic.subscribers.size}`+(verbose?`\nPublishers:\n${[...topic.publishers].join('\n')}\nSubscribers:\n${[...topic.subscribers].join('\n')}`:'');
+ if(action==='info')return `Type: ${topic.type}\nPublisher count: ${topic.publishers.size}\nSubscription count: ${topic.subscribers.size}`+(verbose?`\nPublishers:\n${[...topic.publishers].map(id=>r.nodeName(id)).join('\n')}\nSubscribers:\n${[...topic.subscribers].map(id=>r.nodeName(id)).join('\n')}`:'');
  throw Error('Use ros2 topic --help');
 }
 

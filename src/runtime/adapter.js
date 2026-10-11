@@ -2,19 +2,19 @@
 // explicit owner cleanup, no curriculum evidence or mandatory simulator.
 import {LatestMailbox} from './mailbox.js';
 export class RuntimeAdapter{
- constructor(runtime,{output=()=>{},status=()=>{},ros={},onStop=()=>{},language='Python'}={}){Object.assign(this,{runtime,output,status,ros,onStop,language});this.nodes=new Set();this.sourceNames=new Map();this.subscriptions=new Map();this.jobs=new Map();this.mailbox=new LatestMailbox();this.processed=new Map();this.reports=new Map();this.pendingServices=new Map();this.worker=null;}
- mapNode(name){const n='/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),this.ros.name??name.replace(/^\//,'')].filter(Boolean).join('/');this.sourceNames.set(n,name);return n;}
+ constructor(runtime,{output=()=>{},status=()=>{},ros={},onStop=()=>{},language='Python'}={}){Object.assign(this,{runtime,output,status,ros,onStop,language});this.nodes=new Set();this.sourceNames=new Map();this.mappedNodes=new Map();this.subscriptions=new Map();this.jobs=new Map();this.mailbox=new LatestMailbox();this.processed=new Map();this.reports=new Map();this.pendingServices=new Map();this.worker=null;}
+ mapNode(name,create=false){const n='/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),this.ros.name??name.replace(/^\//,'')].filter(Boolean).join('/');if(create){if(this.mappedNodes.has(n))throw Error('This browser supports one node with each name per program: '+n);const id=this.runtime.allocateNode(n);this.mappedNodes.set(n,id);this.sourceNames.set(id,name);return id;}return this.mappedNodes.get(n)??n;}
  mapTopic(name){const absolute=n=>n.startsWith('/')?n:'/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),n].filter(Boolean).join('/');return absolute(this.ros.remappings?.find(([a])=>absolute(a)===absolute(name))?.[1]??name);}
  watchdog(ms,message){clearTimeout(this.timer);this.timer=setTimeout(()=>{this.output(message);this.stop();},ms);}
- cleanupNode(node){for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.runtime.services.delete(name);this.runtime.removeNode(node);this.nodes.delete(node);this.runtime.removeEmptyTopics();}
+ cleanupNode(node){for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.runtime.services.delete(name);this.runtime.removeNode(node);this.nodes.delete(node);this.sourceNames.delete(node);for(const [name,id]of this.mappedNodes)if(id===node)this.mappedNodes.delete(name);this.runtime.removeEmptyTopics();}
  stop(){const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
- handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node)};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
+ handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node,d.kind==='node')};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
   switch(d.kind){
    case 'loading':this.status(d.text);break;
    case 'executing':this.watchdog(10000,'Program took too long; stopped.');break;
    case 'ready':clearTimeout(this.timer);this.status('Running');break;
    case 'stdout':this.output(d.text);break;
-   case 'log':r.log(d.node,d.text,d.level);this.output('['+d.node+'] '+d.text);break;
+   case 'log':r.log(d.node,d.text,d.level);this.output('['+r.nodeName(d.node)+'] '+d.text);break;
    case 'error':this.output(d.text);this.stop();break;
    case 'shutdown':this.stop();break;
    case 'node':if(r.nodes.has(d.node))throw Error('Node already exists: '+d.node);r.addNode(d.node);this.nodes.add(d.node);break;
