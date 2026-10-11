@@ -9,5 +9,6 @@ export function drawScan(canvas,scan){
   if(Number.isFinite(scan.ranges[i])&&scan.ranges[i]<scan.range_max){c.fillStyle='#91edd0';c.beginPath();c.arc(x,y,1.7,0,Math.PI*2);c.fill();}
  }
  c.fillStyle='#f3ae62';c.beginPath();c.moveTo(cx,cy-7);c.lineTo(cx-5,cy+4);c.lineTo(cx+5,cy+4);c.closePath();c.fill();
- c.fillStyle='#d1e4e6';c.font='11px system-ui';c.fillText('laser_link · forward ↑ · left ←',10,h-10);
+ const frontIndex=Math.round(-scan.angle_min/scan.angle_increment),front=scan.ranges[frontIndex],nearest=Math.min(...scan.ranges.filter(Number.isFinite));
+ c.fillStyle='#d1e4e6';c.font='11px system-ui';c.fillText('Front: '+front.toFixed(2)+' m | nearest: '+nearest.toFixed(2)+' m',10,16);c.fillText('laser_link · forward ↑ · left ←',10,h-10);
 }

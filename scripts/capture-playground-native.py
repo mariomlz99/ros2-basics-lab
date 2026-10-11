@@ -18,6 +18,7 @@ from geometry_msgs.msg import Twist
 
 source="import {playgroundSamples,inspectionCommands} from './scripts/playground-samples.mjs';console.log(JSON.stringify({samples:playgroundSamples(),commands:inspectionCommands}));"
 data=json.loads(subprocess.check_output(['node','--input-type=module','-e',source],text=True))
+subprocess.run(['ros2','daemon','stop'],capture_output=True,timeout=10)
 rclpy.init();node=rclpy.create_node('playground');pairs=[];velocity=[]
 for topic,sample in data['samples'].items():
     qos=QoSProfile(depth=1)
@@ -38,7 +39,16 @@ try:
     laser=buffer.lookup_transform('odom','laser_link',Time()).transform
     assert math.isclose(laser.translation.x,1+.12*math.cos(.6),abs_tol=1e-9)
     assert math.isclose(laser.translation.y,.12*math.sin(.6),abs_tol=1e-9)
-    print('PASS native tf2 lookup composes odom, robot and sensor mounts',flush=True)
+    left=buffer.lookup_transform('base_link','left_wheel_link',Time()).transform
+    right=buffer.lookup_transform('base_link','right_wheel_link',Time()).transform
+    assert left.translation.y>0 and right.translation.y<0
+    print('PASS native tf2 lookup composes odom, robot, wheel and sensor mounts',flush=True)
+    deadline=time.monotonic()+8
+    while True:
+        ready=subprocess.run(['ros2','topic','type','/odom'],capture_output=True,text=True,timeout=10)
+        if ready.returncode==0:break
+        assert time.monotonic()<deadline,('Native CLI discovery did not become ready',ready.stdout,ready.stderr)
+        time.sleep(.2)
     cases=[]
     for command in data['commands']+['ros2 topic echo /odom --once --field missing']:
         result=subprocess.run(shlex.split(command),capture_output=True,text=True,timeout=15)

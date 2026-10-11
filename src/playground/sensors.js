@@ -1,5 +1,6 @@
 // Metres/radians relative to base_link. Shared by TF, rendering and ray casting.
 export const ROBOT_RADIUS=0.18;
+export const WHEELS=Object.freeze({radius:.09,track:.245,width:.065,left:'left_wheel_link',right:'right_wheel_link'});
 export const SENSORS=Object.freeze({
   lidar:Object.freeze({frame:'laser_link',x:0.12,y:0,z:0.15,yaw:0,period:0.10}),
   camera:Object.freeze({frame:'camera_link',x:0.10,y:0,z:0.50,yaw:0,period:0.10,width:320,height:240})

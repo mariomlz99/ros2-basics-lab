@@ -11,6 +11,21 @@ test('camera and LiDAR see the same obstacle, occlusion and room walls',()=>{
  robot.x=1;assert(Math.abs(laserScan(robot,TRAINING_WORLD,stamp).ranges[60]-1.88)<1e-9);assert(brownPixels(renderCamera(robot)).length>brown.length,'Obstacle grows as the robot approaches');
  robot.yaw=Math.PI;assert.equal(brownPixels(renderCamera(robot)).length,0,'The obstacle behind the camera disappears');assert(Math.abs(laserScan(robot,TRAINING_WORLD,stamp).ranges[60]-2.88)<1e-9,'Facing backwards sees the west wall');
 });
+test('one-metre geometry agrees with measured LiDAR and pinhole camera projection',()=>{
+ assert.equal(TRAINING_WORLD.bounds.maxX-TRAINING_WORLD.bounds.minX,10);
+ assert.equal(TRAINING_WORLD.bounds.maxY-TRAINING_WORLD.bounds.minY,8);
+ for(const x of [0,1,2]){
+  const robot=new Robot();robot.x=x;
+  const scan=laserScan(robot,TRAINING_WORLD,stamp),image=renderCamera(robot),pixels=brownPixels(image);
+  const depth=TRAINING_WORLD.obstacles[0].x-x-SENSORS.camera.x;
+  assert(Math.abs(scan.ranges[60]-(3-x-SENSORS.lidar.x))<1e-9);
+  // The front face spans 1.2 world metres. Width follows f * width / depth,
+  // with camera origin 2 cm behind the laser origin, not the robot centre.
+  const span=Math.max(...pixels)-Math.min(...pixels)+1;
+  assert(Math.abs(span-image.width/2*1.2/depth)<=2,`${x}: span ${span}`);
+  assert(Math.abs((depth-scan.ranges[60])-(SENSORS.lidar.x-SENSORS.camera.x))<1e-9);
+ }
+});
 test('collision stops motion before contact and messages match the displayed camera frame',()=>{
  const sent=[],context=new Proxy({putImageData(image){this.image=image;}},{get(target,key){return target[key]??(()=>{});}});const canvas=()=>({width:400,height:320,getContext:()=>context});
  const prior=globalThis.ImageData;globalThis.ImageData=class{constructor(data,width,height){Object.assign(this,{data,width,height});}};

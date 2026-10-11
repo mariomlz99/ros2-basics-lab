@@ -6545,10 +6545,56 @@
               "w": 0.955336489125606
             }
           }
+        },
+        {
+          "header": {
+            "stamp": {
+              "sec": 123,
+              "nanosec": 500000000
+            },
+            "frame_id": "base_link"
+          },
+          "child_frame_id": "left_wheel_link",
+          "transform": {
+            "translation": {
+              "x": 0,
+              "y": 0.1225,
+              "z": 0.09
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          }
+        },
+        {
+          "header": {
+            "stamp": {
+              "sec": 123,
+              "nanosec": 500000000
+            },
+            "frame_id": "base_link"
+          },
+          "child_frame_id": "right_wheel_link",
+          "transform": {
+            "translation": {
+              "x": 0,
+              "y": -0.1225,
+              "z": 0.09
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          }
         }
       ]
     },
-    "publisher": "tf2_msgs.msg.TFMessage(transforms=[geometry_msgs.msg.TransformStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=123, nanosec=500000000), frame_id='odom'), child_frame_id='base_link', transform=geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(x=1.0, y=0.0, z=0.0), rotation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.29552020666133955, w=0.955336489125606)))])",
-    "echo": "transforms:\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: odom\n  child_frame_id: base_link\n  transform:\n    translation:\n      x: 1.0\n      y: 0.0\n      z: 0.0\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.29552020666133955\n      w: 0.955336489125606"
+    "publisher": "tf2_msgs.msg.TFMessage(transforms=[geometry_msgs.msg.TransformStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=123, nanosec=500000000), frame_id='odom'), child_frame_id='base_link', transform=geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(x=1.0, y=0.0, z=0.0), rotation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.29552020666133955, w=0.955336489125606))), geometry_msgs.msg.TransformStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=123, nanosec=500000000), frame_id='base_link'), child_frame_id='left_wheel_link', transform=geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(x=0.0, y=0.1225, z=0.09), rotation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.0, w=1.0))), geometry_msgs.msg.TransformStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=123, nanosec=500000000), frame_id='base_link'), child_frame_id='right_wheel_link', transform=geometry_msgs.msg.Transform(translation=geometry_msgs.msg.Vector3(x=0.0, y=-0.1225, z=0.09), rotation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)))])",
+    "echo": "transforms:\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: odom\n  child_frame_id: base_link\n  transform:\n    translation:\n      x: 1.0\n      y: 0.0\n      z: 0.0\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.29552020666133955\n      w: 0.955336489125606\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: base_link\n  child_frame_id: left_wheel_link\n  transform:\n    translation:\n      x: 0.0\n      y: 0.1225\n      z: 0.09\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.0\n      w: 1.0\n- header:\n    stamp:\n      sec: 123\n      nanosec: 500000000\n    frame_id: base_link\n  child_frame_id: right_wheel_link\n  transform:\n    translation:\n      x: 0.0\n      y: -0.1225\n      z: 0.09\n    rotation:\n      x: 0.0\n      y: 0.0\n      z: 0.0\n      w: 1.0"
   }
 ]
