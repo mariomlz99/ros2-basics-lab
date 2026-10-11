@@ -1,6 +1,9 @@
 // Curated Jazzy interface schemas, transcribed from installed upstream .msg/.srv files.
 // See NOTICE and docs/INTERFACES.md for upstream attribution. Canonical source.
 export const BUILTIN = {
+  "tf2_msgs/msg/TFMessage": {
+    "fields": [{"type": "geometry_msgs/msg/TransformStamped[]", "name": "transforms"}]
+  },
   "builtin_interfaces/msg/Duration": {
     "fields": [
       {

@@ -9,6 +9,10 @@ export function migrateCurriculum(record){
  };
  if((record.curriculumVersion??1)<2){remap(index=>Number.isInteger(index)&&index>=2?index+1:index);record.curriculumVersion=2;}
  if(record.curriculumVersion===2){remap(index=>index===1?2:index===2?1:index);record.curriculumVersion=3;}
+ if(record.curriculumVersion===3){
+  if(record.ui?.guidePositions)record.ui.guidePositions=record.ui.guidePositions.map(([key,value])=>[key,key.startsWith('7:')?0:value]);
+  record.curriculumVersion=4;
+ }
  if(record.other)migrateCurriculum(record.other);
  return record;
 }

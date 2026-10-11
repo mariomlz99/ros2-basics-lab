@@ -73,3 +73,43 @@ Later lessons can be started independently using Prepare this lesson. It creates
 Tab completion includes ROS verbs, sourced package executables and launch files, and live graph names. Unsourced terminal environments do not receive workspace executable suggestions.
 
 Terminal parity checks live in `tests/terminal-semantics.test.js`; `bash scripts/native-terminal-check.sh` verifies the corresponding workflows using native Jazzy in a temporary workspace. The shell supports assignments, export/unset, comments, source, executable lookup through PATH or explicit paths, chmod for executable bits, and bounded Bash scripts. Pipes, control-flow syntax, command substitution and arbitrary native binaries remain explicitly unsupported.
+
+
+### Optional robotics mini-exercises
+
+The playground has an introduction, independent odometry/TF/LiDAR/camera exercises,
+and an optional Python/C++ sensor-reader package. The required seven lessons remain
+robot-free. A fresh playground must be started explicitly. Each mini-exercise explains
+terminal ownership, observations, and stopping motion before resetting the pose.
+
+The standard topics are `/cmd_vel` (`geometry_msgs/msg/Twist`), `/odom`
+(`nav_msgs/msg/Odometry`), `/tf` and `/tf_static` (`tf2_msgs/msg/TFMessage`),
+`/scan` and `/camera/image_raw`. Dynamic TF and odometry use the same robot pose;
+the frames are `odom → base_link → laser_link` and
+`odom → base_link → camera_link → camera_optical_frame`. Mount heights and camera
+projection share the sensor catalog. Camera optical axes follow ROS conventions.
+Fixed transforms use modeled transient-local retention while the publisher lives.
+Inspection uses standard `ros2 topic echo --once`, composite/scalar `--field`, and
+explicit `--qos-durability transient_local --qos-reliability reliable` for static TF.
+
+The robot model advances at 20 Hz; camera, scan, odometry and dynamic TF publish at
+10 Hz while the tab is active. These are browser scheduling targets, not real-time
+guarantees. Stamps use the browser wall clock. Odometry is ideal simulator pose,
+with zero covariance; no wheel noise, localization, drift, DDS transport or Gazebo
+physics is implied. The browser currently teaches TF by inspecting its standard
+messages, not by providing a complete tf2 buffer, tf2_echo executable or RViz.
+QoS support here models the retained latest sample for each static publisher;
+it does not model network loss or every DDS QoS policy. Array-valued `--field`
+selection is not modeled; the full scan message exposes its ranges.
+
+The native reference capture (`scripts/capture-playground-native.py`, after sourcing
+Jazzy) runs every inspection command with native messages on a private ROS domain,
+checks velocity/stop commands, and composes the tree with native tf2.
+`native-sensor-readers.py` also creates temporary native workspaces, builds the
+exact visible Python/C++ reader sources and checks both execution and the
+expected failure before sourcing. The inspection outputs
+are compared verbatim by `tests/playground-native.test.js`. The browser check
+`scripts/playground-exercises-check.mjs` follows every guided page, builds and runs
+both sensor readers with real Python/Clang workers, checks sensor cadence, and
+checks that leaving the playground stops its simulator. These checks do not claim
+that an arbitrary physical robot will have the same topic names or geometry.
