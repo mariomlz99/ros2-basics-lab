@@ -1,4 +1,11 @@
 export const translations = {
+"What you will run":["Ce que vous allez exécuter", "Wat je gaat uitvoeren"],
+"Publisher node":["Nœud éditeur", "Publicerende node"],
+"Topic · message type":["Topic · type de message", "Topic · berichttype"],
+"Subscriber node":["Nœud abonné", "Abonnerende node"],
+"The talker publishes text messages on /topic. The listener subscribes to /topic and prints the messages it receives.":["Le talker publie des messages texte sur /topic. Le listener s’abonne à /topic et affiche les messages reçus.", "De talker publiceert tekstberichten op /topic. De listener abonneert zich op /topic en toont de ontvangen berichten."],
+"Building creates the executables; it does not start the nodes. After building, source the workspace in two terminals, then run the talker in one and the listener in the other.":["La compilation crée les exécutables ; elle ne démarre pas les nœuds. Ensuite, sourcez l’espace de travail dans deux terminaux, puis lancez le talker dans l’un et le listener dans l’autre.", "Bouwen maakt de uitvoerbare bestanden aan; het start de nodes niet. Source daarna de werkruimte in twee terminals. Start de talker in de ene en de listener in de andere."],
+
 "Resize lesson height":["Redimensionner la hauteur de la leçon", "Hoogte van de les aanpassen"],
 "Resize editor height":["Redimensionner la hauteur de l’éditeur", "Hoogte van de editor aanpassen"],
 "Locked during review":["Verrouillé pendant la relecture", "Vergrendeld tijdens de review"],

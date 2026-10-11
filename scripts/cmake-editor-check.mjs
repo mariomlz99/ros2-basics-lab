@@ -27,5 +27,14 @@ try{
  await edit('find_package(rclcpp REQUIRED)\nfind_package(std_msgs REQUIRED)\nadd_executable(talker src/hello.cpp)\nament_target_dependencies(talker st');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);
  await mkdir('artifacts/screenshots',{recursive:true});await page.screenshot({path:'artifacts/screenshots/cmake-assistance.png'});
  assert.equal(requests.length,before,'CMake assistance needs no network requests');assert.deepEqual(errors,[]);
+ await page.keyboard.press('Escape');await page.locator('#nav button').nth(3).click();await page.locator('#guide-mode').click();
+ const diagram=page.locator('.pubsub-diagram');await diagram.scrollIntoViewIfNeeded();
+ assert.deepEqual(await diagram.locator('code').allTextContents(),['/talker','/topic','std_msgs/msg/String','/listener']);
+ assert.match(await diagram.innerText(),/Building creates the executables; it does not start the nodes/);
+ await diagram.screenshot({path:'artifacts/screenshots/pubsub-diagram.png'});
+ await page.setViewportSize({width:390,height:844});await diagram.scrollIntoViewIfNeeded();
+ assert(await diagram.evaluate(node=>node.scrollWidth<=node.clientWidth+1));
+ await diagram.screenshot({path:'artifacts/screenshots/pubsub-diagram-mobile.png'});assert.deepEqual(errors,[]);
  console.log('PASS CMake highlighting, commands, packages, targets, files, variables, signatures, comment suppression and spelling attributes; zero completion network requests');
+ console.log('PASS labeled pub/sub diagram and build/run explanation at desktop and mobile widths');
 }finally{await browser.close();}
