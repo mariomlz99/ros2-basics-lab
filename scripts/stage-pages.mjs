@@ -9,5 +9,7 @@ if(!/[:/]mariomlz99\/ros2-basics-lab(?:\.git)?$/.test(origin))throw Error('Desti
 const info=JSON.parse(await readFile('dist/build-info.json','utf8'));if(!info.publicBuild)throw Error('Run npm run build:public first');
 await stat(path.join(destination,'.git'));
 for(const entry of await readdir(destination)){if(['.git','assets'].includes(entry))continue;await rm(path.join(destination,entry),{recursive:true,force:true});}
-for(const entry of await readdir('dist'))await cp(path.join('dist',entry),path.join(destination,entry),{recursive:true});
+// Keep previously published versions, but do not upload unrelated local previews.
+for(const entry of await readdir('dist'))if(entry!=='assets')await cp(path.join('dist',entry),path.join(destination,entry),{recursive:true});
+await cp(path.join('dist','assets',info.assetVersion),path.join(destination,'assets',info.assetVersion),{recursive:true});
 console.log('Staged '+info.assetVersion+'; prior immutable asset versions retained for open tabs');
