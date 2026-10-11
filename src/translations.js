@@ -504,9 +504,9 @@ export const translations = {
     "Inspectez /conversation dans un autre terminal. Ctrl+C dans le terminal launch arrête les deux processus enfants. Le fichier décrit les exécutables à lancer, leurs noms, paramètres et connexions.",
     "Bekijk /conversation vanuit een andere terminal. Ctrl+C in de launch-terminal stopt beide kindprocessen. Het bestand beschrijft welke programma’s starten, met hun namen, parameters en verbindingen."
   ],
-  "The browser filesystem corresponds to Linux files; the modeled builder corresponds to real colcon; Clang/WASM corresponds to a native compiler; the shared graph corresponds to RMW/DDS; workers correspond to Linux processes. Package, build, source and communication concepts carry over.": [
-    "Le système de fichiers du navigateur correspond aux fichiers Linux ; le modèle de compilation à colcon ; Clang/WASM à un compilateur natif ; le graphe partagé à RMW/DDS ; les workers aux processus Linux. Les concepts de paquet, compilation, environnement et communication restent valables.",
-    "Het browserbestandssysteem komt overeen met Linux-bestanden; het bouwmodel met colcon; Clang/WASM met een native compiler; de gedeelde graaf met RMW/DDS; workers met Linux-processen. De begrippen pakket, bouwen, sourcen en communicatie blijven van toepassing."
+  "The browser filesystem corresponds to Linux files; the modeled builder corresponds to real colcon; Clang/WASM corresponds to a native compiler; the shared graph models node and topic discovery; workers correspond to Linux processes. Package, build, source and communication concepts carry over.": [
+    "Le système de fichiers du navigateur correspond aux fichiers Linux ; le modèle de compilation à colcon ; Clang/WASM à un compilateur natif ; le graphe partagé modélise la découverte des nœuds et des sujets ; les workers aux processus Linux. Les concepts de paquet, compilation, environnement et communication restent valables.",
+    "Het browserbestandssysteem komt overeen met Linux-bestanden; het bouwmodel met colcon; Clang/WASM met een native compiler; de gedeelde graaf modelleert de detectie van nodes en topics; workers met Linux-processen. De begrippen pakket, bouwen, sourcen en communicatie blijven van toepassing."
   ],
   "On Ubuntu 24.04 with ROS 2 Jazzy and colcon already installed, export the reference workspace, unpack it, and run:": [
     "Sur Ubuntu 24.04 avec ROS 2 Jazzy et colcon déjà installés, exportez l’espace de travail de référence, décompressez-le et exécutez :",
