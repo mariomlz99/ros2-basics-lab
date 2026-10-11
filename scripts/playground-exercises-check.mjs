@@ -12,10 +12,10 @@ try{
    const base=document.querySelector('script[type="module"]').src,{Runtime}=await import(new URL('runtime/graph.js',base)),publish=Runtime.prototype.publish;
    window.cameraFrames=[];Runtime.prototype.publish=function(topic,...args){if(topic==='/camera/image_raw'){window.cameraFrames.push(performance.now());if(window.cameraFrames.length>200)window.cameraFrames.shift();}return publish.call(this,topic,...args);};
   });
-  await page.locator('#start').click();await page.locator('.xterm').waitFor();await page.locator('#exercise-nav button').click();await page.locator('#language').selectOption(language);await page.locator('#add-terminal').click();
+  await page.locator('#start').click();await page.locator('.xterm').waitFor();await page.locator('#exercise-nav button[data-index="7"]').click();await page.locator('#language').selectOption(language);await page.locator('#add-terminal').click();
   assert.equal(await page.locator('[data-exercise]').count(),6);
   const command=async(i,text)=>{const input=page.locator('.xterm-helper-textarea').nth(i);await input.focus();await page.keyboard.type(text,{delay:1});await page.keyboard.press('Enter');};
-  const idle=async i=>page.waitForFunction(i=>!document.querySelectorAll('.terminal-state')[i].textContent.includes('Running'),i,{timeout:180000});
+  const idle=async i=>page.waitForFunction(i=>/^(Jazzy|ROS environment not sourced)/.test(document.querySelectorAll('.terminal-state')[i].textContent),i,{timeout:180000});
   const stop=async i=>{await page.locator('.xterm-helper-textarea').nth(i).focus();await page.keyboard.press('Control+c');await page.waitForTimeout(100);};
   const allPages=guidePages(playgroundLesson(language)).slice(0,-1),only=process.env.PLAYGROUND_ONLY;
   if(only){await page.locator('[data-exercise="'+only+'"]').click();await page.locator('#playground-start').click();}
@@ -44,7 +44,7 @@ try{
   await page.locator('[data-exercise="tf"]').click();await page.locator('#playground-reset').click();await page.locator('#guide-next').click();
   await mkdir('artifacts/screenshots',{recursive:true});await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:`artifacts/screenshots/playground-${language}.png`});
   await page.locator('#playground-stop').click();await page.locator('#nav button').first().click();assert(await page.locator('#playground-stage').isHidden());
-  await page.locator('#exercise-nav button').click();assert.match(await page.locator('#playground-status').textContent(),/stopped/);
+  await page.locator('#exercise-nav button[data-index="7"]').click();assert.match(await page.locator('#playground-status').textContent(),/stopped/);
   await page.setViewportSize({width:390,height:844});await page.waitForFunction(()=>document.documentElement.scrollWidth<=innerWidth+1,{},{timeout:5000}).catch(async error=>{await page.screenshot({path:'artifacts/screenshots/playground-mobile-overflow.png'});console.log(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>[e.tagName,e.id,e.className,e.getBoundingClientRect().right]).slice(0,20)));throw error;});await page.locator('[data-exercise="camera"]').click();assert((await page.locator('.exercise-title').textContent()).includes('Camera'));
   assert.deepEqual(errors,[]);console.log(`PASS ${language}: every guided exercise, real sensor readers, TF, cleanup, mobile navigation; camera ${rate.toFixed(1)} Hz`);await page.close();
  }

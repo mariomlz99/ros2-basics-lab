@@ -64,3 +64,6 @@
 .bug-report{padding:12px 24px;border-top:1px solid var(--line);font-size:12px;line-height:1.7;overflow-wrap:anywhere}.bug-report a{color:var(--accent);text-underline-offset:2px}.bug-report code{font-size:inherit}
 
 .playground-exercises{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.playground-exercises button{font-size:12px;padding:6px 9px;border-color:var(--line)}.exercise-title{font-size:18px;font-weight:600;margin:12px 0}.frame-tree{font:12px/1.8 ui-monospace,monospace;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+
+/* Author display rules must respect controls hidden by the current workspace. */
+[hidden]{display:none!important}
