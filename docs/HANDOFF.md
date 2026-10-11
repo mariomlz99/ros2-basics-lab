@@ -10,6 +10,8 @@ The terminal supports `nano <file>` as a bounded in-terminal editor: Ctrl+O then
 
 Use Ctrl+Shift+V to paste in the terminal. The terminal supports Ctrl+C, history arrows, cursor editing, Ctrl+A/E/U/K/W/L, Tab path completion and Ctrl+D to close an empty terminal. Closing a terminal stops its processes and subscriptions.
 
+CMake files have local command and argument completion, package/target/source-file suggestions, variable completion, syntax colors and call help. Use Ctrl+Space, Tab and Esc. This assistance reads the current file and workspace; it is not a CMake language server or native configure step. The editor disables browser spelling and requests that writing-assistant extensions ignore code.
+
 ## Packages and builds
 
 New `ament_cmake` packages preserve the native Jazzy `CMakeLists.txt` template, including comments, warning settings, target settings and the lint/testing block. The browser recognizes this stock configuration; it does not run CMake or linters, reproduce warning flags, or support arbitrary conditional logic. The C++ runtime uses C++17. Lesson replacement examples remain concise edited configurations. Existing files are never rewritten automatically. Verify template parity with `source /opt/ros/jazzy/setup.bash; python3 scripts/capture-cmake-templates.py --check --build`.

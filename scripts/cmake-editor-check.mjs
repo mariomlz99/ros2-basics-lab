@@ -1,0 +1,31 @@
+import {chromium} from 'playwright-core';
+import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],requests=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));
+ await page.goto(process.env.LAB_URL||'http://127.0.0.1:8031/ros2-basics-lab/');
+ await page.evaluate(async()=>{const base=document.querySelector('script[type="module"]').src,{CodeEditor}=await import(new URL('vendor/ui.js',base)),open=CodeEditor.prototype.open;CodeEditor.prototype.open=function(...args){window.testCodeEditor=this;return open.apply(this,args);};});
+ await page.locator('#start').click();await page.locator('.xterm').waitFor();
+ const command=async text=>{await page.locator('.xterm-helper-textarea').first().focus();await page.keyboard.insertText(text);await page.keyboard.press('Enter');await page.waitForTimeout(120);};
+ for(const text of ['mkdir -p ~/ros2_ws/src','cd ~/ros2_ws/src','ros2 pkg create --build-type ament_cmake --node-name hello demo','gedit demo/CMakeLists.txt'])await command(text);
+ await page.locator('.cm-content').waitFor();const before=requests.length;
+ const edit=async source=>page.evaluate(source=>{const e=window.testCodeEditor;e.open(e.path,source);e.view.dispatch({selection:{anchor:source.length}});e.view.focus();},source);
+ const options=()=>page.locator('.cm-tooltip-autocomplete .cm-completionLabel').allTextContents();
+ await edit('find_p');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert((await options()).includes('find_package'));
+ await page.keyboard.press('Tab');assert.equal(await page.locator('.cm-content').innerText(),'find_package()');assert.match(await page.locator('.code-signature').innerText(),/package REQUIRED/);
+ await edit('find_package(rc');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert((await options()).includes('rclcpp'));await page.keyboard.press('Escape');
+ await edit('find_package(dem');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert((await options()).includes('demo'));await page.keyboard.press('Escape');
+ await edit('add_executable(talker src/hello.cpp)\nament_target_dependencies(ta');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert.deepEqual(await options(),['talker']);await page.keyboard.press('Escape');
+ await edit('add_executable(talker src/');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert((await options()).includes('src/hello.cpp'));await page.keyboard.press('Escape');
+ await edit('install(TARGETS talker DESTINATION lib/${PRO');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);await page.keyboard.press('Tab');assert.match(await page.locator('.cm-content').innerText(),/lib\/\$\{PROJECT_NAME\}$/);
+ await edit('# find_p');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);assert.equal(await page.locator('.cm-tooltip-autocomplete').count(),0);
+ await edit('find_package(rclcpp REQUIRED)\n# dependency\n');
+ const colors=await page.locator('.cm-line').first().evaluate(line=>({plain:getComputedStyle(line).color,command:getComputedStyle([...line.querySelectorAll('span')].find(s=>s.textContent==='find_package')).color}));assert.notEqual(colors.command,colors.plain);
+ assert.equal(await page.locator('.cm-content').getAttribute('spellcheck'),'false');assert.equal(await page.locator('.cm-content').getAttribute('data-enable-grammarly'),'false');
+ await edit('find_package(rclcpp REQUIRED)\nfind_package(std_msgs REQUIRED)\nadd_executable(talker src/hello.cpp)\nament_target_dependencies(talker st');await page.keyboard.press('Control+Space');await page.waitForTimeout(200);
+ await mkdir('artifacts/screenshots',{recursive:true});await page.screenshot({path:'artifacts/screenshots/cmake-assistance.png'});
+ assert.equal(requests.length,before,'CMake assistance needs no network requests');assert.deepEqual(errors,[]);
+ console.log('PASS CMake highlighting, commands, packages, targets, files, variables, signatures, comment suppression and spelling attributes; zero completion network requests');
+}finally{await browser.close();}
