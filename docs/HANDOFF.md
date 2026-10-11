@@ -10,7 +10,11 @@ The terminal supports `nano <file>` as a bounded in-terminal editor: Ctrl+O then
 
 Use Ctrl+Shift+V to paste in the terminal. The terminal supports Ctrl+C, history arrows, cursor editing, Ctrl+A/E/U/K/W/L, Tab path completion and Ctrl+D to close an empty terminal. Closing a terminal stops its processes and subscriptions.
 
+CMake files have local command and argument completion, package/target/source-file suggestions, variable completion, syntax colors and call help. Use Ctrl+Space, Tab and Esc. This assistance reads the current file and workspace; it is not a CMake language server or native configure step. The editor disables browser spelling and requests that writing-assistant extensions ignore code.
+
 ## Packages and builds
+
+New `ament_cmake` packages preserve the native Jazzy `CMakeLists.txt` template, including comments, warning settings, target settings and the lint/testing block. The browser recognizes this stock configuration; it does not run CMake or linters, reproduce warning flags, or support arbitrary conditional logic. The C++ runtime uses C++17. Lesson replacement examples remain concise edited configurations. Existing files are never rewritten automatically. Verify template parity with `source /opt/ros/jazzy/setup.bash; python3 scripts/capture-cmake-templates.py --check --build`.
 
 The course uses `~/ros2_ws`, but builds discover packages recursively below the current terminal directory. Folders marked `COLCON_IGNORE` are skipped. Package names come from package.xml. An empty build creates build/install/log spaces and reports zero packages; unknown `--packages-select` names produce warnings. Building from src/ creates src/build and src/install, so the setup file to source depends on where you built. The model retains one current install record per package name; full native overlay precedence between multiple versions of the same package is not implemented. `ros2 pkg create` supports `ament_python`, `ament_cmake`, dependencies, node name and the Apache-2.0 template license. The package parser reads beginner metadata and dependencies, rejecting malformed or unsupported configuration.
 
@@ -19,6 +23,8 @@ The course uses `~/ros2_ws`, but builds discover packages recursively below the 
 Supported CMake calls are `cmake_minimum_required`, `project`, `find_package(... REQUIRED)`, `add_executable`, `ament_target_dependencies`, `install(TARGETS ... DESTINATION lib/${PROJECT_NAME})`, `install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})`, and `ament_package`. Executables have one source file each. Interface packages additionally accept the demonstrated `rosidl_generate_interfaces` form. Arbitrary CMake, external libraries, colcon plugins and arbitrary setup.py execution are not supported.
 
 ## ROS communication
+
+Topic echo distinguishes an undiscovered type (native warning followed by an error), a discovered custom type unavailable in the terminal (native invalid-type error), and an explicitly supplied available type (waits silently for messages). After adding an interface package, re-source the receiving terminal even if it previously sourced the workspace. Native fixtures: `scripts/capture-topic-echo.py`; matching lab cases: `tests/topic-echo-parity.test.js`.
 
 Use `ros2 --help` or a subcommand’s `--help` for exact CLI forms. The modeled CLI includes package creation/listing/executables, node inspection, topic list/type/info/echo/hz/pub, interface list/show, scalar parameters, services, run and declarative launch. Topic publishers, echo subscriptions and launch children are owned by their terminal and removed on stop. Python and C++ processes exchange messages on the same graph. The base channels `/rosout` (`rcl_interfaces/msg/Log`) and `/parameter_events` (`rcl_interfaces/msg/ParameterEvent`) have a modeled, hidden CLI-daemon publisher. Running nodes add their own publishers and produce real logger messages and parameter declaration/change events. Echo stays silent until an event occurs. Stopping a node or CLI subscription removes its endpoints; the base publisher remains. This models the standard CLI environment without running a native daemon.
 

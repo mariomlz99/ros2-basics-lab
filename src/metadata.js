@@ -44,7 +44,36 @@ export function cmakeCalls(source){
   return calls;
 }
 export function parseCmake(source,packageName){
-  const calls=cmakeCalls(source),allowed=new Set(['cmake_minimum_required','project','find_package','add_executable','ament_target_dependencies','install','ament_package']);
+  // Model the stock Jazzy boilerplate explicitly, without treating arbitrary
+  // conditionals, compiler settings or test commands as executable CMake.
+  const calls=[],targetSettings=[];let block=null;
+  const unsupported=c=>{throw Error('CMake '+c.name+' is outside the supported lesson subset.');};
+  for(const original of cmakeCalls(source)){
+    const c={...original,args:original.args.map(a=>a.replace(/^"|"$/g,''))},args=c.args.join(' ');
+    if(c.name==='if'){
+      if(block||!['CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES Clang','BUILD_TESTING'].includes(args))unsupported(c);
+      block=args==='BUILD_TESTING'?'testing':'compiler';continue;
+    }
+    if(c.name==='endif'){if(!block||c.args.length)unsupported(c);block=null;continue;}
+    if(block==='compiler'){
+      if(c.name!=='add_compile_options'||args!=='-Wall -Wextra -Wpedantic')unsupported(c);
+      continue;
+    }
+    if(block==='testing'){
+      const supported=c.name==='find_package'&&args==='ament_lint_auto REQUIRED'
+        ||c.name==='set'&&['ament_cmake_copyright_FOUND TRUE','ament_cmake_cpplint_FOUND TRUE'].includes(args)
+        ||c.name==='ament_lint_auto_find_test_dependencies'&&!c.args.length;
+      if(!supported)unsupported(c);continue;
+    }
+    if(['target_include_directories','target_compile_features'].includes(c.name)){
+      const expected=c.name==='target_compile_features'?'PUBLIC c_std_99 cxx_std_17':'PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include/${PROJECT_NAME}>';
+      if(c.args.slice(1).join(' ')!==expected)unsupported(c);
+      targetSettings.push(c);continue;
+    }
+    calls.push(c);
+  }
+  if(block)throw Error('Unclosed CMake if declaration.');
+  const allowed=new Set(['cmake_minimum_required','project','find_package','add_executable','ament_target_dependencies','install','ament_package']);
   for(const c of calls)if(!allowed.has(c.name))throw Error('CMake '+c.name+' is outside the supported lesson subset.');
   if(!calls.some(c=>c.name==='cmake_minimum_required'))throw Error('CMakeLists.txt needs cmake_minimum_required.');
   if(!calls.some(c=>c.name==='project'&&c.args[0]===packageName))throw Error('CMake project must match package.xml name.');
@@ -52,6 +81,7 @@ export function parseCmake(source,packageName){
   if(!found.has('ament_cmake'))throw Error('CMakeLists.txt needs find_package(ament_cmake REQUIRED).');
   if(!calls.some(c=>c.name==='ament_package'))throw Error('CMakeLists.txt needs ament_package().');
   const targets=new Map();for(const c of calls.filter(c=>c.name==='add_executable')){if(targets.has(c.args[0]))throw Error('Duplicate CMake target '+c.args[0]);targets.set(c.args[0],c.args.slice(1).map(a=>a.replace(/^"|"$/g,'')));}
+  for(const c of targetSettings)if(!targets.has(c.args[0]))throw Error('CMake settings for unknown target '+c.args[0]);
   const installed=new Set();let launchInstalled=false;for(const c of calls.filter(c=>c.name==='install')){
     if(c.args[0]==='DIRECTORY'&&c.args[1]==='launch'&&c.args[2]==='DESTINATION'&&c.args[3]===`share/\${PROJECT_NAME}`){launchInstalled=true;continue;}
     if(c.args[0]!=='TARGETS'||!c.args.includes('DESTINATION')||c.args.slice(c.args.indexOf('DESTINATION')+1).join(' ')!==`lib/\${PROJECT_NAME}`)throw Error('Supported install form: install(TARGETS name DESTINATION lib/${PROJECT_NAME}).');

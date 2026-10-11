@@ -1,4 +1,5 @@
 import {ROS_PREFIX} from './ros-installation.js';
+import {createdCmake} from './package-templates.js';
 import {InterfaceRegistry,parseMessage} from './interfaces/registry.js';
 import {HOME} from './fs.js';
 import {parsePackageXml,parseCmake,parsePythonSetup,cmakeCalls} from './metadata.js';
@@ -50,10 +51,11 @@ export class Workspace{
   if(this.fs.exists(base))throw Error('Aborted!\nThe directory already exists: '+base+'\nEither remove the directory or choose a different destination directory or package name');
   this.fs.mkdir(base);report('creating folder '+base);
   const write=(p,s)=>{this.fs.write(base+'/'+p,s);report('creating '+base+'/'+p);},dir=p=>{this.fs.mkdir(base+'/'+p,true);report('creating folder '+base+'/'+p);};
-  write('package.xml',manifest(name,type,dependencies));
+  const packageManifest=manifest(name,type,dependencies);
+  write('package.xml',type==='ament_cmake'?packageManifest.replace('  <export>','  <test_depend>ament_lint_auto</test_depend>\n  <test_depend>ament_lint_common</test_depend>\n  <export>'):packageManifest);
   if(type==='ament_python'){
    report('creating source folder');dir(name);dir('resource');dir('test');write(name+'/__init__.py','');write('resource/'+name,'');write('setup.cfg',`[develop]\nscript_dir=$base/lib/${name}\n[install]\ninstall_scripts=$base/lib/${name}\n`);write('setup.py',setup(name,node?[`${node} = ${name}.${node}:main`]:[]));if(node)write(name+'/'+node+'.py',`def main():\n    print('Hi from ${name}.')\n\nif __name__ == '__main__':\n    main()\n`);
-  }else{report('creating source and include folder');dir('src');dir('include/'+name);write('CMakeLists.txt',cmake(name,node?{[node]:'src/'+node+'.cpp'}:{},dependencies));if(node)write('src/'+node+'.cpp',`#include <cstdio>\n\nint main(int argc, char ** argv)\n{\n  (void) argc;\n  (void) argv;\n\n  printf("hello world ${name} package\\n");\n  return 0;\n}\n`);}
+  }else{report('creating source and include folder');dir('src');dir('include/'+name);write('CMakeLists.txt',createdCmake(name,{node,dependencies}));if(node)write('src/'+node+'.cpp',`#include <cstdio>\n\nint main(int argc, char ** argv)\n{\n  (void) argc;\n  (void) argv;\n\n  printf("hello world ${name} package\\n");\n  return 0;\n}\n`);}
   this.sourcePaths.set(name,base);return base;
  }
  sourcePath(name){return this.sourcePaths.get(name)??this.installed.get(name)?.sourcePath??ROOT+'/src/'+name;}

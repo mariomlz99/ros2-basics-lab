@@ -1,8 +1,21 @@
 export const translations = {
+"Report an issue":["Signaler un problème", "Een probleem melden"],
+"Found a bug or issue?":["Vous avez trouvé un bug ou un problème ?", "Een bug of probleem gevonden?"],
+"Report it to":["Signalez-le à", "Meld het aan"],
+"Subject:":["Objet :", "Onderwerp:"],
+"Resize file tree and code editor":["Redimensionner l’arborescence et l’éditeur de code", "Bestandsboom en code-editor vergroten of verkleinen"],
+
+"Leave the status publisher running. In a second terminal, source the workspace again to make the newly installed custom message package available, then echo its topic. Sourcing one terminal does not update the others.":["Laissez l’éditeur de statut actif. Dans un deuxième terminal, sourcez à nouveau l’espace de travail pour rendre le nouveau paquet de messages disponible, puis utilisez echo sur son topic. Sourcer un terminal ne met pas les autres à jour.", "Laat de statuspublisher draaien. Source de werkruimte opnieuw in een tweede terminal zodat het nieuw geïnstalleerde berichtenpakket beschikbaar wordt. Gebruik daar echo op het topic. Sourcen in één terminal werkt de andere terminals niet bij."],
+
+"What you will run":["Ce que vous allez exécuter", "Wat je gaat uitvoeren"],
+"Publisher node":["Nœud éditeur", "Publicerende node"],
+"Topic · message type":["Topic · type de message", "Topic · berichttype"],
+"Subscriber node":["Nœud abonné", "Abonnerende node"],
+"The talker publishes text messages on /topic. The listener subscribes to /topic and prints the messages it receives.":["Le talker publie des messages texte sur /topic. Le listener s’abonne à /topic et affiche les messages reçus.", "De talker publiceert tekstberichten op /topic. De listener abonneert zich op /topic en toont de ontvangen berichten."],
+"Building creates the executables; it does not start the nodes. After building, source the workspace in two terminals, then run the talker in one and the listener in the other.":["La compilation crée les exécutables ; elle ne démarre pas les nœuds. Ensuite, sourcez l’espace de travail dans deux terminaux, puis lancez le talker dans l’un et le listener dans l’autre.", "Bouwen maakt de uitvoerbare bestanden aan; het start de nodes niet. Source daarna de werkruimte in twee terminals. Start de talker in de ene en de listener in de andere."],
+
 "Resize lesson height":["Redimensionner la hauteur de la leçon", "Hoogte van de les aanpassen"],
 "Resize editor height":["Redimensionner la hauteur de l’éditeur", "Hoogte van de editor aanpassen"],
-"Locked during review":["Verrouillé pendant la relecture", "Vergrendeld tijdens de review"],
-"Review access: lessons 1–3. Later lessons and the playground are locked.":["Accès pour relecture : leçons 1–3. Les leçons suivantes et le simulateur sont verrouillés.", "Reviewtoegang: lessen 1–3. Latere lessen en de playground zijn vergrendeld."],
 "Start the playground above. All three views show the same room and brown obstacle. The map uses world coordinates; the camera and LiDAR face with the robot. In the LiDAR view, forward is up and left is left. At the starting pose, the front scan is about 2.88 m from the obstacle; the nearest return is the wall behind, about 2.12 m away. Move forward and watch the front range decrease and the camera obstacle grow. The robot stops before hitting obstacles or walls.":["Démarrez le simulateur ci-dessus. Les trois vues montrent la même pièce et le même obstacle brun. La carte utilise les coordonnées du monde ; la caméra et le LiDAR suivent l’orientation du robot. Dans la vue LiDAR, l’avant est en haut et la gauche à gauche. Au départ, la distance frontale à l’obstacle est d’environ 2,88 m ; le retour le plus proche vient du mur derrière, à environ 2,12 m. Avancez : la distance frontale diminue et l’obstacle grandit dans la caméra. Le robot s’arrête avant de heurter les obstacles ou les murs.", "Start de simulator hierboven. Alle drie de beelden tonen dezelfde ruimte en hetzelfde bruine obstakel. De kaart gebruikt wereldcoördinaten; camera en LiDAR draaien mee met de robot. In het LiDAR-beeld is vooruit boven en links links. Bij de start is de afstand vooruit tot het obstakel ongeveer 2,88 m; de dichtstbijzijnde meting is de muur achter de robot, op ongeveer 2,12 m. Rijd vooruit: de afstand neemt af en het obstakel wordt groter in het camerabeeld. De robot stopt vóór obstakels en muren."],
 
 "Enlarge":["Agrandir", "Vergroten"],
