@@ -107,9 +107,11 @@ export function topicCLI(lab,t,args){
    return()=>{dispose?.();discover?.();report?.();r.removeNode(node);r.removeEmptyTopics();t.finishJob(job);};
   });t.stopTask=()=>lab.processes.stop(process.id);return type?'':'Waiting for topic '+topic+' to become available...';
  }
- if(['info','type'].includes(action)&&!rest.length)missingArguments(action,['topic_name']);
- const name=rest[0]&&topicName(rest[0]),verbose=action==='info'&&rest.length===2&&['-v','--verbose'].includes(rest[1]);
- if(rest.length!==1&&!verbose)throw Error('Use ros2 topic --help');const topic=r.topics.get(name);if(!topic)throw Error('Unknown topic: '+name);
+ const positional=action==='info'?rest.filter(arg=>!['-v','--verbose'].includes(arg)):rest;
+ const verbose=action==='info'&&positional.length!==rest.length;
+ if(['info','type'].includes(action)&&!positional.length)missingArguments(action,['topic_name']);
+ if(positional.length!==1||positional[0].startsWith('-'))throw Error('Use ros2 topic --help');
+ const name=topicName(positional[0]),topic=r.topics.get(name);if(!topic)throw Error('Unknown topic: '+name);
  if(action==='type')return topic.type;
  if(action==='info')return `Type: ${topic.type}\nPublisher count: ${topic.publishers.size}\nSubscription count: ${topic.subscribers.size}`+(verbose?`\nPublishers:\n${[...topic.publishers].map(id=>r.nodeName(id)).join('\n')}\nSubscribers:\n${[...topic.subscribers].map(id=>r.nodeName(id)).join('\n')}`:'');
  throw Error('Use ros2 topic --help');
