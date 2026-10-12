@@ -1,6 +1,6 @@
 # Student readiness audit | 12 October 2026
 
-Status: in progress. Local candidate: `be7aa35`; shared KineNest candidate:
+Status: checkpoint saved; paused at the user's request for remote continuation. Local candidate: `be7aa35`; shared KineNest candidate:
 `6fd4b03`. Both use the isolated `audit/student-readiness` branches.
 Original working copies and their uncommitted changes are preserved.
 The latest inspected Pages artifact is `9866aa7` (source `6ea6241`);
@@ -48,6 +48,17 @@ The targeted rerun after the parameter-evidence fix passed; retain both pieces
 of evidence (`artifacts/audit/course-python-cpp.json` and `course-python.json`).
 Other initial walkthrough failures were harness assertions (terminal history
 selection and launch reference text), corrected before the successful reruns.
+
+## Open reproduced defect at checkpoint
+
+**MAJOR, not fixed:** two publishers and two subscriptions in one node are
+reported as one publisher and one subscription. Actual Python callbacks prove
+both subscriptions receive both publications. `scripts/endpoint-lifecycle-check.mjs`
+reproduces this on the development candidate: `Publisher count: 1`,
+`Subscription count: 1`, with `0:payload0`, `1:payload0`, `0:payload1`,
+`1:payload1` all observed. The script exits on the Python failure; its C++ case
+is written but has not yet run. No implementation change for this defect has
+been made. Publisher destruction support must be checked in the same pass.
 
 ## Confirmed findings and local fixes
 
