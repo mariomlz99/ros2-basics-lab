@@ -1,9 +1,12 @@
-import {SENSORS} from './sensors.js';
+import {SENSORS,WHEELS} from './sensors.js';
 export const yawQuaternion=yaw=>({x:0,y:0,z:Math.sin(yaw/2),w:Math.cos(yaw/2)});
 const vector=(x=0,y=0,z=0)=>({x,y,z});
 const transform=(stamp,parent,child,translation,rotation)=>({header:{stamp,frame_id:parent},child_frame_id:child,transform:{translation,rotation}});
 export function dynamicTransforms(robot,stamp){
- return {transforms:[transform(stamp,'odom','base_link',vector(robot.x,robot.y),yawQuaternion(robot.yaw))]};
+ const pitch=angle=>({x:0,y:Math.sin(angle/2),z:0,w:Math.cos(angle/2)});
+ return {transforms:[transform(stamp,'odom','base_link',vector(robot.x,robot.y),yawQuaternion(robot.yaw)),
+  transform(stamp,'base_link',WHEELS.left,vector(0,WHEELS.track/2,WHEELS.radius),pitch(robot.leftWheel??0)),
+  transform(stamp,'base_link',WHEELS.right,vector(0,-WHEELS.track/2,WHEELS.radius),pitch(robot.rightWheel??0))]};
 }
 export function staticTransforms(stamp){
  return {transforms:[

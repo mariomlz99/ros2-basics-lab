@@ -38,7 +38,7 @@ function expandPattern(word,fs,cwd){
  return paths.length?paths:[word.value];
 }
 export class Terminal{
- constructor(fs,id,{output=()=>{},dispatch=null,startup=true}={}){this.fs=fs;this.id=id;this.cwd=HOME;this.env=baseEnvironment(HOME);this.overlays=new Set();this.history=[];this.output=output;this.dispatch=dispatch;this.stopTask=null;this.busy=false;this.vars={};this.sourceStack=[];this.jobs=new Map();this.nextJob=0;this.currentJob=null;this.ready=startup?this.startup():Promise.resolve();}
+ constructor(fs,id,{output=()=>{},dispatch=null,startup=true}={}){this.fs=fs;this.id=id;this.cwd=HOME;this.env=baseEnvironment(HOME);this.overlays=new Set();this.history=[];this.completedCommands=[];this.closed=false;this.commandGeneration=0;this.childShells=new Set();this.output=output;this.dispatch=dispatch;this.stopTask=null;this.busy=false;this.vars={};this.sourceStack=[];this.jobs=new Map();this.nextJob=0;this.currentJob=null;this.ready=startup?this.startup():Promise.resolve();}
  registerJob(control){const job={command:this.history.at(-1),state:'Running',...control};this.currentJob=job;return job;}
  finishJob(job){if(job.id)this.jobs.delete(job.id);if(this.currentJob===job){this.currentJob=null;this.finishForeground();}}
  suspend(){
@@ -59,7 +59,8 @@ export class Terminal{
  finishForeground(){this.busy=false;this.foreground=null;this.stopTask=null;this.onForegroundEnd?.();}
  path(p){return normalize(p,this.cwd);}
  formatEntry(name,entry){return this.color&&(entry.kind==='dir'||entry.executable)?'\x1b[1;'+(entry.kind==='dir'?'34':'32')+'m'+name+'\x1b[0m':name;}
- stop(){this.stopTask?.();this.stopTask=null;this.busy=false;}
+ close(){this.closed=true;for(const child of this.childShells)child.close();this.childShells.clear();this.stop();for(const job of this.jobs.values())job.stop();this.jobs.clear();}
+ stop(){this.commandGeneration++;for(const child of this.childShells)child.close();this.childShells.clear();this.stopTask?.();this.stopTask=null;this.busy=false;}
  async startup(){if(this.fs.exists(HOME+'/.bashrc'))try{await this.sourceFile(HOME+'/.bashrc');}catch(error){this.output('bash: '+error.message);}}
  findFile(name,{executable=false}={}){
   const pathValue=this.vars.PATH??this.env.PATH;
@@ -68,12 +69,13 @@ export class Terminal{
  }
  async sourceFile(name){
   const path=name.includes('/')?this.path(name):(this.findFile(name)||this.path(name));
-  const source=this.fs.read(path);
+  const source=this.fs.read(path),generation=this.commandGeneration;
   if(this.sourceStack.includes(path)||this.sourceStack.length>=32)throw Error('Recursive source: '+path);
   this.sourceStack.push(path);
   let lastError=null;
   try{
    for(const line of source.replace(/\\\n/g,'').split('\n')){
+    if(this.closed||generation!==this.commandGeneration)throw Error('Terminal command cancelled');
     if(!line.trim()||line.trimStart().startsWith('#'))continue;
     try{const output=await this.execute(line,{internal:true,recordHistory:false});lastError=null;if(output)this.output(output);}
     catch(error){lastError=error;this.output('bash: '+path+': '+error.message);}
@@ -85,12 +87,31 @@ export class Terminal{
   if(args.length)throw Error('Script positional arguments are not implemented');
   const output=[],child=new Terminal(this.fs,this.id,{startup:false,dispatch:this.dispatch,output:text=>output.push(text)});
   child.cwd=this.cwd;child.env={...this.env};child.overlays=new Set(this.overlays);
-  if(path)await child.sourceFile(path);else{const result=await child.execute(command);if(result)output.push(result);}
+  this.childShells.add(child);
+  try{if(path)await child.sourceFile(path);else{const result=await child.execute(command);if(result)output.push(result);}}finally{this.childShells.delete(child);}
   if(child.busy){this.busy=true;this.foreground=child.foreground;this.stopTask=()=>child.stop();child.output=text=>this.output(text);}
   return output.join('\n');
  }
- async execute(line,{internal=false,recordHistory=true}={}){
+ async execute(line,options={}){
+  const generation=this.commandGeneration;
+  if(!options.internal)await this.ready;
+  if(this.closed)throw Error('Terminal is closed');
+  if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
+  const environment={...this.env,...this.vars};
+  const result=await this.executeCommand(line,options);
+  if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
+  if(options.recordHistory!==false&&line.trim()){
+   const words=tokenize(line,environment,{redirects:true});
+   this.completedCommands.push({line,words,result:String(result??'').slice(0,4000),rosDistro:environment.ROS_DISTRO});
+   if(this.completedCommands.length>500)this.completedCommands.shift();
+  }
+  return result;
+ }
+ async executeCommand(line,{internal=false,recordHistory=true}={}){
+  const generation=this.commandGeneration;
   if(!internal)await this.ready;
+  if(this.closed)throw Error('Terminal is closed');
+  if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
   if(this.busy)throw Error('Terminal has a running process. Use Ctrl+C or Stop first.');
   if(!line.trim())return '';if(recordHistory)this.history.push(line);
   const words=tokenize(line,{...this.env,...this.vars},{redirects:true,patterns:true}).flatMap(word=>expandPattern(word,this.fs,this.cwd));if(!words.length)return '';
@@ -121,7 +142,7 @@ export class Terminal{
    case 'source':case '.':{if(args.length!==1)throw Error('Usage: source <file>');if(this.dispatch)return this.dispatch(this,words);const p=this.path(args[0]);this.fs.read(p);if(/^\/opt\/ros\/jazzy\/(?:local_)?setup\.(?:bash|sh)$/.test(p)){sourceBase(this.env,this.vars);return '';}return this.sourceFile(args[0]);}
    case 'bash':{if(args[0]==='-c'&&args.length===2)return this.runScript(null,[],args[1]);if(args.length===1&&!args[0].startsWith('-'))return this.runScript(this.path(args[0]));throw Error('Supported: bash <script> or bash -c "command". Use + Terminal for a new interactive shell.');}
    case 'chmod':{if(args.length!==2||!['+x','-x','u+x','u-x','755','644'].includes(args[0]))throw Error('Supported: chmod +x|-x|755|644 <file>');const entry=this.fs.entry(this.path(args[1]));if(entry.kind!=='file')throw Error('chmod: expected a file');const meta=this.fs.metadata(this.path(args[1]));meta.mode=args[0]==='755'?0o755:args[0]==='644'?0o644:args[0]==='u+x'?meta.mode|0o100:args[0]==='u-x'?meta.mode&~0o100:args[0]==='+x'?meta.mode|0o111:meta.mode&~0o111;entry.executable=!!(meta.mode&0o111);this.fs.changed(this.path(args[1]));return '';}
-   case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file> — Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file> — opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');await this.editFile(cmd,path);return '';}
+   case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file>: Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file>: opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');await this.editFile(cmd,path);return '';}
    case 'vim':case 'vi':throw Error('Vim is not implemented in this lab. Use nano <file> or gedit <file>.');
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.env.OLDPWD=this.cwd;this.cwd=p;this.env.PWD=p;return '';}

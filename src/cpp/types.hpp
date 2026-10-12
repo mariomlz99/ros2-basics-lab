@@ -28,6 +28,7 @@ __attribute__((import_module("kinenest"),import_name("field_length"))) int kn_fi
 __attribute__((import_module("kinenest"),import_name("field_kind"))) int kn_field_kind(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_bool"))) int kn_field_bool(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_number"))) double kn_field_number(const char*,int);
+__attribute__((import_module("kinenest"),import_name("field_bytes_copy"))) int kn_field_bytes_copy(const char*,int,uint8_t*,int);
 __attribute__((import_module("kinenest"),import_name("field_string_size"))) int kn_field_string_size(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_string_copy"))) int kn_field_string_copy(const char*,int,char*,int);
 }
@@ -62,8 +63,8 @@ template<class T> std::string encode_value(const T& v){
  else if constexpr(std::is_arithmetic<T>::value)return number(v);
  else return MessageTraits<T>::encode(v);
 }
-template<class T> std::string encode_value(const std::vector<T>& v){std::string s="[";for(size_t i=0;i<v.size();i++){if(i)s+=",";s+=encode_value(v[i]);}return s+"]";}
-template<class T,size_t N> std::string encode_value(const std::array<T,N>& v){std::string s="[";for(size_t i=0;i<N;i++){if(i)s+=",";s+=encode_value(v[i]);}return s+"]";}
+template<class T> std::string encode_value(const std::vector<T>& v){std::string s="[";for(size_t i=0;i<v.size();i++){if(i)s+=",";if constexpr(std::is_same<T,bool>::value)s+=encode_value(bool(v[i]));else s+=encode_value(v[i]);}return s+"]";}
+template<class T,size_t N> std::string encode_value(const std::array<T,N>& v){std::string s="[";for(size_t i=0;i<N;i++){if(i)s+=",";if constexpr(std::is_same<T,bool>::value)s+=encode_value(bool(v[i]));else s+=encode_value(v[i]);}return s+"]";}
 inline std::map<int,std::function<void()>> subscriptions,timers,service_responses;
 inline std::map<int,std::function<void(const std::string&)>> service_handlers;
 }

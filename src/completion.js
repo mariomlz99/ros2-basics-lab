@@ -13,11 +13,11 @@ export function rosCompletions(lab,terminal,prefix){
  }else if(words.length===3)choices=verbs[verb]??[];
  else if(words.length===4){
   if(verb==='pkg'&&['executables','prefix'].includes(action))choices=[...BASE_PACKAGES.filter(name=>lab.workspace.baseVisible(terminal,name)),...lab.workspace.visible(terminal)];
-  if(verb==='node'&&action==='info'||verb==='param'&&['list','get','set'].includes(action))choices=[...lab.runtime.nodes];
+  if(verb==='node'&&action==='info'||verb==='param'&&['list','get','set'].includes(action))choices=[...new Set([...lab.runtime.nodes].map(id=>lab.runtime.nodeName(id)))];
   if(verb==='topic'&&['info','type','echo','hz','pub'].includes(action))choices=[...lab.runtime.topics.keys()];
   if(verb==='service'&&['type','call'].includes(action))choices=[...lab.runtime.services.keys()];
   if(verb==='interface'&&action==='show')choices=[...lab.workspace.registry.definitions.keys()].filter(name=>lab.workspace.baseVisible(terminal,name.split('/')[0])||lab.workspace.visible(terminal).includes(name.split('/')[0]));
- }else if(words.length===5&&verb==='param'&&['get','set'].includes(action))choices=[...(lab.runtime.parameters.get(words[3])?.keys()??[])];
+ }else if(words.length===5&&verb==='param'&&['get','set'].includes(action))choices=[...(lab.runtime.parameters.get(lab.runtime.resolveNode(words[3]))?.keys()??[])];
  if(verb==='node'&&action==='list'&&words.length>=4)choices=['--all','--count-nodes','--no-daemon','--help'];
  return sortedCompletions(choices.filter(value=>value.startsWith(partial)));
 }

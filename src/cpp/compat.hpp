@@ -8,11 +8,15 @@ class Logger{std::string name_;public:explicit Logger(std::string name):name_(na
 template<class... Args> inline void log(const Logger& logger,int level,const char* format,Args... args){char text[4096];std::snprintf(text,sizeof(text),format,args...);kinenest::emit("{\"kind\":\"log\",\"node\":"+kinenest::quote(logger.get_name())+",\"level\":"+std::to_string(level)+",\"text\":"+kinenest::quote(text)+"}");}
 template<class T> class Publisher {
  std::string node_,topic_;
+ int id_;
 public:
  using SharedPtr=std::shared_ptr<Publisher<T>>;
- Publisher(std::string node,std::string topic):node_(node),topic_(topic){
-  kinenest::emit("{\"kind\":\"publisher\",\"node\":"+kinenest::quote(node_)+",\"topic\":"+kinenest::quote(topic_)+",\"type\":"+kinenest::quote(kinenest::MessageTraits<T>::type())+"}");
+ Publisher(std::string node,std::string topic):node_(node),topic_(topic),id_(++kinenest::next_id){
+  kinenest::emit("{\"kind\":\"publisher\",\"id\":"+std::to_string(id_)+",\"node\":"+kinenest::quote(node_)+",\"topic\":"+kinenest::quote(topic_)+",\"type\":"+kinenest::quote(kinenest::MessageTraits<T>::type())+"}");
  }
+ Publisher(const Publisher&)=delete;
+ Publisher& operator=(const Publisher&)=delete;
+ ~Publisher(){kinenest::emit("{\"kind\":\"unpublisher\",\"id\":"+std::to_string(id_)+"}");}
  void publish(const T& msg){
   const auto payload=kinenest::MessageTraits<T>::encode(msg);
   kinenest::emit("{\"kind\":\"publish\",\"node\":"+kinenest::quote(node_)+",\"topic\":"+kinenest::quote(topic_)+",\"type\":"+kinenest::quote(kinenest::MessageTraits<T>::type())+",\"message\":"+payload+"}");
@@ -83,7 +87,7 @@ inline std::map<std::string,std::map<std::string,Parameter>> parameters;
 
 template<class T> class Service {
  int id_;
-public:using SharedPtr=std::shared_ptr<Service<T>>;explicit Service(int id):id_(id){}~Service(){kinenest::service_handlers.erase(id_);}
+public:using SharedPtr=std::shared_ptr<Service<T>>;explicit Service(int id):id_(id){}~Service(){kinenest::service_handlers.erase(id_);kinenest::emit("{\"kind\":\"unservice\",\"id\":"+std::to_string(id_)+"}");}
 };
 template<class T> class Client{
  std::string node_,name_;

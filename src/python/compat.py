@@ -5,7 +5,7 @@ import sys
 import types
 import json
 from js import emit_json
-_nodes, _subscriptions, _timers, _futures = {}, {}, {}, {}
+_nodes, _publishers, _subscriptions, _timers, _futures = {}, {}, {}, {}, {}
 _counter = 0
 _initialized = False
 
@@ -48,17 +48,44 @@ def _payload(msg):
 
 def _from_payload(instance, payload):
     for key, value in payload.items():
+        if isinstance(value, memoryview):
+            value = value.tolist()
         current = getattr(instance, key)
-        setattr(instance, key, _from_payload(current, value) if isinstance(value, dict) and hasattr(current, '__dict__') else [_object(v) for v in value] if isinstance(value, list) else value)
+        if isinstance(value, list) and key in instance._field_factories:
+            factory = instance._field_factories[key]
+            value = [_from_payload(factory(), item) if isinstance(item, dict) else item for item in value]
+        elif isinstance(value, dict) and hasattr(current, '__dict__'):
+            value = _from_payload(current, value)
+        setattr(instance, key, value)
     return instance
 
 class Publisher:
     def __init__(self, node, topic, cls):
         self.node, self.topic, self.cls = node, topic, cls
+        self.id = _id()
+        _publishers[self.id] = self
+        _send('publisher', node=node, topic=topic, type=_type_name(cls), id=self.id)
     def publish(self, msg):
+        if self.id not in _publishers:
+            raise RuntimeError('Publisher has been destroyed')
         if not isinstance(msg, self.cls):
             raise TypeError('Wrong message type for publisher')
         _send('publish', node=self.node, topic=self.topic, type=_type_name(self.cls), message=_payload(msg))
+
+class Timer:
+    def __init__(self, key, node, period, callback):
+        self.id, self.node, self.period, self.callback = key, node, period, callback
+        self.cancelled = False
+    def cancel(self):
+        self.cancelled = True
+        _send('timer_cancel', id=self.id)
+    def is_canceled(self):
+        return self.cancelled
+    def reset(self):
+        if self.id not in _timers:
+            raise RuntimeError('Timer has been destroyed')
+        self.cancelled = False
+        _send('timer', node=self.node, period=self.period, id=self.id)
 
 class Node:
     def __init__(self, name):
@@ -71,24 +98,36 @@ class Node:
         _nodes[self.name] = self
         _send('node', node=self.name)
     def create_publisher(self, cls, topic, qos):
-        _send('publisher', node=self.name, topic=topic, type=_type_name(cls))
         return Publisher(self.name, topic, cls)
+    def destroy_publisher(self, publisher):
+        if publisher.node != self.name or _publishers.pop(publisher.id, None) is None:
+            return False
+        _send('unpublisher', id=publisher.id)
+        return True
     def create_subscription(self, cls, topic, callback, qos):
         key = _id()
         _subscriptions[key] = (self.name, callback, cls)
         _send('subscribe', node=self.name, topic=topic, type=_type_name(cls), id=key)
         return key
     def destroy_subscription(self, key):
-        _subscriptions.pop(key, None)
+        if key not in _subscriptions or _subscriptions[key][0] != self.name:
+            return False
+        _subscriptions.pop(key)
         _send('unsubscribe', id=key)
+        return True
     def create_timer(self, period, callback):
         key = _id()
-        _timers[key] = (self.name, callback)
-        _send('timer', node=self.name, period=float(period), id=key)
-        return types.SimpleNamespace(cancel=lambda: self.destroy_timer(key))
+        timer = Timer(key, self.name, float(period), callback)
+        _timers[key] = timer
+        _send('timer', node=self.name, period=timer.period, id=key)
+        return timer
     def destroy_timer(self, timer):
-        _timers.pop(timer, None)
-        _send('timer_cancel', id=timer)
+        key = timer.id if isinstance(timer, Timer) else timer
+        if key not in _timers or _timers[key].node != self.name:
+            return False
+        _timers.pop(key)
+        _send('timer_cancel', id=key)
+        return True
     def declare_parameter(self, name, value):
         if name in self._parameters:
             raise ValueError('Parameter already declared')
@@ -102,12 +141,18 @@ class Node:
             _send('log', node=self.name, level=level, text=str(message))
         return types.SimpleNamespace(debug=lambda s: log(10, s), info=lambda s: log(20, s), warning=lambda s: log(30, s), warn=lambda s: log(30, s), error=lambda s: log(40, s), fatal=lambda s: log(50, s))
     def destroy_node(self):
+        for publisher in list(_publishers.values()):
+            if publisher.node == self.name:
+                self.destroy_publisher(publisher)
         for key, (node, _, _) in list(_subscriptions.items()):
             if node == self.name:
                 self.destroy_subscription(key)
-        for key, (node, _) in list(_timers.items()):
-            if node == self.name:
+        for key, timer in list(_timers.items()):
+            if timer.node == self.name:
                 self.destroy_timer(key)
+        for key, (node, _, _) in list(_services.items()):
+            if node == self.name:
+                self.destroy_service(key)
         _nodes.pop(self.name, None)
         _send('destroy', node=self.name)
 
@@ -136,12 +181,12 @@ def _run_student(source):
 
 def _dispatch_message(key, payload, sample):
     if key in _subscriptions:
-        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload)))
+        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload) if isinstance(payload, str) else payload))
         _send('message_processed', sample=sample)
 
 def _dispatch_timer(key):
-    if key in _timers:
-        _timers[key][1]()
+    if key in _timers and not _timers[key].cancelled:
+        _timers[key].callback()
 
 _module('rclpy', init=init, shutdown=shutdown, ok=lambda: _initialized, spin=spin, create_node=Node)
 _module('rclpy.node', Node=Node)
@@ -159,6 +204,12 @@ def _install_interfaces(schema):
         if package + '.' + kind not in sys.modules:
             _module(package + '.' + kind)
         def message_class(fields, label):
+            factories = {}
+            for field in fields:
+                base = field['type'].split('[')[0]
+                if base not in primitives and not base.startswith(('int', 'uint')) and base not in ('byte', 'char'):
+                    target = base if base.count('/') == 2 else base.replace('/', '/msg/') if '/' in base else package + '/msg/' + base
+                    factories[field['name']] = lambda target=target: make(target)()
             def constructor(self, **kwargs):
                 for field in fields:
                     typename = field['type']
@@ -177,7 +228,7 @@ def _install_interfaces(schema):
                     setattr(self, field['name'], kwargs.pop(field['name'], [default() for _ in range(int(count or 0))] if array else default()))
                 if kwargs:
                     raise TypeError('Unknown fields: ' + ', '.join(kwargs))
-            return type(label, (), {'__init__': constructor, '_type': name, **{c['name']: c['value'] for c in record.get('responseConstants' if label == 'Response' else 'constants', [])}})
+            return type(label, (), {'__init__': constructor, '_type': name, '_field_factories': factories, **{c['name']: c['value'] for c in record.get('responseConstants' if label == 'Response' else 'constants', [])}})
         if 'response' in record:
             cls = type(short, (), {'_type': name, 'Request': message_class(record['fields'], 'Request'), 'Response': message_class(record['response'], 'Response')})
         else:
@@ -232,6 +283,14 @@ def _create_service(self, cls, name, callback):
 def _create_client(self, cls, name):
     return Client(self.name, cls, name)
 
+def _destroy_service(self, key):
+    if key not in _services or _services[key][0] != self.name:
+        return False
+    _services.pop(key)
+    _send('unservice', id=key)
+    return True
+
+Node.destroy_service = _destroy_service
 Node.create_service = _create_service
 Node.create_client = _create_client
 _module('rclpy.task', Future=Future)
@@ -240,7 +299,7 @@ def _service_request(key, token, payload):
     if key not in _services:
         raise RuntimeError('Service stopped')
     _, cls, callback = _services[key]
-    result = callback(cls.Request(**json.loads(payload)), cls.Response())
+    result = callback(_from_payload(cls.Request(), json.loads(payload)), cls.Response())
     if not isinstance(result, cls.Response):
         raise TypeError('Service callback must return a response')
     _send('service_result', token=token, response=_payload(result))
@@ -252,7 +311,7 @@ def _service_response(key, payload):
     future, cls = entry
     data = json.loads(payload)
     future._error = data.get('error')
-    future._result = None if future._error else cls.Response(**data)
+    future._result = None if future._error else _from_payload(cls.Response(), data)
     future._done = True
     for callback in future._callbacks:
         callback(future)

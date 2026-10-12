@@ -5,7 +5,7 @@ import {parseLaunch} from './launch.js';
 export class ProcessManager {
   constructor(runtime,workspace,{factories=LANGUAGE_ADAPTERS,onChange=()=>{},onOutput=()=>{}}={}){
     this.runtime=runtime;this.workspace=workspace;this.factories=factories;this.onChange=onChange;this.onOutput=onOutput;
-    this.processes=new Map();this.groups=new Map();this.nextId=0;this.generation=0;
+    this.processes=new Map();this.runs=new Map();this.groups=new Map();this.nextId=0;this.generation=0;
   }
   task(executable,terminal,start){const id=++this.nextId;const process={id,name:'ros2cli',executable,terminal,language:'cli',state:'running',output:[]};this.processes.set(id,process);try{const cleanup=start(process);process.adapter={stop:cleanup};this.onChange();return process;}catch(e){this.processes.delete(id);throw e;}}
   active(){return [...this.processes.values()].filter(p=>p.state!=='stopped');}
@@ -21,8 +21,8 @@ export class ProcessManager {
     const installed=installedRecord??this.workspace.installedPackage(name),entry=installed.executables.get(executable);
     if(!entry||!this.workspace.executableExists(name,executable,installed))throw Error('Executable '+executable+' is not installed in '+name+'.');
     const id=++this.nextId,token=this.generation;
-    const process={id,name,executable,terminal,group,ros,state:'loading',language:installed.type,adapter:null,output:[],sampleStart:this.runtime.sampleCounter};
-    this.processes.set(id,process);if(group)this.groups.get(group)?.add(id);this.onChange();
+    const process={id,name,executable,terminal,group,ros,state:'loading',language:installed.type,adapter:null,entrySignature:JSON.stringify([entry.module,entry.function,entry.code]),entryCode:installed.type==='python'?installed.files[entry.module.replaceAll('.','/')+'.py']:entry.code,output:[],sampleStart:this.runtime.sampleCounter};
+    this.processes.set(id,process);this.runs.set(name+'/'+executable,process);if(this.runs.size>100)this.runs.delete(this.runs.keys().next().value);if(group)this.groups.get(group)?.add(id);this.onChange();
     try{
       const factory=this.factories.get(installed.type);if(!factory)throw Error('No execution adapter for '+installed.type);
       const Adapter=await factory();if(token!==this.generation||!this.processes.has(id))return null;
@@ -48,5 +48,5 @@ export class ProcessManager {
   stopGroup(group){for(const id of [...(this.groups.get(group)??[])])this.stop(id);this.groups.delete(group);this.onChange();}
   stopTerminal(terminal){for(const process of this.active())if(process.terminal===terminal)this.stop(process.id);}
   stopAll(){this.generation++;for(const id of [...this.processes.keys()])this.stop(id);this.groups.clear();this.onChange();}
-  reset(){this.stopAll();this.processes.clear();this.groups.clear();this.nextId=0;}
+  reset(){this.stopAll();this.runs.clear();this.processes.clear();this.groups.clear();this.nextId=0;}
 }

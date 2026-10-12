@@ -1,3 +1,4 @@
+import {WHEELS,SENSORS} from './sensors.js';
 import {TRAINING_WORLD} from './lidar.js';
 import {ROBOT_RADIUS} from './sensors.js';
 // Render in world metres so the robot, obstacles and collision footprint agree.
@@ -13,10 +14,10 @@ export function drawWorld(canvas,robot,overview=false){
  c.save();c.translate(robot.x,robot.y);c.rotate(robot.yaw);
  const r=ROBOT_RADIUS;c.fillStyle='#8c9ca1';c.beginPath();c.ellipse(.035,-.035,r,r*.85,0,0,Math.PI*2);c.fill();
  // Two tyres, chassis, lidar puck and a forward-facing camera.
- c.fillStyle='#283a44';c.fillRect(-.09,-.155,.18,.065);c.fillRect(-.09,.09,.18,.065);
+ c.fillStyle='#283a44';for(const side of [-1,1])c.fillRect(-WHEELS.radius,side*WHEELS.track/2-WHEELS.width/2,2*WHEELS.radius,WHEELS.width);
  c.fillStyle='#f4f8f8';c.strokeStyle='#416575';c.lineWidth=.02;c.fillRect(-.13,-.11,.25,.22);c.strokeRect(-.13,-.11,.25,.22);
- c.fillStyle='#348a98';c.fillRect(.045,-.085,.065,.17);c.fillStyle='#163440';c.beginPath();c.arc(.02,0,.055,0,Math.PI*2);c.fill();
- c.fillStyle='#6dd9dc';c.beginPath();c.arc(.02,0,.026,0,Math.PI*2);c.fill();c.fillStyle='#ef9b46';c.beginPath();c.moveTo(.17,0);c.lineTo(.10,-.045);c.lineTo(.10,.045);c.closePath();c.fill();c.restore();c.restore();
+ c.fillStyle='#348a98';c.fillRect(.045,-.085,.065,.17);c.fillStyle='#163440';c.beginPath();c.arc(SENSORS.lidar.x,SENSORS.lidar.y,.055,0,Math.PI*2);c.fill();
+ c.fillStyle='#6dd9dc';c.beginPath();c.arc(SENSORS.lidar.x,SENSORS.lidar.y,.026,0,Math.PI*2);c.fill();c.fillStyle='#ef9b46';c.beginPath();c.moveTo(.17,0);c.lineTo(.10,-.045);c.lineTo(.10,.045);c.closePath();c.fill();c.restore();c.restore();
  c.fillStyle='#203844';c.font='30px ui-monospace, monospace';c.fillText(`x=${robot.x.toFixed(2)} m   y=${robot.y.toFixed(2)} m   yaw=${(robot.yaw*180/Math.PI).toFixed(0)}°`,20,36);
- c.font='26px system-ui';c.fillText('1 m grid · +x → · +y ↑',20,h-20);
+ c.font='26px system-ui';c.fillText('1 square = 1 m · +x → · +y ↑',20,h-20);
 }

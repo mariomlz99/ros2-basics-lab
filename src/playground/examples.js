@@ -35,3 +35,15 @@ int main(int argc, char **argv) {
 }
 `;
 return py?{[pkg+'/lidar.py']:python('LaserScan','/scan',"self.get_logger().info(f'Front: {message.ranges[len(message.ranges)//2]:.2f} m; nearest: {min(message.ranges):.2f} m')"),[pkg+'/camera.py']:python('Image','/camera/image_raw',"self.get_logger().info(f'Image: {message.width} × {message.height}, {message.encoding}')"),'setup.py':setup(pkg,[`lidar = ${pkg}.lidar:main`,`camera = ${pkg}.camera:main`])}:{'src/lidar.cpp':cpp('LaserScan','laser_scan','/scan','RCLCPP_INFO(node->get_logger(), "Front: %.2f m; nearest: %.2f m", message->ranges[message->ranges.size()/2], *std::min_element(message->ranges.begin(), message->ranges.end()));'),'src/camera.cpp':cpp('Image','image','/camera/image_raw','RCLCPP_INFO(node->get_logger(), "Image: %u x %u", message->width, message->height);'),'CMakeLists.txt':cmake(pkg,{lidar:'src/lidar.cpp',camera:'src/camera.cpp'},['rclcpp','sensor_msgs'])};}
+
+
+// Valid, runnable scaffolds. Sensor processing is left for the student; package
+// metadata remains identical to the optional reference implementation.
+export function sensorSkeletons(language){
+ const files=sensorFiles(language),out={};
+ for(const [path,source]of Object.entries(files)){
+  if(language==='python'&&path.endsWith('.py')&&path!=='setup.py')out[path]=source.replace(/        self.get_logger\(\).info\([^\n]+/, '        # TODO: inspect the message fields and print your observation.\n        pass');
+  if(language==='cpp'&&path.endsWith('.cpp'))out[path]=source.replace(/      RCLCPP_INFO\([^\n]+/, '      // TODO: inspect the message fields and print your observation.\n      (void)message;');
+ }
+ return out;
+}

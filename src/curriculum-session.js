@@ -14,5 +14,6 @@ export function migrateCurriculum(record){
   record.curriculumVersion=4;
  }
  if(record.other)migrateCurriculum(record.other);
+ for(const slot of Object.values(record.slots??{}))migrateCurriculum(slot);
  return record;
 }

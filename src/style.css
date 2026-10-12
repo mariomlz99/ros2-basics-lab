@@ -32,11 +32,11 @@
 
 #session-state{font-size:11px;color:var(--muted);margin:8px 0}
 
-#playground-stage{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:16px}#playground-stage[hidden]{display:none}.playground-streams{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px}.playground-streams figure{margin:0;min-width:0}.playground-streams figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}.playground-streams canvas{display:block;width:100%;height:200px;object-fit:contain;background:#14252b;border:1px solid var(--line);border-radius:5px;image-rendering:auto}.playground-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.playground-controls span{font-size:12px;color:var(--muted)}@media(max-width:700px){.playground-streams{grid-template-columns:1fr}.playground-streams canvas{height:180px}}
+#playground-stage{container-type:inline-size;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:16px}#playground-stage[hidden]{display:none}.playground-streams{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:12px}.playground-streams figure{margin:0;min-width:0}.playground-streams figcaption{font-size:12px;color:var(--muted);margin-bottom:6px}.playground-streams canvas{display:block;width:100%;height:200px;object-fit:contain;background:#14252b;border:1px solid var(--line);border-radius:5px;image-rendering:auto}.playground-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}.playground-controls span{font-size:12px;color:var(--muted)}@media(max-width:700px){.playground-streams{grid-template-columns:1fr}.playground-streams canvas{height:180px}}
 
 .command button{min-width:64px}
 
-#resize-streams{display:block;margin:-10px 0 12px}#playground-stage[hidden]+#resize-streams{display:none}.playground-streams figure{position:relative}.playground-streams figcaption{padding-right:100px;min-height:26px;overflow-wrap:anywhere}.stream-expand{position:absolute;right:0;top:0;font-size:11px;padding:3px 8px}.playground-streams canvas{height:var(--stream-height,200px)}.playground-streams figure.expanded{grid-column:1 / -1;order:-1}.playground-streams figure.expanded canvas{height:max(var(--stream-height,200px),min(60vh,560px))}@media(max-width:700px){.playground-streams canvas{height:var(--stream-height,180px)}}
+#resize-streams{display:block;margin:-10px 0 12px}#playground-stage[hidden]+#resize-streams{display:none}.playground-streams figure{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr;column-gap:8px;align-items:start}.playground-streams figcaption{margin:0 0 8px;min-height:32px;overflow-wrap:normal}.stream-expand{position:static;font-size:11px;padding:3px 8px;white-space:nowrap}.playground-streams canvas{grid-column:1 / -1;height:var(--stream-height,240px)}.playground-streams figure.expanded{grid-column:1 / -1;order:-1}.playground-streams figure.expanded canvas{height:max(var(--stream-height,200px),min(60vh,560px))}@media(max-width:700px){.playground-streams canvas{height:var(--stream-height,180px)}}
 
 /* Local code completion and call signatures, with no language server. */
 .cm-tooltip {background:var(--panel)!important;color:var(--text)!important;border-color:var(--line)!important}
@@ -64,3 +64,10 @@
 .bug-report{padding:12px 24px;border-top:1px solid var(--line);font-size:12px;line-height:1.7;overflow-wrap:anywhere}.bug-report a{color:var(--accent);text-underline-offset:2px}.bug-report code{font-size:inherit}
 
 .playground-exercises{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.playground-exercises button{font-size:12px;padding:6px 9px;border-color:var(--line)}.exercise-title{font-size:18px;font-weight:600;margin:12px 0}.frame-tree{font:12px/1.8 ui-monospace,monospace;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+
+/* Author display rules must respect controls hidden by the current workspace. */
+[hidden]{display:none!important}
+
+/* Respond to the simulator panel width, including the lesson sidebar. */
+@container (max-width:920px){.playground-streams{grid-template-columns:repeat(2,minmax(0,1fr))}.playground-streams figure:first-child{grid-column:1 / -1}.playground-streams figure:first-child canvas{height:var(--stream-height,280px)}}
+@container (max-width:560px){.playground-streams{grid-template-columns:1fr}.playground-streams canvas,.playground-streams figure:first-child canvas{height:var(--stream-height,240px)}}
