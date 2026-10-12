@@ -1,3 +1,5 @@
+> Historical notes. The completed 12 October audit and live release are recorded in [ADVERSARIAL-REVIEW.md](ADVERSARIAL-REVIEW.md). Earlier review locks and pause instructions below are superseded.
+
 # Package continuity, local IntelliSense and terminal widths — 9 October 2026
 
 - Lesson 3 keeps native ROS package-creation templates, then explicitly edits the visible hello source to print `Hi from my_first_package.` in either language. Lesson 4 removes only `src/my_first_package`, `build/my_first_package`, and `install/my_first_package`, then recreates that same package with publisher/subscriber dependencies. Later parameter/custom-message/launch examples use the same name. The removal is a visible exercise command; saved work is never silently rewritten. Native Python and C++ builds verify the greeting and removal of stale hello executables; browser runtime checks verify rebuilt publisher/subscriber delivery.

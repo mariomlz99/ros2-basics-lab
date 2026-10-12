@@ -1,9 +1,12 @@
 # Student readiness audit | 12 October 2026
 
-Resumed final release verification on the isolated `audit/student-readiness` candidates. The
+**ROS 2 BASICS LAB READY FOR STUDENT USE: YES, within the supported beginner scope.**
+
+Final local and live verification is complete on the `audit/student-readiness` candidates. The
 original `ros2-basics-lab/` and `ros2learn/` working copies, including their
-preexisting Python changes, remain untouched. No audit candidate has been
-published yet. The readiness verdict remains **NO until final release checks**.
+preexisting Python changes, remain untouched. The standalone public Lab is
+published and verified. Shared KineNest changes are verified locally and have
+not been deployed. No reproduced product defect remains open.
 
 ## Evidence and scope
 
@@ -70,7 +73,7 @@ ungraded; no checker requirements have been invented for either.
 | Free Lab | Both languages/products: real hello, per-terminal sourcing, independent course/playground/free persistence and Reset, zero Twist, 20 simulator toggles/language, mobile layout | Final visible output stress: 30 seconds/language/product, 1200–1233 log events and 297–302 image callbacks, Stop/close/reload/Reset isolation pass |
 | UI/layout | Dirty drafts/conflicts, theme/language while running, six terminals, history/Back/Forward, keyboard resizing; six Chrome widths/products and four Firefox Lab widths; seven locales for K upcoming cards | Built layout/product smoke plus 30 theme/viewport changes per sustained-output run pass; transcript 80000 chars and scrollback 2000 rows bounded |
 | Runtime loading/cache | Both built products: real Python-only hello, pub/sub callbacks, save/reload; five Python assets and zero C++ toolchain/worker requests; installed C++ without compiler cache; compiler worker failure recovery; both open C++ sessions survive asset rebuild | No reproduced open defect |
-| Public Pages/storage | Local standalone public build under /ros2-basics-lab/; 12 assets/MIME, nine navigation entries/reloads, real 404, no cookies/Set-Cookie/service workers; navigation does not eagerly fetch runtimes | Final committed artifact and actual live validation pending |
+| Public Pages/storage | Local standalone public build under /ros2-basics-lab/; 12 assets/MIME, nine navigation entries/reloads, real 404, no cookies/Set-Cookie/service workers; navigation does not eagerly fetch runtimes | All live checks pass; 210 staged files matched; old C++ tab survives publication; new tabs use new assets |
 
 ## Findings and regressions
 
@@ -78,8 +81,7 @@ Count each defect group once across products. Confirmed product findings:
 **24 MAJOR, 4 MINOR, 0 BLOCKER**, all locally fixed and verified. The two
 new output fixes pass actual Python/C++ flood, recovery and Stop checks in both products.
 This count does not convert unfinished deployment verification into a product
-bug. No reproduced product defects remain open. Final built verification passes;
-actual live validation is still required before a release readiness claim.
+bug. No reproduced product defects remain open. Final built and live verification pass; the supported Lab is ready for student use.
 
 | ID | Severity | Fixed behavior | Regression/evidence |
 | --- | --- | --- | --- |
@@ -169,10 +171,52 @@ Logs: `final-built-sensor.log`, `final-built-output.log`,
 `final-built-course.log`, `final-free-lab-output.log`. Structured reports retain
 the associated sensor, output, per-unit and Free Lab measurements.
 
-## Release state
+## Live release verification
 
-The remotes were refreshed again: KineNest `origin/main` remains `1f2744e`
-and is an ancestor of its candidate; Pages `origin/main` remains `9866aa7`.
-The original dirty working copies are preserved. Source and local built checks
-are complete; standalone public artifact publication and live validation follow.
-KineNest retains its separate source and product deployment.
+The complete deployed Lab walkthrough passed **14/14 unit/language runs,
+294 guided pages**, including actual outputs, every checker, cleanup,
+save/reload/history and Reset. This is an additional live run of Units 1–7,
+not a claim inferred from the local build. `final-live-course.log` and the
+release checkpoint's `live-course-python-cpp.json` retain the evidence.
+
+- GitHub Pages [deployment 38300876968](https://github.com/mariomlz99/ros2-basics-lab/actions/runs/38300876968)
+  succeeded for artifact commit `aa9c0f2d332784a612a8ed678fe2fa9d11e4187c`.
+- Live source: `bf3975a79370f2d2c59078b49614a5ede35f6d6a`, public build,
+  assets `fa5a84708f8b`. All 210 staged files matched the build byte-for-byte;
+  every previously tracked immutable asset remained unchanged.
+- Live asset/MIME/subpath checks cover 12 runtime files, all nine navigation
+  entries, reload, real missing-page 404, lazy runtime loading and browser-local
+  session storage. No cookies, Set-Cookie responses or service workers appeared.
+- `live-release-check.mjs` compiled real C++ on old live assets `7b3a6474757d`
+  before publication. That same open tab ran its publisher/subscriber after
+  publication. Five old worker/runtime paths still return 200; new tabs use
+  `fa5a84708f8b`. Cleanup leaves zero processes/nodes/listeners/timers.
+- Live Free Lab passes Python/C++ hello, separate terminal sourcing, saved
+  workspace isolation, reload, Reset, mobile layout, zero Twist and 20 robot
+  Start/Stop cycles per language.
+- Live Python-only hello, real pub/sub callbacks and reload download five Python
+  assets and **zero C++ toolchain/worker assets**.
+
+## Source, remote and working-tree state
+
+The Lab release source is `bf3975a`; subsequent local changes only record
+release evidence and add the live publication regression. Application assets
+are unchanged. Lab development source remains local, with a verified Git bundle
+in `checkpoints/2026-10-12-ros2-audit-release/`. The generated Pages checkout and
+remote `main` are both `aa9c0f2` and clean.
+
+KineNest candidate source is `fb2b7071d514f7e608031d75fac70fa74eceb940`, clean
+on `audit/student-readiness`, built as assets `836933e97cf5`. Its refreshed
+`origin/main` is still `1f2744e6975b6f60e1fc4e748453e68a51e9cab9`; this session
+did not push or deploy KineNest. Its separate homepage and curriculum remain.
+The complete local course, Actions, ecosystem and final built checks above pass.
+
+Original worktrees remain at Lab `6ea6241` and KineNest `3b7f000` with exactly
+the saved modified Python worker and two untracked Python-build regression files.
+Their tracked patches and untracked file contents were compared byte-for-byte
+with the evening checkpoint. They were not reset, cleaned or overwritten.
+
+The completion checkpoint records final local reporting commits, evidence
+hashes and verified source bundles. No known audit requirement remains open
+for this Lab release. Unsupported behavior and the DDS/RMW exclusion above
+remain explicit; readiness does not promise arbitrary native ROS compatibility.

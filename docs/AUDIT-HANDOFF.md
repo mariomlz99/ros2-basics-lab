@@ -1,14 +1,16 @@
-# Audit release verification | 12 October 2026
+# Audit complete | 12 October 2026
 
-Final local validation is complete. Both rebuilt products pass Python/C++
-worker flood/recovery, strict image feedback and visible Free Lab output stress.
-Affected guided Units 4–6 (Lab) and 4–7 (KineNest) pass again on the final builds,
-including checkers, cleanup, save/reload/history and Reset.
+ROS 2 BASICS LAB READY FOR STUDENT USE: YES, within the supported beginner scope.
+The complete live Python/C++ course passed 294 pages, every checker, cleanup,
+reload/history and Reset. Pages source `bf3975a`, artifact commit `aa9c0f2`,
+assets `fa5a84708f8b`; deployment 38300876968 succeeded. Existing C++ tabs survive.
+Live Free Lab, hosting and Python-only loading checks pass.
 
-See [ADVERSARIAL-REVIEW.md](ADVERSARIAL-REVIEW.md) for full exercise coverage,
-24 MAJOR / 4 MINOR fixed defect groups, evidence and intentional limitations.
-No reproduced product defects remain open. DDS/RMW internals remain out of scope.
+See [ADVERSARIAL-REVIEW.md](ADVERSARIAL-REVIEW.md) for exercise coverage,
+24 MAJOR / 4 MINOR fixed groups, regressions, performance and limitations.
+KineNest `fb2b707` has all shared fixes and passes local verification; it was
+not deployed. Original dirty worktrees are preserved exactly.
 
-Next: publish the standalone public artifact and verify actual live Pages.
-Original dirty working copies are preserved. Both audit candidates stay on
-`audit/student-readiness`; all older paused checkpoints are historical.
+The completion checkpoint, final commit identities, evidence and verified source
+bundles are in the workspace's `checkpoints/2026-10-12-ros2-audit-release/`.
+Earlier paused checkpoints are historical; no audit work remains pending.
