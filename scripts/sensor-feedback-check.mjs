@@ -26,7 +26,7 @@ try{
     const latest=[...l.runtime.samples.values()].filter(s=>s.topic==='/camera/image_raw').at(-1).message,rgba=canvases[1].getContext('2d').getImageData(0,0,latest.width,latest.height).data;
     if(latest.data.length!==320*240*3||latest.encoding!=='rgb8'||latest.header.frame_id!=='camera_optical_frame')throw Error('Invalid camera metadata');
     for(let i=0;i<latest.data.length;i++)if(latest.data[i]!==rgba[Math.floor(i/3)*4+i%3])throw Error('Displayed and published image differ at '+i);
-    const latencies=frames.map(f=>f.latencyMs).sort((a,b)=>a-b),latency={medianMs:latencies[Math.floor(latencies.length/2)],p95Ms:latencies[Math.floor(latencies.length*.95)],maxMs:latencies.at(-1)};if(latency.p95Ms>250)throw Error('Image feedback p95 exceeds 250 ms: '+JSON.stringify(latency));captures.push({pose:stopped,frame:frames.at(-1),latency,bytesMatched:latest.data.length});
+    const latencies=frames.map(f=>f.latencyMs).sort((a,b)=>a-b),latency={medianMs:latencies[Math.floor(latencies.length/2)],p95Ms:latencies[Math.floor(latencies.length*.95)],maxMs:latencies.at(-1)};if(latency.p95Ms>100)throw Error('Image feedback p95 exceeds 100 ms: '+JSON.stringify(latency));captures.push({pose:stopped,frame:frames.at(-1),latency,bytesMatched:latest.data.length});
     await window.feedbackProgress(language+': opposite camera corrections, LiDAR stop and displayed RGB bytes PASS');
     // Rotate away from the obstacle: pixels vanish and the program sends zero.
     scene.robot.yaw=Math.PI;const away=frames.length;await until(()=>frames.length>away+2,'new rear-facing frames');if(frames.at(-1).count!==0||frames.at(-1).linear!==0||frames.at(-1).angular!==0)throw Error('No-target image must stop');

@@ -1,6 +1,6 @@
 # Student readiness audit | 12 October 2026
 
-Status: updated remote-continuation checkpoint. See AUDIT-HANDOFF.md and the root AUDIT-RESUME.md for current commits and exact verification state. Both use the isolated `audit/student-readiness` branches.
+Status: active review on this PC; the user cancelled the handoff. See AUDIT-HANDOFF.md and the root AUDIT-RESUME.md for current commits and exact verification state. Both use the isolated `audit/student-readiness` branches.
 Original working copies and their uncommitted changes are preserved.
 The latest inspected Pages artifact is `9866aa7` (source `6ea6241`);
 this audit candidate has not been published.
@@ -26,7 +26,7 @@ Course, Playground and Free Lab have independent saved workspace scopes.
 
 | Area | Evidence to date | Remaining |
 | --- | --- | --- |
-| Model suite | Latest checkpoint: all 39 Lab / 41 KineNest test files passed | Browser image latency still unverified |
+| Model suite | All 40 Lab / 42 KineNest test files passed | Final built validation |
 | Units 1–7 | All 147 guided pages per language followed in fresh browser profiles; commands, supplied files, checks, cleanup, reset and reload/history passed | Complete mistake/recovery and checker attack matrix per unit |
 | Unit 1 | Native 15-command parity; successful-command evidence rejects literals/comments/failures; browser rerun passes | Wider per-exercise matrix |
 | Python | Real packaging/runtime boundary, syntax, imports, pub/sub, custom messages, parameters, services and launch passed | Wider valid alternatives and repeated lifecycle stress |
@@ -53,12 +53,12 @@ selection and launch reference text), corrected before the successful reruns.
 The former endpoint-count defect is fixed and passed native plus real Python/C++
 checks in both products, including 2/2 -> 1/1 -> 0/0 independent destruction.
 
-**MAJOR: C++ image latency remains open pending browser verification.** Real
-image-driven control reached x=2.79 m rather than stopping near x=2.2 m. The
-strict reproducer measured a 463 ms image-to-command sample. Generated Image
-byte decoding crossed WASM/JS once per byte. A validated bulk transfer is now
-implemented in both projects; model tests pass, real browser rerun is pending.
-Do not count earlier weak sensor stopping checks as success. Read the handoff.
+**MAJOR, fixed and verified:** C++ image feedback previously reached x=2.79 m
+with a 463 ms sample. Bulk byte decoding, compact Python transfer and typed-byte
+validation now give Python p95=33 ms and C++ p95=24–26 ms in both products. Both
+stop at x≈2.22 m. Exact full-image byte checks, 18 varied-target cycles per
+language/product and slow-callback interruption pass. Browser clocks now also
+support real C++ std::chrono wall/monotonic readings. See the active audit record.
 
 This continuation also fixed Python timer/service lifecycle and nested typed
 payloads, inspectable custom-interface overlay bindings, bounded CMake/colcon/
@@ -75,10 +75,11 @@ The simulator responsive layout passes six Chrome widths in both products and
 four native Firefox widths in Lab. KineNest now includes TF & Odometry before
 Communication & QoS as a coming-soon card, with an axis icon and seven locales.
 Em dashes in visible guidance were reduced. Latest complete model runs pass
-39 Lab and 41 KineNest test FILES. Current dist/live builds remain older.
+40 Lab and 42 KineNest test FILES. Current dist/live builds remain older.
 
-Additional image latency, Start/Stop with varied targets, complete UI/navigation
-and per-exercise adversarial matrices, rebuilt/static/live validation remain.
+Image feedback, varied-target lifecycle and UI/navigation checks pass. Both products
+also pass 19 real-program checker attacks/repairs per language. Rebuilt/static/
+live validation remains in progress.
 The handoff is the authoritative detailed evidence/remaining-work ledger.
 
 ## Confirmed findings and local fixes
@@ -102,7 +103,7 @@ The handoff is the authoritative detailed evidence/remaining-work ledger.
 Shared implementation fixes and their regressions have been committed to the
 KineNest audit branch. Its product homepage and independent curriculum remain.
 The unused robotics navigation entry is removed from its Linux module.
-Current source changes are saved in the checkpoint commits; see the handoff.
+Current source changes are under active validation; see the audit record.
 
 ## Regression entry points
 

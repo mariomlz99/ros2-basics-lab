@@ -48,6 +48,8 @@ def _payload(msg):
 
 def _from_payload(instance, payload):
     for key, value in payload.items():
+        if isinstance(value, memoryview):
+            value = value.tolist()
         current = getattr(instance, key)
         if isinstance(value, list) and key in instance._field_factories:
             factory = instance._field_factories[key]
@@ -179,7 +181,7 @@ def _run_student(source):
 
 def _dispatch_message(key, payload, sample):
     if key in _subscriptions:
-        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload)))
+        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload) if isinstance(payload, str) else payload))
         _send('message_processed', sample=sample)
 
 def _dispatch_timer(key):

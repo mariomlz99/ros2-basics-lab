@@ -92,3 +92,13 @@ test('restarting the native handoff lesson clears a later export acknowledgement
   restoreLesson(lab,before);assert.equal(lessonChecks(lab,6)[0].passed,false);
  }finally{lab.reset();}
 });
+test('workspace check requires an actual current build and per-terminal source',async()=>{
+ const lab=new Lab(),t=lab.terminal();try{
+  await t.execute("echo 'Summary: 1 package finished'");await t.execute('mkdir -p ~/ros2_ws/src');
+  assert.deepEqual(lessonChecks(lab,2).map(c=>c.passed),[true,false,false]);
+  await t.execute('cd ~/ros2_ws/src');await t.execute('ros2 pkg create alternate_pkg --build-type ament_cmake');await t.execute('cd ..');await t.execute('colcon build');
+  assert.deepEqual(lessonChecks(lab,2).map(c=>c.passed),[true,true,false]);
+  await t.execute('source install/setup.bash');assert(lessonChecks(lab,2).every(c=>c.passed));
+  await t.execute('rm src/alternate_pkg/package.xml');assert.equal(lessonChecks(lab,2)[1].passed,false);
+ }finally{lab.reset();}
+});

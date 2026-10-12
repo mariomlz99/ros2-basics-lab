@@ -11,7 +11,22 @@ export class InterfaceRegistry{
  get(name){const r=this.definitions.get(name);if(!r)throw Error('Unknown or unbuilt interface '+name);return r;}
  schema(){return Object.fromEntries(this.definitions);}
  validate(name,value,response=false){const record=this.get(name);const fields=response?record.response:record.fields;if(!fields)throw Error('Not a service interface');this.validateFields(fields,value,name);return value;}
- validateFields(fields,value,owner){if(!value||typeof value!=='object'||Array.isArray(value))throw Error(owner+' requires a message object');for(const key of Object.keys(value))if(!fields.some(f=>f.name===key))throw Error('Unknown field '+key);for(const f of fields){const t=splitType(f.type,owner),v=value[f.name];if(t.array){if(!Array.isArray(v)&&!ArrayBuffer.isView(v))throw Error(f.name+' must be an array');if(t.length!==null&&v.length!==t.length)throw Error(f.name+' must have '+t.length+' elements');if(v.length>1000000)throw Error('Browser message array limit exceeded');for(const x of v)this.validateScalar(t.base,x,f.name);}else this.validateScalar(t.base,v,f.name);}}
+ validateFields(fields,value,owner){
+  if(!value||typeof value!=='object'||Array.isArray(value))throw Error(owner+' requires a message object');
+  for(const key of Object.keys(value))if(!fields.some(f=>f.name===key))throw Error('Unknown field '+key);
+  for(const f of fields){
+   const t=splitType(f.type,owner),v=value[f.name];
+   if(t.array){
+    if(!Array.isArray(v)&&!(ArrayBuffer.isView(v)&&!(v instanceof DataView)))throw Error(f.name+' must be an array');
+    if(t.length!==null&&v.length!==t.length)throw Error(f.name+' must have '+t.length+' elements');
+    if(v.length>1000000)throw Error('Browser message array limit exceeded');
+    // Typed byte storage already guarantees every element's integer range.
+    // Keep shape/size checks, and fully validate ordinary or other typed arrays.
+    if(['uint8','byte','char'].includes(t.base)&&(v instanceof Uint8Array||v instanceof Uint8ClampedArray))continue;
+    for(const x of v)this.validateScalar(t.base,x,f.name);
+   }else this.validateScalar(t.base,v,f.name);
+  }
+ }
  validateScalar(type,v,label){if(!PRIMITIVES[type])return this.validate(type,v);if(type==='string'||type==='wstring'){if(typeof v!=='string')throw Error(label+' must be string');return;}if(type==='bool'){if(typeof v!=='boolean')throw Error(label+' must be bool');return;}if(typeof v!=='number'||!Number.isFinite(v))throw Error(label+' must be finite number');if(!type.startsWith('float')){const signed=type.startsWith('int'),bits=Number(type.match(/\d+/)?.[0]??8);const low=signed?-(2**(bits-1)):0,high=signed?2**(bits-1)-1:2**bits-1;if(!Number.isSafeInteger(v)||v<low||v>high)throw Error(label+' integer outside supported exact range');}else if(type==='float32'&&Math.abs(v)>3.402823466e38)throw Error(label+' exceeds float32 range');}
  defaultMessage(name){const fields=this.get(name).fields;return Object.fromEntries(fields.map(f=>{const t=splitType(f.type,name),value=()=>f.default??(['string','wstring'].includes(t.base)?'':t.base==='bool'?false:PRIMITIVES[t.base]?0:this.defaultMessage(t.base));return [f.name,t.array?Array.from({length:t.length??0},value):value()];}));}
  complete(name,input,response=false){const fields=response?this.get(name).response:this.get(name).fields;if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Message must be a mapping');const out=response?Object.fromEntries(fields.map(f=>{const single=new InterfaceRegistry({temporary:{fields:[f]}});return [f.name,single.defaultMessage('temporary')[f.name]];})):this.defaultMessage(name);for(const [key,v]of Object.entries(input)){const f=fields.find(f=>f.name===key);if(!f)throw Error('Unknown field '+key);const t=splitType(f.type,name);out[key]=!t.array&&!PRIMITIVES[t.base]?this.complete(t.base,v):v;}this.validate(name,out,response);return out;}

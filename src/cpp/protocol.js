@@ -112,7 +112,8 @@ export function copyByteField(payload,path,memory,destination,capacity) {
   if(!Array.isArray(value)&&!(ArrayBuffer.isView(value)&&!(value instanceof DataView)))throw Error('C++ message field '+path+' must be an array');
   if(!Number.isInteger(capacity)||capacity!==value.length)throw Error('C++ byte array size mismatch');
   if(!Number.isInteger(destination)||destination<0||destination+capacity>memory.byteLength)throw Error('C++ byte array destination outside memory');
-  for(const byte of value)if(!Number.isInteger(byte)||byte<0||byte>255)throw Error('C++ message field '+path+' must contain bytes');
+  if(!(value instanceof Uint8Array)&&!(value instanceof Uint8ClampedArray))
+    for(const byte of value)if(!Number.isInteger(byte)||byte<0||byte>255)throw Error('C++ message field '+path+' must contain bytes');
   new Uint8Array(memory,destination,capacity).set(value);
   return capacity;
 }

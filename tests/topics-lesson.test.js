@@ -58,3 +58,15 @@ test('publisher representation matches native nested Twist and String while echo
   assert.equal(formatPublishedMessage(lab.runtime.registry,'std_msgs/msg/String',{data:'line\nnext'}),"std_msgs.msg.String(data='line\\nnext')");
  }finally{lab.reset();}
 });
+test('topic checkers reject print-only, wrong topics, incomplete counts and stale reset evidence',async()=>{
+ const lab=new Lab(),a=lab.terminal(),b=lab.terminal();try{
+  await a.execute("echo 'data: Hello from Terminal 1'");await a.execute("echo 'average rate: 5.000'");
+  assert(topicsChecks(lab).every(c=>!c.passed));
+  await b.execute('ros2 topic echo /wrong std_msgs/msg/String');await a.execute("ros2 topic pub --times 3 --rate 2 /wrong std_msgs/msg/String '{data: wrong}'");await until(()=>!a.busy);
+  assert(topicsChecks(lab).every(c=>!c.passed));lab.stop(b.id);
+  await b.execute('ros2 topic echo /lab_chat std_msgs/msg/String');await a.execute("ros2 topic pub --times 3 --rate 2 /lab_chat std_msgs/msg/String '{data: interrupted}'");await sleep(100);lab.stop(a.id);
+  assert(topicsChecks(lab)[0].passed);assert(!topicsChecks(lab)[1].passed);
+  await a.execute("ros2 topic pub --times 3 --rate 2 /lab_chat std_msgs/msg/String '{data: actual}'");await until(()=>!a.busy);assert(topicsChecks(lab)[1].passed);
+  lab.reset();assert(topicsChecks(lab).every(c=>!c.passed));
+ }finally{lab.reset();}
+});

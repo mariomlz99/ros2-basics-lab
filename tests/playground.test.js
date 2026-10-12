@@ -32,7 +32,7 @@ test('collision stops motion before contact and messages match the displayed cam
  try{const scene=new Playground({stamp:()=>stamp,publish:(topic,type,message)=>sent.push({topic,type,message})},canvas(),canvas(),canvas());
   for(let i=0;i<100;i++){scene.robot.command(2,0);scene.step();assert(!collides(scene.robot,TRAINING_WORLD));}
   assert(scene.robot.x<=3-ROBOT_RADIUS);assert(scene.robot.x>2.7);assert(scene.robot.x+SENSORS.lidar.x<3);
-  const image=sent.filter(s=>s.topic==='/camera/image_raw').at(-1).message;assert.equal(image.data.length,image.step*image.height);assert.deepEqual(image.data,Array.from(renderCamera(scene.robot).data));
+  const image=sent.filter(s=>s.topic==='/camera/image_raw').at(-1).message;assert.equal(image.data.length,image.step*image.height);assert(image.data instanceof Uint8Array);assert.deepEqual(image.data,renderCamera(scene.robot).data);
   const scan=sent.filter(s=>s.topic==='/scan').at(-1).message;assert.equal(scan.scan_time,.1);assert(scan.ranges[60]>.05&&scan.ranges[60]<.2);
  }finally{globalThis.ImageData=prior;}
 });

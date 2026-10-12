@@ -76,3 +76,27 @@ assert service not in _services
 assert events[-1]=={'kind':'unservice','id':service}
 assert node.destroy_service(service) is False
 `));
+
+test('direct decoded image payload preserves generated types and all byte values',()=>python(`
+from sensor_msgs.msg import Image
+from builtin_interfaces.msg import Time
+node=Node('image_probe')
+pub=node.create_publisher(Image,'/copy',10)
+received=[]
+def receive(message):
+    assert isinstance(message,Image)
+    assert isinstance(message.header.stamp,Time)
+    assert message.header.stamp.nanosec==42
+    assert message.data==list(range(256))*900
+    received.append(message)
+    pub.publish(message)
+sub=node.create_subscription(Image,'/image',receive,10)
+message=Image(width=320,height=240,step=960,encoding='rgb8',data=list(range(256))*900)
+message.header.stamp.nanosec=42
+payload=_payload(message)
+payload['data']=memoryview(bytes(payload['data']))
+_dispatch_message(sub,payload,7)
+assert len(received)==1
+assert [e for e in events if e['kind']=='publish'][-1]['message']['data']==message.data
+assert [e for e in events if e['kind']=='message_processed'][-1]['sample']==7
+`));

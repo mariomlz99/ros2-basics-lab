@@ -60,10 +60,10 @@ async function handle(data){
     finally{pyodide.globals.delete('image_bytes');postMessage({kind:'frame_done',subscription:data.subscription});}
   }else if(data.kind==='message'||data.kind==='timer'){
     pyodide.globals.set('event_key',data.subscription??data.id);
-    pyodide.globals.set('event_payload',JSON.stringify(data.message,(_,v)=>v===Infinity?'Infinity':v));
+    pyodide.globals.set('event_payload',data.message??null);
     pyodide.globals.set('event_sample',data.sample??0);
-    try{pyodide.runPython(data.kind==='timer'?'_dispatch_timer(event_key)':'_dispatch_message(event_key, event_payload, event_sample)');}
-    finally{postMessage({kind:'frame_done',subscription:data.subscription??('timer-'+data.id)});}
+    try{pyodide.runPython(data.kind==='timer'?'_dispatch_timer(event_key)':'_dispatch_message(event_key, event_payload.to_py(), event_sample)');}
+    finally{pyodide.globals.delete('event_payload');postMessage({kind:'frame_done',subscription:data.subscription??('timer-'+data.id)});}
   }else if(data.kind==='parameter_update'){
     pyodide.globals.set('param_payload',JSON.stringify(data));
     pyodide.runPython('p = json.loads(param_payload); _nodes[p["node"]]._parameters[p["name"]] = p["value"]');

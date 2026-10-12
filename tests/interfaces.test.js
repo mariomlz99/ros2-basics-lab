@@ -1,4 +1,13 @@
 import test from'node:test';import assert from'node:assert/strict';import{InterfaceRegistry,parseMessage}from'../src/interfaces/registry.js';
+test('typed byte fields preserve schema, bounds and validation of other arrays',()=>{
+ const r=new InterfaceRegistry(),image=r.defaultMessage('sensor_msgs/msg/Image');
+ for(const data of [new Uint8Array([0,128,255]),new Uint8ClampedArray([0,128,255]),[0,128,255]])assert.doesNotThrow(()=>r.validate('sensor_msgs/msg/Image',{...image,data}));
+ for(const data of [[-1],[256],[.5],['1'],new Int8Array([-1]),new Float64Array([256]),new Float32Array([NaN]),new DataView(new ArrayBuffer(8)),new Uint8Array(1000001)])assert.throws(()=>r.validate('sensor_msgs/msg/Image',{...image,data}));
+ assert.doesNotThrow(()=>r.validate('unique_identifier_msgs/msg/UUID',{uuid:new Uint8Array(16)}));
+ assert.throws(()=>r.validate('unique_identifier_msgs/msg/UUID',{uuid:new Uint8Array(15)}),/16 elements/);
+ assert.throws(()=>r.validateFields([{type:'bool[]',name:'values'}],{values:new Uint8Array([0,1])},'test/msg/Test'),/must be bool/);
+ assert.throws(()=>r.validateFields([{type:'int8[]',name:'values'}],{values:new Uint8Array([255])},'test/msg/Test'),/outside/);
+});
 test('one registry covers nested standard types, defaults, validation and generated headers',()=>{const r=new InterfaceRegistry();for(const n of ['std_msgs/msg/String','geometry_msgs/msg/Twist','geometry_msgs/msg/Pose','sensor_msgs/msg/Image','sensor_msgs/msg/LaserScan','nav_msgs/msg/Odometry','example_interfaces/srv/AddTwoInts','std_srvs/srv/Trigger']){assert.ok(r.show(n));r.validate(n,r.defaultMessage(n));}assert.equal(r.defaultMessage('geometry_msgs/msg/Pose').orientation.w,1);assert.throws(()=>r.validate('std_msgs/msg/String',{data:12}));assert.throws(()=>r.validate('std_msgs/msg/Int64',{data:2**54}));const h=r.cppHeaders();assert.match(h['/include/geometry_msgs/msg/pose.hpp'],/Quaternion/);assert.match(h['/include/example_interfaces/srv/add_two_ints.hpp'],/struct Request/);});
 test('custom messages use the same model',()=>{const r=new InterfaceRegistry();r.add('tutorial_interfaces/msg/StudentStatus',parseMessage('string name\nint32 counter\nbool ready'));assert.equal(r.defaultMessage('tutorial_interfaces/msg/StudentStatus').ready,false);assert.ok(r.cppHeaders()['/include/tutorial_interfaces/msg/student_status.hpp']);assert.throws(()=>parseMessage('string[] names'));assert.throws(()=>parseMessage('bool ready\nbool ready'));});
 import{FileSystem}from'../src/fs.js';import{Workspace,Builder,ROOT}from'../src/workspace.js';import{customFiles}from'../src/examples.js';

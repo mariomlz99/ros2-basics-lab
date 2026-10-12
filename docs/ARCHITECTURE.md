@@ -18,3 +18,7 @@ the virtual filesystem. Existing sessions acquire missing metadata without
 changing file contents. `touch`, writes, copies, moves and removals update the
 appropriate metadata. `scripts/native-ls-parity.mjs` compares controlled
 fixtures with GNU ls, normalizing account names and column padding.
+
+### Runtime boundaries
+
+C++ uses browser wall and monotonic clocks. Native threads and C++ exceptions are unsupported by this WebAssembly toolchain; unsupported syntax produces compiler diagnostics. Sensor callbacks keep one running message and one replaceable latest message per subscription. RGB images use typed byte storage and bulk C++ decoding; displayed pixels and published bytes share the same rendered frame. Browser scheduling is not a real-time guarantee.

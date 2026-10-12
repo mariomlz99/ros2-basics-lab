@@ -13,3 +13,11 @@ test('hz reports real interval statistics with native formatting',()=>{
  assert.equal(formatHzStatistics([0,200,400,600]),'average rate: 5.000\n\tmin: 0.200s max: 0.200s std dev: 0.00000s window: 3');
  assert.equal(formatHzStatistics([0,199,400]),'average rate: 5.000\n\tmin: 0.199s max: 0.201s std dev: 0.00100s window: 2');
 });
+
+test('compact byte buffers preserve publisher and echo output',()=>{
+ const image=registry.defaultMessage('sensor_msgs/msg/Image');image.width=1;image.height=1;image.step=3;image.encoding='rgb8';image.data=[0,128,255];
+ const typed={...image,data:new Uint8Array(image.data)};
+ registry.validate('sensor_msgs/msg/Image',typed);
+ assert.equal(formatPublishedMessage(registry,'sensor_msgs/msg/Image',typed),formatPublishedMessage(registry,'sensor_msgs/msg/Image',image));
+ assert.equal(formatEchoMessage(registry,'sensor_msgs/msg/Image',typed),formatEchoMessage(registry,'sensor_msgs/msg/Image',image));
+});

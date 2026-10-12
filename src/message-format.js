@@ -45,7 +45,7 @@ export function formatPublishedMessage(registry,type,message){
   return base.startsWith('float')?pythonFloat(value):String(value);
  };
  return type.replaceAll('/','.')+'('+registry.get(type).fields.map(field=>{
-  const t=splitType(field.type,type);let value=message[field.name];
+  const t=splitType(field.type,type);let value=t.array?Array.from(message[field.name]):message[field.name];
   if(t.array&&t.base==='float32')value=value.map(Math.fround);
   return field.name+'='+(t.array?(t.length&&['float64','uint8'].includes(t.base)?numpyArray(value,t.base):'['+value.map(item=>scalar(t.base,item)).join(', ')+']'):scalar(t.base,value));
  }).join(', ')+')';
@@ -71,7 +71,7 @@ export function formatEchoMessage(registry,type,message){
  const mapping=(owner,value,indent)=>{
   const fields=registry.get(owner).fields;if(!fields.length)return ' '.repeat(indent)+'{}';
   return fields.map(field=>{
-   const t=splitType(field.type,owner),v=value[field.name],prefix=' '.repeat(indent)+field.name+':';
+   const t=splitType(field.type,owner),v=t.array?Array.from(value[field.name]):value[field.name],prefix=' '.repeat(indent)+field.name+':';
    if(t.array){
     if(!v.length)return prefix+' []';
     return prefix+'\n'+v.map(item=>{
