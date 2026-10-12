@@ -29,3 +29,26 @@ test('Python entry point modules are resolved at run time, not packaging time',(
  f.write(ROOT+'/src/demo/setup.py',f.read(ROOT+'/src/demo/setup.py').replace('demo.hello:main','demo.absent:missing'));
  assert.equal(w.inspect('demo').executables.get('hello').module,'demo.absent');
 });
+
+test('unsupported colcon options cannot hide after --packages-select',async()=>{
+ const lab=new Lab(),t=lab.terminal();
+ try{
+  for(const line of ['colcon build --packages-select demo --merge-install','colcon build --packages-select --symlink-install'])await assert.rejects(()=>t.execute(line),/Supported: colcon/);
+ }finally{lab.reset();}
+});
+
+test('CMake validates modeled arguments instead of silently accepting invalid syntax',()=>{
+ const good=cmake('demo',{hello:'src/hello.cpp'});
+ for(const bad of [good.replace('VERSION 3.8','VERSION banana'),good.replace('ament_package()','ament_package(unknown)'),good.replace('find_package(ament_cmake REQUIRED)','find_package(ament_cmake REQUIRED unknown)')])assert.throws(()=>parseCmake(bad,'demo'));
+});
+
+test('separate dependency declarations accumulate as in native CMake',()=>{
+ const c=parseCmake(cmake('demo',{hello:'src/hello.cpp'},['rclcpp','std_msgs']).replace('ament_target_dependencies(hello rclcpp std_msgs)','ament_target_dependencies(hello rclcpp)\nament_target_dependencies(hello std_msgs)'),'demo');
+ assert.deepEqual([...c.dependencies.get('hello')],['rclcpp','std_msgs']);
+});
+
+test('setup.cfg accepts native INI whitespace and comments',()=>{
+ const {f,w}=fixture();w.create('demo','ament_python',{node:'hello'});
+ f.write(ROOT+'/src/demo/setup.cfg','# setup.cfg\n[develop]\nscript_dir = $base/lib/demo\n[install]\ninstall_scripts = $base/lib/demo\n');
+ assert.equal(w.inspect('demo').executables.size,1);
+});

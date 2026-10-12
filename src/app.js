@@ -87,7 +87,7 @@ function renderLesson(){renderPlayground();$('#prepare-lesson').textContent=less
   if(step.kind==='text')root.append(el('p',step.body));
   if(step.kind==='diagram')root.append(pubsubDiagram());
   if(step.kind==='topic-diagram'){const d=el('div','Terminal 1: pub  →  /lab_chat : String  →  Terminal 2: echo','diagram');d.setAttribute('role','img');d.setAttribute('aria-label','A publisher and subscriber exchange messages on the same typed topic.');root.append(d);}
-  if(step.kind==='terminal-action')root.append(el('p','Terminal '+step.terminal+' — press Ctrl+C to stop its running command.','guide-observation'));
+  if(step.kind==='terminal-action')root.append(el('p','Terminal '+step.terminal+': press Ctrl+C to stop its running command.','guide-observation'));
   if(step.kind==='commands'){if(step.terminal)root.append(el('strong','Terminal '+step.terminal,'command-terminal'));if(guided&&lessonIndex===0&&environmentHints[step.commands[0]])root.append(el('p',environmentHints[step.commands[0]],'guide-observation'));const group=el('div',undefined,'command-group');for(const command of step.commands){const row=el('div',undefined,'command');const code=el('code',command);const copy=el('button','Copy');let copyTimer;copy.setAttribute('aria-live','polite');copy.onclick=async()=>{clearTimeout(copyTimer);copy.disabled=true;try{await navigator.clipboard.writeText(command);copy.textContent='Copied!';status('Copied command');}catch{copy.textContent='Copy failed';status('Copy failed. Select the command and copy it manually.');}finally{copy.disabled=false;copyTimer=setTimeout(()=>{copy.textContent='Copy';},1800);}};row.append(code,copy);group.append(row);}root.append(group);}
   if(step.kind==='files'){for(const[path,source]of Object.entries(step.items)){
    const details=el('details'),summary=el('summary',`${step.pkg}/${path}`),pre=el('pre',source),actions=el('div',undefined,'example-actions');if(guided)details.open=true;
@@ -158,7 +158,7 @@ async function start(){const stored=await restoreCompiledModules(await loadSessi
  let signature='',saving=false,savePending=false;
  const persist=async(force=false)=>{
   if(saving){savePending||=force;return;}if(preparing)return;const ui=currentSessionUI();
-  const current=JSON.stringify([lab.fs.revision,ui,[...lab.terminals.values()].map(t=>[t.cwd,t.env,t.vars,[...t.overlays],t.history]),!!lab.exported]);
+  const current=JSON.stringify([lab.fs.revision,ui,[...lab.terminals.values()].map(t=>[t.cwd,t.env,t.vars,[...t.overlays],t.history,t.completedCommands]),!!lab.exported]);
   if(!force&&current===signature)return;
   saving=true;try{const record=captureSession(lab,ui);record.slots=Object.fromEntries([...sessionSlots].map(([scope,state])=>[scope,state.record??captureSession(state.lab,state.ui)]));await saveSession(record);signature=current;$('#session-state').textContent='Saved in this browser';}catch(error){$('#session-state').textContent='Session could not be saved. Export your workspace to keep a copy.';console.error(error);}finally{saving=false;if(savePending){savePending=false;persist(true);}}
  };

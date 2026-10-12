@@ -74,7 +74,13 @@ export function parseCmake(source,packageName){
   }
   if(block)throw Error('Unclosed CMake if declaration.');
   const allowed=new Set(['cmake_minimum_required','project','find_package','add_executable','ament_target_dependencies','install','ament_package']);
-  for(const c of calls)if(!allowed.has(c.name))throw Error('CMake '+c.name+' is outside the supported lesson subset.');
+  for(const c of calls){
+    if(!allowed.has(c.name))unsupported(c);
+    if(c.name==='cmake_minimum_required'&&(c.args.length!==2||c.args[0]!=='VERSION'||!/^\d+\.\d+(?:\.\d+)?$/.test(c.args[1])))throw Error('Use cmake_minimum_required(VERSION major.minor).');
+    if(c.name==='project'&&c.args.length!==1)throw Error('Supported project form: project(package_name).');
+    if(c.name==='find_package'&&(c.args.length!==2||c.args[1]!=='REQUIRED'))throw Error('Supported find_package form: find_package(package REQUIRED).');
+    if(c.name==='ament_package'&&c.args.length)throw Error('Use ament_package() without arguments.');
+  }
   if(!calls.some(c=>c.name==='cmake_minimum_required'))throw Error('CMakeLists.txt needs cmake_minimum_required.');
   if(!calls.some(c=>c.name==='project'&&c.args[0]===packageName))throw Error('CMake project must match package.xml name.');
   const found=new Set(calls.filter(c=>c.name==='find_package'&&c.args.includes('REQUIRED')).map(c=>c.args[0]));
@@ -83,11 +89,11 @@ export function parseCmake(source,packageName){
   const targets=new Map();for(const c of calls.filter(c=>c.name==='add_executable')){if(targets.has(c.args[0]))throw Error('Duplicate CMake target '+c.args[0]);targets.set(c.args[0],c.args.slice(1).map(a=>a.replace(/^"|"$/g,'')));}
   for(const c of targetSettings)if(!targets.has(c.args[0]))throw Error('CMake settings for unknown target '+c.args[0]);
   const installed=new Set();let launchInstalled=false;for(const c of calls.filter(c=>c.name==='install')){
-    if(c.args[0]==='DIRECTORY'&&c.args[1]==='launch'&&c.args[2]==='DESTINATION'&&c.args[3]===`share/\${PROJECT_NAME}`){launchInstalled=true;continue;}
+    if(c.args.length===4&&c.args[0]==='DIRECTORY'&&c.args[1]==='launch'&&c.args[2]==='DESTINATION'&&c.args[3]===`share/\${PROJECT_NAME}`){launchInstalled=true;continue;}
     if(c.args[0]!=='TARGETS'||!c.args.includes('DESTINATION')||c.args.slice(c.args.indexOf('DESTINATION')+1).join(' ')!==`lib/\${PROJECT_NAME}`)throw Error('Supported install form: install(TARGETS name DESTINATION lib/${PROJECT_NAME}).');
     for(const name of c.args.slice(1,c.args.indexOf('DESTINATION')))installed.add(name);
   }
-  const dependencies=new Map();for(const c of calls.filter(c=>c.name==='ament_target_dependencies'))dependencies.set(c.args[0],new Set(c.args.slice(1)));
+  const dependencies=new Map();for(const c of calls.filter(c=>c.name==='ament_target_dependencies'))dependencies.set(c.args[0],new Set([...(dependencies.get(c.args[0])??[]),...c.args.slice(1)]));
   for(const target of dependencies.keys())if(!targets.has(target))throw Error('Dependencies for unknown target '+target);
   return {found,targets,installed,dependencies,launchInstalled};
 }

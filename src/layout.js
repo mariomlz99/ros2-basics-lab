@@ -18,7 +18,7 @@ export function initLayout(){
   textHandle.setAttribute('aria-valuenow',String(Math.round(values.textHeight??370)));
   editorHandle.setAttribute('aria-valuenow',String(Math.round(values.editorHeight??350)));
   if(values.streams!==undefined){values.streams=clamp(values.streams,160,800);document.querySelector('#playground-stage').style.setProperty('--stream-height',values.streams+'px');}
-  streamHandle.setAttribute('aria-valuenow',String(Math.round(values.streams??200)));
+  streamHandle.setAttribute('aria-valuenow',String(Math.round(values.streams??240)));
   widthHandle.setAttribute('aria-valuenow',String(Math.round(values.split??43)));
   heightHandle.setAttribute('aria-valuenow',String(Math.round(values.height??workspace.getBoundingClientRect().height)));
  };
@@ -42,7 +42,7 @@ export function initLayout(){
  }
  bind(textHandle,'textHeight','clientY',()=>workspace.querySelector('#lesson').getBoundingClientRect().height);
  bind(editorHandle,'editorHeight','clientY',()=>workspace.querySelector('#files').getBoundingClientRect().height);
- bind(streamHandle,'streams','clientY',()=>values.streams??(matchMedia('(max-width:700px)').matches?180:200));
+ bind(streamHandle,'streams','clientY',()=>values.streams??document.querySelector('.playground-streams figure:not(.expanded) canvas')?.getBoundingClientRect().height??240);
  bind(widthHandle,'split','clientX',()=>values.split??43);
  bind(heightHandle,'height','clientY',()=>workspace.getBoundingClientRect().height);
  document.querySelector('#restore-layout').onclick=()=>{

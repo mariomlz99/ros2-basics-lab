@@ -28,6 +28,7 @@ __attribute__((import_module("kinenest"),import_name("field_length"))) int kn_fi
 __attribute__((import_module("kinenest"),import_name("field_kind"))) int kn_field_kind(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_bool"))) int kn_field_bool(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_number"))) double kn_field_number(const char*,int);
+__attribute__((import_module("kinenest"),import_name("field_bytes_copy"))) int kn_field_bytes_copy(const char*,int,uint8_t*,int);
 __attribute__((import_module("kinenest"),import_name("field_string_size"))) int kn_field_string_size(const char*,int);
 __attribute__((import_module("kinenest"),import_name("field_string_copy"))) int kn_field_string_copy(const char*,int,char*,int);
 }

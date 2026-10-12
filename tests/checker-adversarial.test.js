@@ -85,3 +85,10 @@ test('a parameter named publish_rate has no invented global range restriction',a
   lab.runtime.setParameter('/sender','publish_rate',25);assert.equal(lab.runtime.parameters.get('/sender').get('publish_rate'),25);
  }finally{lab.reset();}
 });
+test('restarting the native handoff lesson clears a later export acknowledgement',async()=>{
+ const {snapshotLesson,restoreLesson}=await import('../src/course/checks.js');
+ const lab=new Lab();try{
+  const before=snapshotLesson(lab);lab.exported=true;assert(lessonChecks(lab,6)[0].passed);
+  restoreLesson(lab,before);assert.equal(lessonChecks(lab,6)[0].passed,false);
+ }finally{lab.reset();}
+});

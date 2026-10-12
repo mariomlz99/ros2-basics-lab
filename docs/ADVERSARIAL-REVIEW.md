@@ -1,7 +1,6 @@
 # Student readiness audit | 12 October 2026
 
-Status: checkpoint saved; paused at the user's request for remote continuation. Local candidate: `be7aa35`; shared KineNest candidate:
-`6fd4b03`. Both use the isolated `audit/student-readiness` branches.
+Status: updated remote-continuation checkpoint. See AUDIT-HANDOFF.md and the root AUDIT-RESUME.md for current commits and exact verification state. Both use the isolated `audit/student-readiness` branches.
 Original working copies and their uncommitted changes are preserved.
 The latest inspected Pages artifact is `9866aa7` (source `6ea6241`);
 this audit candidate has not been published.
@@ -49,16 +48,38 @@ of evidence (`artifacts/audit/course-python-cpp.json` and `course-python.json`).
 Other initial walkthrough failures were harness assertions (terminal history
 selection and launch reference text), corrected before the successful reruns.
 
-## Open reproduced defect at checkpoint
+## Current open defect and continuation results
 
-**MAJOR, not fixed:** two publishers and two subscriptions in one node are
-reported as one publisher and one subscription. Actual Python callbacks prove
-both subscriptions receive both publications. `scripts/endpoint-lifecycle-check.mjs`
-reproduces this on the development candidate: `Publisher count: 1`,
-`Subscription count: 1`, with `0:payload0`, `1:payload0`, `0:payload1`,
-`1:payload1` all observed. The script exits on the Python failure; its C++ case
-is written but has not yet run. No implementation change for this defect has
-been made. Publisher destruction support must be checked in the same pass.
+The former endpoint-count defect is fixed and passed native plus real Python/C++
+checks in both products, including 2/2 -> 1/1 -> 0/0 independent destruction.
+
+**MAJOR: C++ image latency remains open pending browser verification.** Real
+image-driven control reached x=2.79 m rather than stopping near x=2.2 m. The
+strict reproducer measured a 463 ms image-to-command sample. Generated Image
+byte decoding crossed WASM/JS once per byte. A validated bulk transfer is now
+implemented in both projects; model tests pass, real browser rerun is pending.
+Do not count earlier weak sensor stopping checks as success. Read the handoff.
+
+This continuation also fixed Python timer/service lifecycle and nested typed
+payloads, inspectable custom-interface overlay bindings, bounded CMake/colcon/
+setup.cfg validation, Unit 1 successful-command evidence, evidence autosave,
+pending commands after Reset/close/lesson restore, and stale export completion
+on lesson reset. These fixes have reproductions and regression coverage.
+
+18 browser build-failure/recovery cases and 22 Python/21 C++ build-causality
+checks passed both products. Native exported workspaces both languages built
+and ran services, launch and custom messages. Mixed Python/C++/sensor stress
+passed 16 cycles per product with zero remaining workers or graph resources.
+
+The simulator responsive layout passes six Chrome widths in both products and
+four native Firefox widths in Lab. KineNest now includes TF & Odometry before
+Communication & QoS as a coming-soon card, with an axis icon and seven locales.
+Em dashes in visible guidance were reduced. Latest complete model runs pass
+39 Lab and 41 KineNest test FILES. Current dist/live builds remain older.
+
+Additional image latency, Start/Stop with varied targets, complete UI/navigation
+and per-exercise adversarial matrices, rebuilt/static/live validation remain.
+The handoff is the authoritative detailed evidence/remaining-work ledger.
 
 ## Confirmed findings and local fixes
 
@@ -81,6 +102,7 @@ been made. Publisher destruction support must be checked in the same pass.
 Shared implementation fixes and their regressions have been committed to the
 KineNest audit branch. Its product homepage and independent curriculum remain.
 The unused robotics navigation entry is removed from its Linux module.
+Current source changes are saved in the checkpoint commits; see the handoff.
 
 ## Regression entry points
 

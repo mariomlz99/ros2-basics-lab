@@ -5,7 +5,7 @@ import {HOME} from './fs.js';
 import {parsePackageXml,parseCmake,parsePythonSetup,cmakeCalls} from './metadata.js';
 export const ROOT=HOME+'/ros2_ws';
 export {BASE_PACKAGES} from './ros-ecosystem.js';
-import {BASE_PACKAGES,seedEcosystem} from './ros-ecosystem.js';
+import {BASE_PACKAGES,seedEcosystem,generatedInterfaceFiles} from './ros-ecosystem.js';
 export function manifest(name,type,dependencies=[]){return `<?xml version="1.0"?>
 <package format="3">
   <name>${name}</name><version>0.0.0</version>
@@ -63,9 +63,18 @@ export class Workspace{
  packages(){return [...this.sourcePaths.keys()];}
  discover(cwd){const found=new Map();const visit=path=>{if(this.fs.exists(path+'/COLCON_IGNORE'))return;const manifestPath=path+'/package.xml';if(this.fs.exists(manifestPath)||this.fs.exists(path+'/CMakeLists.txt')||this.fs.exists(path+'/setup.py')){const name=this.fs.exists(manifestPath)?parsePackageXml(this.fs.read(manifestPath)).name:path.split('/').at(-1);if(found.has(name))throw Error('Duplicate package name '+name+': '+found.get(name)+' and '+path);found.set(name,path);return;}for(const entry of this.fs.list(path))if(entry.kind==='dir'&&!entry.name.startsWith('.'))visit(entry.path);};visit(cwd);for(const [name,path]of found)this.sourcePaths.set(name,path);return [...found.keys()];}
  fingerprint(name,path=this.sourcePath(name)){return JSON.stringify(this.sourceFiles(path));}
+ installInterfaceBindings(record,{overwrite=false}={}){
+  if(!record.generated||!this.hasInstall(record.name,record))return;
+  for(const [path,content]of Object.entries(generatedInterfaceFiles(record.generated,this.installPrefix(record.name,record)))){
+   this.fs.mkdir(path.slice(0,path.lastIndexOf('/')),true);const entry=this.fs.entries.get(path);
+   if(overwrite||!entry||entry.content===entry.installedContent){this.fs.write(path,content);this.fs.entry(path).installedContent=content;}
+  }
+  record.generatedInstallationVersion=1;
+ }
  upgradeInstallations(){
   const roots=new Set();
   for(const record of this.installedRecords().values()){
+   if(record.generatedInstallationVersion!==1)this.installInterfaceBindings(record);
    const {name}=record,prefix=this.installPrefix(name,record);if(!this.hasInstall(name,record)||record.installationVersion===2)continue;
    const marker=prefix+'/share/ament_index/resource_index/packages/'+name;this.fs.mkdir(marker.slice(0,marker.lastIndexOf('/')),true);if(!this.fs.exists(marker))this.fs.write(marker,'');
    for(const executable of record.executables.keys()){const path=prefix+'/lib/'+name+'/'+executable;if(this.fs.exists(path)&&this.fs.read(path)==='# Modeled executable; real code runs in a worker\n')Object.assign(this.fs.entry(path),{executable:true,package:name,program:executable});}
@@ -116,7 +125,9 @@ export class Workspace{
   let executables,launch=[];
   if(metadata.buildType==='ament_python'){
    for(const p of ['resource/'+name,name+'/__init__.py','setup.py','setup.cfg'])if(!Object.hasOwn(files,p))throw Error('Missing '+p);
-   if(!files['setup.cfg'].includes('script_dir=$base/lib/'+name)||!files['setup.cfg'].includes('install_scripts=$base/lib/'+name))throw Error('setup.cfg must install scripts into $base/lib/'+name);
+   const cfg=new Map();let section='';
+   for(const raw of files['setup.cfg'].split('\n')){const line=raw.trim();if(!line||/^[#;]/.test(line))continue;const header=/^\[([^\]]+)\]$/.exec(line);if(header){section=header[1];continue;}const setting=/^([A-Za-z_]+)\s*[=:]\s*(.*?)\s*$/.exec(line);if(!setting)throw Error('Unsupported setup.cfg entry: '+line);const key=section+'.'+setting[1];if(cfg.has(key))throw Error('Duplicate setup.cfg entry: '+key);cfg.set(key,setting[2]);}
+   if(cfg.get('develop.script_dir')!=='$base/lib/'+name||cfg.get('install.install_scripts')!=='$base/lib/'+name)throw Error('setup.cfg must install scripts into $base/lib/'+name);
    executables=parsePythonSetup(files['setup.py'],name);launch=[...executables.launchFiles];
   }else{
    if(!files['CMakeLists.txt'])throw Error('Missing CMakeLists.txt');const c=parseCmake(files['CMakeLists.txt'],name);executables=new Map();
@@ -156,7 +167,7 @@ export class Workspace{
   }
   if(record.type==='python')for(const [path,source]of Object.entries(record.files))if(path.startsWith(name+'/')&&path.endsWith('.py'))write(prefix+'/lib/python3.12/site-packages/'+path,source);
   if(record.generated){for(const type of Object.keys(record.generated)){const path=type.split('/').slice(1).join('/')+'.msg';write(prefix+'/share/'+name+'/'+path,record.files[path]);}write(prefix+'/share/ament_index/resource_index/rosidl_interfaces/'+name,Object.keys(record.generated).map(type=>type.split('/').slice(1).join('/')+'.msg').join('\n')+'\n');}
-  record.installationVersion=2;this.installed.set(name,record);this.installations.set(prefix,record);this.writeSetup(root);write(root+'/log/build.txt','Built '+name+'\n');
+  record.installationVersion=2;this.installInterfaceBindings(record,{overwrite:true});this.installed.set(name,record);this.installations.set(prefix,record);this.writeSetup(root);write(root+'/log/build.txt','Built '+name+'\n');
  }
 
 }

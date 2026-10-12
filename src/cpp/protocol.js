@@ -105,3 +105,14 @@ export function associateReport(message, {sample = null, frame = null} = {}) {
   }
   throw new Error('Unknown C++ report kind: ' + String(message.kind));
 }
+
+/** Copy an entire byte field across the WASM boundary once, preserving validation. */
+export function copyByteField(payload,path,memory,destination,capacity) {
+  const value=readField(payload,path);
+  if(!Array.isArray(value)&&!(ArrayBuffer.isView(value)&&!(value instanceof DataView)))throw Error('C++ message field '+path+' must be an array');
+  if(!Number.isInteger(capacity)||capacity!==value.length)throw Error('C++ byte array size mismatch');
+  if(!Number.isInteger(destination)||destination<0||destination+capacity>memory.byteLength)throw Error('C++ byte array destination outside memory');
+  for(const byte of value)if(!Number.isInteger(byte)||byte<0||byte>255)throw Error('C++ message field '+path+' must contain bytes');
+  new Uint8Array(memory,destination,capacity).set(value);
+  return capacity;
+}

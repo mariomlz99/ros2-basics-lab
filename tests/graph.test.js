@@ -17,5 +17,5 @@ test('base ROS topics expose real types, events, counts and cleanup',async()=>{
  adapter.stop();lab.stop(logs.id);lab.close(events.id);
  assert.equal(await inspect.execute('ros2 topic info /rosout'),'Type: rcl_interfaces/msg/Log\nPublisher count: 1\nSubscription count: 0');assert.equal(lab.runtime.nodes.size,0);
  lab.reset();assert.equal(lab.runtime.topics.size,2);assert.equal(lab.runtime.listeners.size,0);
- await assert.rejects(()=>inspect.execute('ros2 topit type /rosout'),/invalid choice: 'topit'/);assert.match(await inspect.execute('ros2 param'),/ros2 param list/);
+ const fresh=lab.terminal();await assert.rejects(()=>fresh.execute('ros2 topit type /rosout'),/invalid choice: 'topit'/);assert.match(await fresh.execute('ros2 param'),/ros2 param list/);lab.reset();
 });

@@ -4,6 +4,7 @@ import {InterfaceRegistry,splitType,PRIMITIVES} from './interfaces/registry.js';
 import {RUNTIME_FILES} from './installation-assets.js';
 export const BASE_PACKAGES=[...new Set([...['rcl_interfaces','builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'],...Object.keys(BUILTIN).map(name=>name.split('/')[0]),...RUNTIME_FILES.modules.map(name=>name.split('.')[0])])];
 
+const INTERFACE_LIBRARY_SUFFIXES=['rosidl_generator_c','rosidl_typesupport_c','rosidl_typesupport_cpp','rosidl_typesupport_introspection_c','rosidl_typesupport_introspection_cpp'];
 const PREFIX='/opt/ros/jazzy',PYTHON=PREFIX+'/lib/python3.12/site-packages';
 const snake=name=>name.replace(/([A-Z]+)([A-Z][a-z])/g,'$1_$2').replace(/([a-z0-9])([A-Z])/g,'$1_$2').toLowerCase();
 const section=(fields,constants=[])=>[
@@ -75,9 +76,30 @@ export function seedEcosystem(fs){
  for(const [dir,entries]of pythonIndexes)file(dir+'/__init__.py',entries.join('\n')+'\n# Classes are installed here by the ROS Python worker.\n');
  for(const [pkg,interfaces]of interfacesByPackage){
   file(PREFIX+'/share/ament_index/resource_index/rosidl_interfaces/'+pkg,interfaces.join('\n')+'\n');
-  for(const suffix of ['rosidl_generator_c','rosidl_typesupport_c','rosidl_typesupport_cpp','rosidl_typesupport_introspection_c','rosidl_typesupport_introspection_cpp'])library(pkg+'__'+suffix,'Interface support for '+pkg+':\n'+interfaces.join('\n'));
+  for(const suffix of INTERFACE_LIBRARY_SUFFIXES)library(pkg+'__'+suffix,'Interface support for '+pkg+':\n'+interfaces.join('\n'));
  }
  for(const pkg of ['rclcpp',...(BASE_PACKAGES.includes('rclcpp_action')?['rclcpp_action']:[])])library(pkg,'Simulated '+pkg+' runtime; headers are in '+PREFIX+'/include/'+pkg+'.');
  file(PYTHON+'/rclpy/_rclpy_pybind11.so','SIMULATED Python extension: rclpy transport is implemented by the browser graph bridge.\n');
  for(const pkg of ['ament_python','launch','launch_ros','ros2launch'])file(PYTHON+'/'+pkg+'/__init__.py','# Simulated '+pkg+' package. Build/launch behavior is handled by the browser workspace and launch parser.\n');
+}
+
+// Workspace interfaces use the same registry and inspectable binding generator
+// as the built-in installation, but are installed only in their own overlay.
+export function generatedInterfaceFiles(definitions,prefix){
+ const files={},indexes=new Map(),packages=new Set(Object.keys(definitions).map(name=>name.split('/')[0]));
+ const python=prefix+'/lib/python3.12/site-packages';
+ for(const [path,source]of Object.entries(new InterfaceRegistry(definitions).cppHeaders()))if(packages.has(path.split('/')[2]))files[prefix+path]=source;
+ for(const [name,record]of Object.entries(definitions)){
+  const [pkg,kind,type]=name.split('/'),dir=python+'/'+pkg+'/'+kind,module='_'+snake(type);
+  files[python+'/'+pkg+'/__init__.py']='# Simulated generated interface package '+pkg+'\n';
+  files[dir+'/'+module+'.py']=pythonInterface(name,record);
+  if(!indexes.has(dir))indexes.set(dir,[]);
+  indexes.get(dir).push('from .'+module+' import '+type);
+ }
+ for(const [dir,lines]of indexes)files[dir+'/__init__.py']=lines.join('\n')+'\n';
+ for(const pkg of packages){
+  files[prefix+'/share/'+pkg+'/cmake/'+pkg+'Config.cmake']='# Simulated generated interface package configuration\nset('+pkg+'_FOUND TRUE)\n';
+  for(const suffix of INTERFACE_LIBRARY_SUFFIXES)files[prefix+'/lib/lib'+pkg+'__'+suffix+'.so']='SIMULATED SHARED LIBRARY\nInterface support for '+pkg+'; browser workers implement these bindings. This is not a native ELF binary.\n';
+ }
+ return files;
 }
