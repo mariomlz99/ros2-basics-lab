@@ -8,8 +8,10 @@ try{
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(r.url()));page.on('response',async response=>{if((await response.allHeaders())['set-cookie'])setCookies.push(new URL(response.url()).origin);});
  const response=await page.goto(base);assert.equal(response.status(),200);
  const build=await page.evaluate(async()=>fetch('./build-info.json').then(r=>r.json()));
+ assert.equal(build.publicBuild,true,'Pages must serve the standalone public build');
+ assert.equal((await context.request.get(new URL('__audit_missing_page__',base).href)).status(),404);
  const module=await page.locator('script[type="module"]').getAttribute('src');
- const files=['app.js','lab.js','python/worker.js','python/compat.py','cpp/worker.js','cpp/compat.hpp','interfaces/builtin.js','installation-assets.js'];
+ const files=['app.js','lab.js','python/worker.js','python/compat.py','cpp/worker.js','cpp/compat.hpp','interfaces/builtin.js','installation-assets.js','cpp/wasi-clock.js','cpp/protocol.js','interfaces/registry.js','playground/camera.js'];
  for(const file of files){const url=new URL(file,new URL(module,page.url())).href;const r=await context.request.get(url);assert.equal(r.status(),200,url);if(file.endsWith('.js'))assert.match(r.headers()['content-type'],/javascript/,url);}
  await page.locator('#start').click();await page.locator('.xterm').first().waitFor();
  const unitCount=await page.locator('#nav button, #exercise-nav button').count();for(let i=0;i<unitCount;i++){await page.locator(`button[data-index="${i}"]`).click();assert(await page.locator('#lesson-heading').isVisible());}
