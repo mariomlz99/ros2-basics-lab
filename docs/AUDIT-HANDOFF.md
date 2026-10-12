@@ -1,30 +1,14 @@
-# Audit checkpoint | 12 October 2026, evening
+# Audit release verification | 12 October 2026
 
-Saved at Mario's request to stop and close the computer. No deployment.
-Resume from the workspace root AUDIT-RESUME.md and RESUME-AUDIT-PROMPT.md,
-which point to checkpoints/2026-10-12-ros2-audit-evening-pause/.
-Read that checkpoint's CONVERSATION-NOTES.md and SESSION-STATUS.txt for exact
-final commits, build identities, evidence and pending work. Older pause notes
-and the former Actions priority are superseded.
+Final local validation is complete. Both rebuilt products pass Python/C++
+worker flood/recovery, strict image feedback and visible Free Lab output stress.
+Affected guided Units 4–6 (Lab) and 4–7 (KineNest) pass again on the final builds,
+including checkers, cleanup, save/reload/history and Reset.
 
-Both candidates remain on audit/student-readiness. Original dirty working
-copies remain untouched. No subagents used.
+See [ADVERSARIAL-REVIEW.md](ADVERSARIAL-REVIEW.md) for full exercise coverage,
+24 MAJOR / 4 MINOR fixed defect groups, evidence and intentional limitations.
+No reproduced product defects remain open. DDS/RMW internals remain out of scope.
 
-Completed since the previous pause: full K Actions verification and rebuilt
-Unit 7 in Python/C++; both Python-only network checks; K asset-rebuild session;
-K built target matrix at 100 ms guard; strict built K image feedback; final
-built layouts/product smoke; 48 mixed-runtime cycles per product.
-
-New shared fixes bound ROS logger traffic and unfinished C++ stdout before
-worker messages reach the UI. Five worker-source regressions, real Python/C++
-flood/recovery/Stop checks in both products, and post-fix K cross-language
-Actions pass. Full model suites pass 41 Lab / 43 K test files.
-
-Remaining: final built checks on the committed output fixes, coverage/release
-reconciliation and actual live publication validation. See SESSION-STATUS.txt
-for any final built results recorded while saving. Do not repeat the old image
-latency investigation. Source/runtime correctness is not proof of deployment.
-
-DDS/RMW/native discovery/middleware internals remain outside scope. Lab Pages
-must serve npm run build:public; K keeps its separate homepage and curriculum.
-ROS 2 BASICS LAB READY FOR STUDENT USE: NO pending final release validation.
+Next: publish the standalone public artifact and verify actual live Pages.
+Original dirty working copies are preserved. Both audit candidates stay on
+`audit/student-readiness`; all older paused checkpoints are historical.

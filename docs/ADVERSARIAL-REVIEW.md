@@ -1,6 +1,6 @@
 # Student readiness audit | 12 October 2026
 
-Checkpoint prepared for the requested pause on the isolated `audit/student-readiness` candidates. The
+Resumed final release verification on the isolated `audit/student-readiness` candidates. The
 original `ros2-basics-lab/` and `ros2learn/` working copies, including their
 preexisting Python changes, remain untouched. No audit candidate has been
 published yet. The readiness verdict remains **NO until final release checks**.
@@ -8,8 +8,8 @@ published yet. The readiness verdict remains **NO until final release checks**.
 ## Evidence and scope
 
 This record reconciles the saved checkpoint with the resumed checks. Reports
-are in each candidate's `artifacts/audit/`; the immutable pause copy is under
-`checkpoints/2026-10-12-ros2-audit-final-pause/evidence/` in the parent workspace.
+are in each candidate's `artifacts/audit/`; immutable earlier evidence is under
+`checkpoints/2026-10-12-ros2-audit-evening-pause/evidence/` in the parent workspace.
 A test-file count is not an assertion count. Browser walkthroughs, actual runtime
 attacks, model tests and native comparisons are separate forms of evidence.
 
@@ -55,20 +55,20 @@ ungraded; no checker requirements have been invented for either.
 
 ## Ecosystem, lifecycle and UI coverage
 
-| Area | Verified evidence | Remaining release work |
+| Area | Verified evidence | Final verification status |
 | --- | --- | --- |
-| Models | 41 Lab / 43 KineNest test files pass after the shared output fix; installation asset consistency checked | Final built worker-fix checks pending |
+| Models | 41 Lab / 43 KineNest test files pass after the shared output fix; installation asset consistency checked | Built flood/recovery/Stop passes both languages/products |
 | Shell/filesystem | Native command/listing parity; relative/absolute paths, metadata, redirection, variables, shared files, independent cwd/environment; pending commands canceled on Reset/close/restore | No reproduced open defect |
 | Build/install/source | 18 failure/recovery cases per product; 22 Python and 21 C++ causal checks per product; actual browser compilation; no-install CMake targets; native exported projects | No reproduced open defect |
 | Installation | All 148 built-in Python bindings and C++ headers/constructors exercised in browser and native Python/g++; canonical registry/catalog; generated underlay and custom overlay files; restoration fills missing generated files and preserves edits | No reproduced open defect |
 | Nested runtime | Path/PoseStamped and GetPlan request/response types, republishing and destruction verified in real Python/C++ and native Jazzy | No reproduced open defect |
 | Graph/processes | Duplicate process names; independent same-node endpoint counts 2/2 → 1/1 → 0/0; native comparison; launch children, terminal close, Stop, Reset and loading interruption | 48 cycles/product at 1500 ms dwell passed before the final output fix |
-| Playground | All six sections, both products/languages; visible instructions and real sensor readers; preparation retains selection and one prompt; source/display camera equality; Twist/watchdog, LiDAR, odometry and existing TF | Built K strict sensor result passed before the final output fix |
-| Camera/timing | All 230400 image bytes, patterned/fixed/dynamic/empty arrays and malformed-data rejection; strict source image-driven stop x=2.2168 m, front range ≈0.6632 m; Python p95 33 ms, C++ 24–26 ms | Built K passed x=2.2168 m, all 230400 bytes; Python p95 33 ms, C++ 21 ms |
+| Playground | All six sections, both products/languages; visible instructions and real sensor readers; preparation retains selection and one prompt; source/display camera equality; Twist/watchdog, LiDAR, odometry and existing TF | Final built strict feedback passes both products/languages |
+| Camera/timing | All 230400 image bytes, patterned/fixed/dynamic/empty arrays and malformed-data rejection; strict image-driven stop x=2.2168 m, front range ≈0.6632 m | Final builds: Lab Python/C++ p95 27/20 ms; KineNest 26/19 ms; all bytes match; 100 ms guard unchanged |
 | Target lifecycle | Built Lab 36 cycles, highest cycle p95 Python 60/C++ 34 ms; rebuilt K 36 cycles, Python/C++ 33 ms; six target situations, live retarget/removal, source/process restarts, 8 startup cancellations/language, zero leftover workers/graph resources | All stored cycles satisfy 100 ms; lifecycle harness guard tightened from 250 to 100 ms |
 | Slow consumers | Deliberate 350 ms callbacks; four interruption cycles/language/product; two in flight plus two latest slots across two subscriptions; bounded queues, responsive main thread, no late output | No reproduced open defect |
-| Free Lab | Both languages/products: real hello, per-terminal sourcing, independent course/playground/free persistence and Reset, zero Twist, 20 simulator toggles/language, mobile layout | 48 mixed Python/C++/sensor cycles per product passed |
-| UI/layout | Dirty drafts/conflicts, theme/language while running, six terminals, history/Back/Forward, keyboard resizing; six Chrome widths/products and four Firefox Lab widths; seven locales for K upcoming cards | Built layout and K product smoke passed |
+| Free Lab | Both languages/products: real hello, per-terminal sourcing, independent course/playground/free persistence and Reset, zero Twist, 20 simulator toggles/language, mobile layout | Final visible output stress: 30 seconds/language/product, 1200–1233 log events and 297–302 image callbacks, Stop/close/reload/Reset isolation pass |
+| UI/layout | Dirty drafts/conflicts, theme/language while running, six terminals, history/Back/Forward, keyboard resizing; six Chrome widths/products and four Firefox Lab widths; seven locales for K upcoming cards | Built layout/product smoke plus 30 theme/viewport changes per sustained-output run pass; transcript 80000 chars and scrollback 2000 rows bounded |
 | Runtime loading/cache | Both built products: real Python-only hello, pub/sub callbacks, save/reload; five Python assets and zero C++ toolchain/worker requests; installed C++ without compiler cache; compiler worker failure recovery; both open C++ sessions survive asset rebuild | No reproduced open defect |
 | Public Pages/storage | Local standalone public build under /ros2-basics-lab/; 12 assets/MIME, nine navigation entries/reloads, real 404, no cookies/Set-Cookie/service workers; navigation does not eagerly fetch runtimes | Final committed artifact and actual live validation pending |
 
@@ -78,8 +78,8 @@ Count each defect group once across products. Confirmed product findings:
 **24 MAJOR, 4 MINOR, 0 BLOCKER**, all locally fixed and verified. The two
 new output fixes pass actual Python/C++ flood, recovery and Stop checks in both products.
 This count does not convert unfinished deployment verification into a product
-bug. No reproduced product defects remain open. Final built/live verification is
-still required before a release readiness claim.
+bug. No reproduced product defects remain open. Final built verification passes;
+actual live validation is still required before a release readiness claim.
 
 | ID | Severity | Fixed behavior | Regression/evidence |
 | --- | --- | --- | --- |
@@ -142,16 +142,37 @@ The rendered documentation site denied automated access, so its official Jazzy
 source branch was read. This does not broaden the explicitly excluded scope.
 Existing native Jazzy evidence is retained; unchanged tests were not blindly rerun.
 
+## Final built verification
+
+The resumed checks tested Lab source `ac425cf`, public assets `fa5a84708f8b`,
+and KineNest source `89a194b`, assets `836933e97cf5`. The final worker changes
+were present in both builds. No additional product defect was reproduced.
+
+- Strict image-feedback tests ran separately from other browser workloads.
+  Both languages/products retain correct opposite steering, meaningful stopping,
+  full display/image equality, stale-frame rejection, wrong-topic failure and
+  repair, velocity watchdog and clean shutdown.
+- Actual worker flood tests pass in both languages/products: Python 40 logger
+  events; C++ 8 MiB without a newline yields one 4000-character line and 39
+  logger events in the same budget. Later timer output resumes; Stop is quiet.
+- Affected visible course walkthroughs are repeated after the worker fix:
+  Lab Units 4–6 and KineNest Units 4–7, both languages. Reports include checkers,
+  process cleanup, save/reload/history and Reset; full-course evidence is retained.
+- `free-lab-output-stress.mjs` drives actual Free Lab terminals while 100-message
+  logger bursts run every 50 ms and full camera images arrive. Four 30-second
+  runs cover theme changes, resizing, bounded transcript/scrollback, Stop,
+  rerun/terminal close, reload and isolated Reset. Every final worker/process/
+  node/listener/timer/service/parameter count is zero. This is distinct from
+  the earlier 48-cycle model-engine soak; it verifies the visible Free Lab UI.
+
+Logs: `final-built-sensor.log`, `final-built-output.log`,
+`final-built-course.log`, `final-free-lab-output.log`. Structured reports retain
+the associated sensor, output, per-unit and Free Lab measurements.
+
 ## Release state
 
-Source at resume: Lab `17293e6`, KineNest `18c8b01`, with resumed audit
-harness/document changes and shared worker output bounds in progress. Refreshed KineNest `origin/main` is
-`1f2744e`; it is an ancestor of the candidate. Refreshed Pages `origin/main`
-is `9866aa7`; the artifact checkout has fast-forwarded cleanly and is ready for later staging.
-Latest inspected live Lab source is `6ea6241`, asset version `7b3a6474757d`.
-Local runtime fixes have not yet been presented as deployed.
-
-Before YES: finish the outstanding built/extended checks above, commit the
-candidate, build Lab with `npm run build:public`, stage only that standalone
-artifact while preserving old immutable assets, then validate the actual live
-site. Preserve KineNest's separate homepage and source history.
+The remotes were refreshed again: KineNest `origin/main` remains `1f2744e`
+and is an ancestor of its candidate; Pages `origin/main` remains `9866aa7`.
+The original dirty working copies are preserved. Source and local built checks
+are complete; standalone public artifact publication and live validation follow.
+KineNest retains its separate source and product deployment.
