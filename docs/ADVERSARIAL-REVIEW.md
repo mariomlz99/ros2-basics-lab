@@ -26,18 +26,18 @@ Course, Playground and Free Lab have independent saved workspace scopes.
 
 | Area | Evidence to date | Remaining |
 | --- | --- | --- |
-| Model suite | Lab 107 / KineNest 112 passed | Extend for new defects |
+| Model suite | Latest checkpoint: all 39 Lab / 41 KineNest test files passed | Browser image latency still unverified |
 | Units 1–7 | All 147 guided pages per language followed in fresh browser profiles; commands, supplied files, checks, cleanup, reset and reload/history passed | Complete mistake/recovery and checker attack matrix per unit |
-| Unit 1 | Native Bash/Jazzy comparison of all 15 commands passed | Additional checker bypass attempts |
+| Unit 1 | Native 15-command parity; successful-command evidence rejects literals/comments/failures; browser rerun passes | Wider per-exercise matrix |
 | Python | Real packaging/runtime boundary, syntax, imports, pub/sub, custom messages, parameters, services and launch passed | Wider valid alternatives and repeated lifecycle stress |
 | C++ | Real compile/run, failed rebuild recovery, pub/sub, interfaces, parameters, services and launch passed | Wider valid alternatives and repeated lifecycle stress |
 | Interfaces | All 148 built-in Python imports / C++ headers and constructors passed in browser and native Python/g++ | Additional nested payload behavior |
-| Build/source | Native boundary checks; unsourced second terminal; compiled-but-uninstalled target; missing Python entry module; installed C++ runs without compiler cache passed | Full invalid build matrix and native exported workspace run |
-| Graph | Duplicate-name processes, combined publisher rates, independent stop, background jobs, Ctrl+C/job control passed | Multiple endpoints inside one node; longer race/stress runs |
+| Build/source | 18 adversarial build cases, 22 Python/21 C++ causality checks both products; native exported workspaces both languages passed | Changed decoder integration and final built checks |
+| Graph | Duplicate names; same-node 2/2 -> 1/1 -> 0/0 endpoints; native parity; 16 mixed worker cycles per product passed | Varied-target sensor Start/Stop and final generation extension |
 | Playground | All six sections in Python/C++; command walkthrough, sensors, TF, readers, cleanup; current standalone built artifact passed | More wrong/partial code and long runtime stress |
 | Preparation | All six positions retain selection; three repeated preparations; single prompt; real skeleton run; explicit reference reveal passed in both projects | No open reproduced defect |
 | Free Lab | Both languages in both built projects: real hello, separate environments, independent save/reload/reset, zero Twist, 20 start/stop cycles per language, mobile layout passed | Long mixed workload stress |
-| UI | Responsive 960/700/390 layouts, keyboard resize/persistence, terminal job control passed | Back/Forward and theme/language changes during execution |
+| UI | Simulator six Chrome/four Firefox widths; dirty edits/conflicts; theme/language during execution passed | Complete revised Back/Forward, isolation and keyboard audit |
 | Learner copy | Standalone Units 1–7 × two code languages × three UI languages (42 combinations) passed scope scan on rebuilt preview | Shared copy review where applicable |
 | Pages | Live baseline and local prefixed public build: navigation/reload and 8 runtime assets/MIME passed; runtimes remain lazy | Full live course review after validated deployment |
 | Storage | No cookies, Set-Cookie headers or service workers observed; browser session database present | No open reproduced defect |
