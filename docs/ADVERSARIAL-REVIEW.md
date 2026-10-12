@@ -1,121 +1,157 @@
 # Student readiness audit | 12 October 2026
 
-Status: active review on this PC; the user cancelled the handoff. See AUDIT-HANDOFF.md and the root AUDIT-RESUME.md for current commits and exact verification state. Both use the isolated `audit/student-readiness` branches.
-Original working copies and their uncommitted changes are preserved.
-The latest inspected Pages artifact is `9866aa7` (source `6ea6241`);
-this audit candidate has not been published.
+Checkpoint prepared for the requested pause on the isolated `audit/student-readiness` candidates. The
+original `ros2-basics-lab/` and `ros2learn/` working copies, including their
+preexisting Python changes, remain untouched. No audit candidate has been
+published yet. The readiness verdict remains **NO until final release checks**.
 
-## Scope and evidence rules
+## Evidence and scope
 
-Audit Units 1–7 without redesign, plus every optional playground exercise.
-Exercise Python and C++ in the real browser runtimes. Distinguish model tests,
-visible student walkthroughs, and native Jazzy comparisons. Keep the review
-within the beginner concepts taught by the course.
+This record reconciles the saved checkpoint with the resumed checks. Reports
+are in each candidate's `artifacts/audit/`; the immutable pause copy is under
+`checkpoints/2026-10-12-ros2-audit-final-pause/evidence/` in the parent workspace.
+A test-file count is not an assertion count. Browser walkthroughs, actual runtime
+attacks, model tests and native comparisons are separate forms of evidence.
 
-## Architecture and realism
+Both source candidates retain the beginner course and shared runtime fixes.
+Lab Unit 7 is the browser-to-native handoff; KineNest Unit 7 is its existing
+Actions unit. KineNest keeps “Build it. Run it. Understand it.” and the TF &
+Odometry coming-soon card before Communication & QoS. DDS, RMW, native
+network discovery, RTPS and middleware internals are excluded from this audit.
 
-Static application: virtual filesystem → shell → package metadata → modeled
-build/install → per-terminal environment → real Python/WASM workers → modeled
-ROS graph. Python uses Pyodide CPython; C++ uses Clang/LLD and WebAssembly.
-Shell, CMake, colcon and launch are bounded models, not native Linux processes.
-Browser timers and worker scheduling differ from a native workstation.
-Installation entries derive from the canonical interface/runtime catalogs.
-Course, Playground and Free Lab have independent saved workspace scopes.
+## Exercise coverage
 
-## Coverage ledger
+Each guided page was followed in a fresh profile through its visible commands
+and file controls. The complete built reports contain 294 Lab pages (147 per
+language) and 324 KineNest pages (162 per language). Each unit includes observed
+output, the visible checker, process cleanup, session reload/history and Reset.
+The strengthened KineNest Actions checker was then verified on a rebuilt
+artifact in both languages, 22 pages each, in `course-python-cpp-units-7.json`.
+Subset reruns now write separate reports, preserving the full-course evidence.
 
-| Area | Evidence to date | Remaining |
+| Unit | Pages per language | Mistakes, recovery and checker evidence |
+| --- | ---: | --- |
+| 1. Environment | 17 | Native 15-command comparison; literal/comment/failed-command attacks rejected; successful inspection survives save/reload; independent terminal environments; startup/reset races |
+| 2. Topics and terminals | 29 | All commands and three terminals; once/count/rate/wait/no-replay behavior; wrong types/topics/options, interrupted waiters and incomplete publication counts; print-only and stale-reset attacks |
+| 3. Workspace and packages | 17 | Missing per-terminal source and recovery; real build/install required; wrong-directory build retained; source edits, failed rebuild, missing executable/module, deleted/recreated build/install/source trees; alternate package names |
+| 4. Publishers and subscribers | 23 | Real Python/C++ workers; empty/print-only/unexecuted source, wrong topic, external CLI, stopped or edited programs rejected; alternate node/topic names pass after repair |
+| 5. Messages and parameters | 31 | Built custom-interface overlay required; CLI publication and unexecuted source rejected; constant output cannot satisfy parameter change; repaired programs, nested types and alternate names pass |
+| 6. Services and launch | 23 | Varied AddTwoInts requests reject constant replies; program client plus terminal call required; alternate launch/remaps with real child delivery pass; Stop removes children and late responses |
+| 7. Lab native handoff | 7 | Exported Python/C++ workspaces actually built and ran under native Jazzy; fresh/reset unit cannot reuse a previous export acknowledgement |
+| 7. KineNest Actions | 22 | Wrong Fibonacci payloads, CLI-only client and prior-server evidence rejected; repaired real clients pass; success/cancel/reject, final Stop, new run and Reset checked in both languages; all four server/client language pairings pass |
+
+`course-python-cpp.json` is the latest complete walkthrough, not the early
+failed run. Historical failure screenshots and the immutable earlier checkpoint
+are retained; they do not represent unresolved current failures. The original
+Unit 5 parameter-checker defect was repaired. Other early walkthrough failures
+included obsolete harness assumptions. The first new Python-loading harness
+used KineNest's instruction selector on Lab and timed out before any commands;
+its corrected Lab/KineNest selector and six-command assertion now pass both.
+
+The actual-program checker matrix has 19 attacks/repairs per language/product
+(76 total), plus seven Actions cases per language (14). Model regressions cover
+additional shell and terminal-topic attacks. Playground and Free Lab are
+ungraded; no checker requirements have been invented for either.
+
+## Ecosystem, lifecycle and UI coverage
+
+| Area | Verified evidence | Remaining release work |
 | --- | --- | --- |
-| Model suite | All 40 Lab / 42 KineNest test files passed | Final built validation |
-| Units 1–7 | All 147 guided pages per language followed in fresh browser profiles; commands, supplied files, checks, cleanup, reset and reload/history passed | Complete mistake/recovery and checker attack matrix per unit |
-| Unit 1 | Native 15-command parity; successful-command evidence rejects literals/comments/failures; browser rerun passes | Wider per-exercise matrix |
-| Python | Real packaging/runtime boundary, syntax, imports, pub/sub, custom messages, parameters, services and launch passed | Wider valid alternatives and repeated lifecycle stress |
-| C++ | Real compile/run, failed rebuild recovery, pub/sub, interfaces, parameters, services and launch passed | Wider valid alternatives and repeated lifecycle stress |
-| Interfaces | All 148 built-in Python imports / C++ headers and constructors passed in browser and native Python/g++ | Additional nested payload behavior |
-| Build/source | 18 adversarial build cases, 22 Python/21 C++ causality checks both products; native exported workspaces both languages passed | Changed decoder integration and final built checks |
-| Graph | Duplicate names; same-node 2/2 -> 1/1 -> 0/0 endpoints; native parity; 16 mixed worker cycles per product passed | Varied-target sensor Start/Stop and final generation extension |
-| Playground | All six sections in Python/C++; command walkthrough, sensors, TF, readers, cleanup; current standalone built artifact passed | More wrong/partial code and long runtime stress |
-| Preparation | All six positions retain selection; three repeated preparations; single prompt; real skeleton run; explicit reference reveal passed in both projects | No open reproduced defect |
-| Free Lab | Both languages in both built projects: real hello, separate environments, independent save/reload/reset, zero Twist, 20 start/stop cycles per language, mobile layout passed | Long mixed workload stress |
-| UI | Simulator six Chrome/four Firefox widths; dirty edits/conflicts; theme/language during execution passed | Complete revised Back/Forward, isolation and keyboard audit |
-| Learner copy | Standalone Units 1–7 × two code languages × three UI languages (42 combinations) passed scope scan on rebuilt preview | Shared copy review where applicable |
-| Pages | Live baseline and local prefixed public build: navigation/reload and 8 runtime assets/MIME passed; runtimes remain lazy | Full live course review after validated deployment |
-| Storage | No cookies, Set-Cookie headers or service workers observed; browser session database present | No open reproduced defect |
+| Models | 41 Lab / 43 KineNest test files pass after the shared output fix; installation asset consistency checked | Final built worker-fix checks pending |
+| Shell/filesystem | Native command/listing parity; relative/absolute paths, metadata, redirection, variables, shared files, independent cwd/environment; pending commands canceled on Reset/close/restore | No reproduced open defect |
+| Build/install/source | 18 failure/recovery cases per product; 22 Python and 21 C++ causal checks per product; actual browser compilation; no-install CMake targets; native exported projects | No reproduced open defect |
+| Installation | All 148 built-in Python bindings and C++ headers/constructors exercised in browser and native Python/g++; canonical registry/catalog; generated underlay and custom overlay files; restoration fills missing generated files and preserves edits | No reproduced open defect |
+| Nested runtime | Path/PoseStamped and GetPlan request/response types, republishing and destruction verified in real Python/C++ and native Jazzy | No reproduced open defect |
+| Graph/processes | Duplicate process names; independent same-node endpoint counts 2/2 → 1/1 → 0/0; native comparison; launch children, terminal close, Stop, Reset and loading interruption | 48 cycles/product at 1500 ms dwell passed before the final output fix |
+| Playground | All six sections, both products/languages; visible instructions and real sensor readers; preparation retains selection and one prompt; source/display camera equality; Twist/watchdog, LiDAR, odometry and existing TF | Built K strict sensor result passed before the final output fix |
+| Camera/timing | All 230400 image bytes, patterned/fixed/dynamic/empty arrays and malformed-data rejection; strict source image-driven stop x=2.2168 m, front range ≈0.6632 m; Python p95 33 ms, C++ 24–26 ms | Built K passed x=2.2168 m, all 230400 bytes; Python p95 33 ms, C++ 21 ms |
+| Target lifecycle | Built Lab 36 cycles, highest cycle p95 Python 60/C++ 34 ms; rebuilt K 36 cycles, Python/C++ 33 ms; six target situations, live retarget/removal, source/process restarts, 8 startup cancellations/language, zero leftover workers/graph resources | All stored cycles satisfy 100 ms; lifecycle harness guard tightened from 250 to 100 ms |
+| Slow consumers | Deliberate 350 ms callbacks; four interruption cycles/language/product; two in flight plus two latest slots across two subscriptions; bounded queues, responsive main thread, no late output | No reproduced open defect |
+| Free Lab | Both languages/products: real hello, per-terminal sourcing, independent course/playground/free persistence and Reset, zero Twist, 20 simulator toggles/language, mobile layout | 48 mixed Python/C++/sensor cycles per product passed |
+| UI/layout | Dirty drafts/conflicts, theme/language while running, six terminals, history/Back/Forward, keyboard resizing; six Chrome widths/products and four Firefox Lab widths; seven locales for K upcoming cards | Built layout and K product smoke passed |
+| Runtime loading/cache | Both built products: real Python-only hello, pub/sub callbacks, save/reload; five Python assets and zero C++ toolchain/worker requests; installed C++ without compiler cache; compiler worker failure recovery; both open C++ sessions survive asset rebuild | No reproduced open defect |
+| Public Pages/storage | Local standalone public build under /ros2-basics-lab/; 12 assets/MIME, nine navigation entries/reloads, real 404, no cookies/Set-Cookie/service workers; navigation does not eagerly fetch runtimes | Final committed artifact and actual live validation pending |
 
-The first combined course artifact records one Python Unit 5 checker failure.
-The targeted rerun after the parameter-evidence fix passed; retain both pieces
-of evidence (`artifacts/audit/course-python-cpp.json` and `course-python.json`).
-Other initial walkthrough failures were harness assertions (terminal history
-selection and launch reference text), corrected before the successful reruns.
+## Findings and regressions
 
-## Current open defect and continuation results
+Count each defect group once across products. Confirmed product findings:
+**24 MAJOR, 4 MINOR, 0 BLOCKER**, all locally fixed and verified. The two
+new output fixes pass actual Python/C++ flood, recovery and Stop checks in both products.
+This count does not convert unfinished deployment verification into a product
+bug. No reproduced product defects remain open. Final built/live verification is
+still required before a release readiness claim.
 
-The former endpoint-count defect is fixed and passed native plus real Python/C++
-checks in both products, including 2/2 -> 1/1 -> 0/0 independent destruction.
+| ID | Severity | Fixed behavior | Regression/evidence |
+| --- | --- | --- | --- |
+| M01 | MAJOR | Python packaging validates syntax without executing entry-module imports | python-build tests and actual/native packaging checks |
+| M02 | MAJOR | Missing Python console-script module fails at execution, not package metadata inspection | build-failures and build-causality |
+| M03 | MAJOR | CMake target without install rule compiles but is unavailable to ros2 run | build-failures and adversarial-build |
+| M04 | MAJOR | Background topic jobs own independent nodes/endpoints and cleanup | job-control and terminal semantics |
+| M05 | MAJOR | Communication/parameter/service/launch checks require appropriate current program-owned observations | checker-adversarial and 76 real-program cases |
+| M06 | MAJOR | Installed C++ executes without fetching/requiring cached compiler and linker | installed-cpp browser check |
+| M07 | MAJOR | C++ boolean arrays compile and encode correctly | every-standard-interface browser/native check |
+| M08 | MAJOR | Separate processes may share a node display name and stop independently | duplicate-publishers and native-duplicate-nodes |
+| M09 | MAJOR | Playground preparation preserves selected exercise and avoids repeated prompts | playground-preparation, six positions and repeated preparations |
+| M10 | MAJOR | Simulator startup preflights types; stop/reset are idempotent with coherent collision rollback | playground model and browser lifecycle tests |
+| M11 | MAJOR | Multiple same-node endpoints count and dispose independently | endpoint-lifecycle model/browser/native 2/2 → 1/1 → 0/0 |
+| M12 | MAJOR | Python timer/service destruction removes callbacks and pending work | python-compat, native-runtime-behavior and nested-runtime |
+| M13 | MAJOR | Nested Python message/service fields retain generated types and can be republished | nested-runtime, python-compat and native comparisons |
+| M14 | MAJOR | Custom generated bindings/libraries are inspectable in the workspace overlay and restore safely | custom-installation and ecosystem coverage |
+| M15 | MAJOR | Modeled CMake/colcon arguments are validated; repeated dependencies and valid setup.cfg spacing work | build-failures, adversarial-build, build-causality |
+| M16 | MAJOR | Unit 1 requires successful shell inspections, rejecting literals/comments/failed commands | shell-checker-evidence and visible walkthrough |
+| M17 | MAJOR | Pending terminal commands cannot write after close, Reset or lesson restoration | terminal-lifecycle and session-race |
+| M18 | MAJOR | Successful shell-check evidence participates in autosave and session restoration | shell-checker-evidence, course reload/history and UI state |
+| M19 | MAJOR | Full camera feedback is fast enough to stop meaningfully; typed byte paths retain shape/bounds checks | strict sensor-feedback, byte-runtime, target/slow-sensor matrices |
+| M20 | MAJOR | C++ wall and monotonic clocks return usable timestamps | wasi-clock tests and real C++ image timing |
+| M21 | MAJOR | K Actions reject wrong Fibonacci data and CLI substitution for required program clients | action-checker-runtime, checker-adversarial and rebuilt Unit 7 |
+| M22 | MAJOR | K Actions cannot reuse prior server-run completion; final visible Stop preserves earned evidence | action-checker-runtime and checker-adversarial |
+| M23 | MAJOR | ROS logger traffic now shares the worker stdout limit before entering the UI queue; protocol payloads/lifecycle remain intact | worker-output model tests (five cases), real Python/C++ flood/recovery checks |
+| M24 | MAJOR | C++ unterminated stdout retains at most 4000 characters instead of the entire stream | actual worker parser regression, 8 MiB no-newline browser fixture |
+| N01 | MINOR | Sensor mounts, wheel transforms and metre-scale visuals use consistent geometry | playground geometry, sensor/readout and native reader comparisons |
+| N02 | MINOR | Lab native-handoff translations stay within the agreed beginner scope | rendered lesson-copy scan, 42 combinations |
+| N03 | MINOR | Simulator layout adapts to its actual panel width | Chrome/Firefox responsive checks |
+| N04 | MINOR | Reset native-handoff lesson clears its prior export acknowledgement | checker-adversarial and course Reset |
 
-**MAJOR, fixed and verified:** C++ image feedback previously reached x=2.79 m
-with a 463 ms sample. Bulk byte decoding, compact Python transfer and typed-byte
-validation now give Python p95=33 ms and C++ p95=24–26 ms in both products. Both
-stop at x≈2.22 m. Exact full-image byte checks, 18 varied-target cycles per
-language/product and slow-callback interruption pass. Browser clocks now also
-support real C++ std::chrono wall/monotonic readings. See the active audit record.
+Audit infrastructure corrections are separate: subset reports no longer replace
+the complete walkthrough, and the target matrix now enforces the same 100 ms
+limit as the strict feedback check. The Python network observer's initial Lab
+selector error was a harness error, not a product defect. The first C++ flood
+fixture did not explicitly flush its iostream before logger messages consumed
+the output budget; it now flushes the no-newline stream and terminating newline
+before the logger burst. This fixture correction does not relax its assertions. Free Lab and KineNest's
+requested coming-soon card are features, not defect counts.
 
-This continuation also fixed Python timer/service lifecycle and nested typed
-payloads, inspectable custom-interface overlay bindings, bounded CMake/colcon/
-setup.cfg validation, Unit 1 successful-command evidence, evidence autosave,
-pending commands after Reset/close/lesson restore, and stale export completion
-on lesson reset. These fixes have reproductions and regression coverage.
+## Intentional limitations and parity references
 
-18 browser build-failure/recovery cases and 22 Python/21 C++ build-causality
-checks passed both products. Native exported workspaces both languages built
-and ran services, launch and custom messages. Mixed Python/C++/sensor stress
-passed 16 cycles per product with zero remaining workers or graph resources.
+The browser models shell, package/build/install/source, launch and ROS graph
+behavior. Learner Python runs in Pyodide CPython; C++ runs compiled WebAssembly.
+The supported installation is inspectable, including clearly marked simulated
+binaries. It does not execute host commands or promise native functionality
+merely because a modeled binary exists. Unsupported build/shell/runtime options
+remain explicit. C++ native threads and exceptions are unsupported. Browser
+scheduling is not a real-time guarantee; callbacks use bounded latest-message
+queues. Topic type conflicts and multiple same-named node objects inside one
+program are rejected; separate processes can use duplicate display names.
+Checkers validate observed behavior rather than proving arbitrary code correct.
 
-The simulator responsive layout passes six Chrome widths in both products and
-four native Firefox widths in Lab. KineNest now includes TF & Odometry before
-Communication & QoS as a coming-soon card, with an axis icon and seven locales.
-Em dashes in visible guidance were reduced. Latest complete model runs pass
-40 Lab and 42 KineNest test FILES. Current dist/live builds remain older.
+Fresh reference review used the official Jazzy documentation source for
+[per-terminal environment setup](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.rst),
+[workspace build and overlay sourcing](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Tutorials/Beginner-Client-Libraries/Creating-A-Workspace/Creating-A-Workspace.rst),
+and [action goal/feedback/result and cancellation](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Actions/Understanding-ROS2-Actions.rst).
+The rendered documentation site denied automated access, so its official Jazzy
+source branch was read. This does not broaden the explicitly excluded scope.
+Existing native Jazzy evidence is retained; unchanged tests were not blindly rerun.
 
-Image feedback, varied-target lifecycle and UI/navigation checks pass. Both products
-also pass 19 real-program checker attacks/repairs per language. Rebuilt/static/
-live validation remains in progress.
-The handoff is the authoritative detailed evidence/remaining-work ledger.
+## Release state
 
-## Confirmed findings and local fixes
+Source at resume: Lab `17293e6`, KineNest `18c8b01`, with resumed audit
+harness/document changes and shared worker output bounds in progress. Refreshed KineNest `origin/main` is
+`1f2744e`; it is an ancestor of the candidate. Refreshed Pages `origin/main`
+is `9866aa7`; the artifact checkout has fast-forwarded cleanly and is ready for later staging.
+Latest inspected live Lab source is `6ea6241`, asset version `7b3a6474757d`.
+Local runtime fixes have not yet been presented as deployed.
 
-- **MAJOR:** Python packaging executed entry modules. Build now performs CPython syntax validation; imports execute at run time. Native and real Pyodide regression passed.
-- **MAJOR:** An absent Python console-script module failed at packaging instead of execution. Corrected to match native behavior.
-- **MAJOR:** Compiled CMake targets without install rules failed the build. They now compile successfully and remain unavailable to `ros2 run`.
-- **MAJOR:** Background topic jobs shared terminal-derived identities. They now have independent nodes, endpoints and cleanup.
-- **MAJOR:** Course checks accepted terminal-only traffic or stale program evidence. Current executable ownership and observed callbacks now gate relevant checks; parameter checks require a matching output change.
-- **MAJOR:** Installed C++ programs unnecessarily needed cached compiler/linker files. They now execute existing modules without loading Clang/LLD.
-- **MAJOR:** C++ boolean-array encoding failed real compilation. Fixed and checked with every standard binding, including native compilation.
-- **MAJOR:** Two processes with the same node name were rejected/merged. Independent identities preserve duplicate display names and independent lifecycle; native parity and Python/C++ repeated publisher tests passed.
-- **MAJOR:** Playground preparation jumped to the introduction and repeated terminal prompts. It now preserves the current exercise and redraws the prompt once.
-- **MAJOR:** Simulator start could leave partial graph state after a type error. Start is preflighted; stop/reset are idempotent. Velocity limits and collision rollback keep pose/wheels coherent.
-- **MINOR:** Sensor mounts, wheel transforms and metre-scale visuals were inconsistent. Geometry, dynamic left/right wheel frames, floor scale and sensor readouts now share tested conventions.
-- **MINOR:** Unit 7 translations retained excluded terminology. Source and translations are corrected; the rebuilt preview passed the rendered-copy scan.
-- **FEATURE:** Free Lab provides an isolated, resettable workspace with the same Python/C++ environment and optional simulator, without a graded checker.
-- **LIMITATION:** One program currently supports only one node object for a given node name; separate processes may share names. Topic type conflicts are explicitly rejected by the supported graph model.
-- **LIMITATION:** Parameter evidence checks observed behavior; they are not a formal proof that arbitrary student code derives every output from a parameter.
-
-Shared implementation fixes and their regressions have been committed to the
-KineNest audit branch. Its product homepage and independent curriculum remain.
-The unused robotics navigation entry is removed from its Linux module.
-Current source changes are under active validation; see the audit record.
-
-## Regression entry points
-
-`npm test`; `scripts/browser.mjs`; `scripts/course-audit.mjs`;
-`scripts/playground-exercises-check.mjs`; `scripts/playground-preparation-check.mjs`;
-`scripts/free-lab-check.mjs`; `scripts/duplicate-publishers-check.mjs`;
-`scripts/installed-cpp-check.mjs`; `scripts/interface-runtime-check.mjs`;
-`scripts/pages-storage-check.mjs`; `scripts/lesson-copy-check.mjs`.
-Native comparisons include `native-build-boundaries.py`, `python-build-parity.mjs`,
-`native-duplicate-nodes.py`, `native-sensor-readers.py`, `lesson-one-parity.mjs`.
-
-## Verdict
-
-ROS 2 BASICS LAB READY FOR STUDENT USE: NO | complete adversarial review pending.
-This is an evidence checkpoint, not a claim of a completed audit.
+Before YES: finish the outstanding built/extended checks above, commit the
+candidate, build Lab with `npm run build:public`, stage only that standalone
+artifact while preserving old immutable assets, then validate the actual live
+site. Preserve KineNest's separate homepage and source history.

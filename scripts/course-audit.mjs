@@ -7,6 +7,7 @@ import {lesson,LESSON_NAMES} from '../src/course.js';
 import {guidePages} from '../src/course/guide.js';
 const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true});
 const reports=[],languages=(process.env.LAB_LANGUAGE||'python,cpp').split(','),selected=process.env.AUDIT_UNITS?.split(',').map(Number)||[0,1,2,3,4,5,6];
+const reportPath='artifacts/audit/course-'+languages.join('-')+(process.env.AUDIT_UNITS?'-units-'+selected.map(i=>i+1).join('-'):'')+'.json';
 await mkdir('artifacts/audit',{recursive:true});
 try{for(const language of languages)for(const index of selected){
  const page=await browser.newPage({viewport:{width:1500,height:1100}}),errors=[],record={unit:index+1,title:LESSON_NAMES[index],language,pages:0,commands:[],passed:false};
@@ -74,5 +75,5 @@ try{for(const language of languages)for(const index of selected){
   await page.locator('#reset-lesson').click();await page.locator('#reset').click();await page.waitForTimeout(250);assert.equal(await page.locator('.terminal-card').count(),1);assert.equal(await page.locator('#graph-state').textContent(),'0 nodes · 2 topics');record.reset=true;
   assert.deepEqual(errors,[]);record.passed=true;console.log('PASS walkthrough '+language+' unit '+(index+1)+'; checker '+record.checkerPassed);
  }catch(error){record.error=error.message;record.outputs=await page.locator('.terminal-transcript pre').allTextContents().catch(()=>[]);await page.screenshot({path:`artifacts/audit/failure-${language}-${index+1}.png`}).catch(()=>{});console.log('FAIL '+language+' unit '+(index+1)+' '+error.message);process.exitCode=1;
- }finally{reports.push(record);await writeFile('artifacts/audit/course-'+languages.join('-')+'.json',JSON.stringify(reports,null,2));await page.close();}
+ }finally{reports.push(record);await writeFile(reportPath,JSON.stringify(reports,null,2));await page.close();}
 }}finally{await browser.close();}

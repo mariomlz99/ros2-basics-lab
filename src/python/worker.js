@@ -2,8 +2,10 @@
 let pyodide, chain=Promise.resolve();
 const INDEX='https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
 let outputCount=0, outputTime=0;
-self.emit_json=text=>postMessage(JSON.parse(text));
-function output(text){const now=Date.now();if(now-outputTime>1000){outputTime=now;outputCount=0;}if(outputCount++<40)postMessage({kind:'stdout',text:String(text).slice(0,4000)});}
+self.emit_json=text=>emit(JSON.parse(text));
+// Bound stdout and ROS logs before they enter the main-thread message queue.
+function emit(message){if(message.kind==='stdout'||message.kind==='log'){const now=Date.now();if(now-outputTime>1000){outputTime=now;outputCount=0;}if(outputCount++>=40)return;message={...message,text:String(message.text).slice(0,4000)};}postMessage(message);}
+function output(text){emit({kind:'stdout',text});}
 async function teachingAPI(){
   const url=new URL('./compat.py',self.location.href);
   for(let attempt=0;attempt<3;attempt++){

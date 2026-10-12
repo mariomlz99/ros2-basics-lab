@@ -22,3 +22,8 @@ fixtures with GNU ls, normalizing account names and column padding.
 ### Runtime boundaries
 
 C++ uses browser wall and monotonic clocks. Native threads and C++ exceptions are unsupported by this WebAssembly toolchain; unsupported syntax produces compiler diagnostics. Sensor callbacks keep one running message and one replaceable latest message per subscription. RGB images use typed byte storage and bulk C++ decoding; displayed pixels and published bytes share the same rendered frame. Browser scheduling is not a real-time guarantee.
+
+Worker stdout and ROS logger output share a limit of 40 events per second,
+with at most 4000 characters per event. Excess output is omitted. C++ keeps
+at most 4000 characters while waiting for a line ending. These output limits
+do not truncate ROS messages or discard node/process lifecycle messages.

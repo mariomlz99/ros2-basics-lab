@@ -52,7 +52,7 @@ try{
      }
      // Rapid sensor toggles must be idempotent and clean.
      for(let n=0;n<3;n++){scene.start();scene.start();scene.stop();scene.stop();}
-     const clean=assertClean(config.name),latencies=frames.slice(first).map(f=>f.latency).sort((a,b)=>a-b),p95=latencies[Math.floor(latencies.length*.95)];if(p95>250)throw Error(config.name+' image p95 '+p95+' ms');
+     const clean=assertClean(config.name),latencies=frames.slice(first).map(f=>f.latency).sort((a,b)=>a-b),p95=latencies[Math.floor(latencies.length*.95)];if(p95>100)throw Error(config.name+' image p95 '+p95+' ms');
      cycles.push({cycle,target:config.name,frames:frames.length-first,p95Ms:p95,clean});await window.targetProgress(language+' target '+cycle+' '+config.name+': PASS '+p95+' ms p95');
     }
     // Cancel process startup repeatedly; no worker may arrive after close/reset.
