@@ -1,3 +1,6 @@
+import {translations as odometryDictionary} from './translations.js';
+import {odometryTranslations} from './playground/odometry-translations.js';
+import {OdometryView} from './playground/odometry-view.js';
 import {sessionScope, savedSlots} from './session-scopes.js';
 import {playgroundSections} from './playground/sections.js';
 import {pubsubDiagram} from './pubsub-diagram.js';
@@ -12,15 +15,16 @@ import{Lab}from'./lab.js';import{ROOT,BASE_PACKAGES}from'./workspace.js';import{
 let exampleUpdates=[];let preparing=false;let overview=false;const guidePositions=new Map();
 const sessionSlots=new Map();
 let freeRobot=false;
-let playground;let lessonSnapshots=new Map();const collapsed=new Set([ROOT+'/build',ROOT+'/install',ROOT+'/log']);
+let odometryView,playground;let lessonSnapshots=new Map();const collapsed=new Set([ROOT+'/build',ROOT+'/install',ROOT+'/log']);
 let lab,editor,views=[],activeFile=null,saved='',lessonIndex=0,language='python',progress=new Set(),refreshPending=false;
+Object.assign(odometryDictionary,odometryTranslations);
 const $=s=>document.querySelector(s),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 function updateProgress(){
  $('#progress').textContent=`${progress.size} / 7 completed`;
  for(const b of document.querySelectorAll('#nav button')){const done=progress.has(Number(b.dataset.index));b.classList.toggle('completed',done);b.querySelector('.completion-mark')?.remove();if(done){const mark=el('span','✓','completion-mark');mark.setAttribute('aria-label','Completed');b.append(mark);}}
 }
 function status(s){$('#status').textContent=s;}
-function refresh(){if(refreshPending)return;refreshPending=true;requestAnimationFrame(()=>{refreshPending=false;if(!lab)return;renderFiles();for(const update of exampleUpdates)update();$('#graph-state').textContent=`${lab.runtime.nodes.size} nodes · ${lab.runtime.topics.size} topics`;if(activeFile&&!lab.fs.exists(activeFile)){activeFile=null;editor.open('','');saved='';fileTitle();}else if(activeFile&&editor.value===saved&&lab.fs.read(activeFile)!==saved){saved=lab.fs.read(activeFile);editor.open(activeFile,saved);fileTitle();}});}
+function refresh(){if(refreshPending)return;refreshPending=true;requestAnimationFrame(()=>{refreshPending=false;if(!lab)return;odometryView?.update();renderFiles();for(const update of exampleUpdates)update();$('#graph-state').textContent=`${lab.runtime.nodes.size} nodes · ${lab.runtime.topics.size} topics`;if(activeFile&&!lab.fs.exists(activeFile)){activeFile=null;editor.open('','');saved='';fileTitle();}else if(activeFile&&editor.value===saved&&lab.fs.read(activeFile)!==saved){saved=lab.fs.read(activeFile);editor.open(activeFile,saved);fileTitle();}});}
 function fileTitle(){const dirty=activeFile&&editor.value!==saved;$('#active-file').textContent=(activeFile?.replace('/home/student/','~/')??'Choose a file')+(dirty?' • unsaved':'');$('#save').disabled=!activeFile;}
 function save(){if(!activeFile)return;try{if(lab.fs.read(activeFile)!==saved)throw Error('File changed in another editor. Reopen it before saving.');lab.fs.write(activeFile,editor.value);saved=editor.value;fileTitle();status('Saved '+activeFile.split('/').at(-1));}catch(e){status(e.message);}}
 function openFile(path){if(activeFile&&editor.value!==saved){status('Save the current file before switching, or use Revert.');return false;}try{saved=lab.fs.read(path);activeFile=path;for(const p of [...collapsed])if(path.startsWith(p+'/'))collapsed.delete(p);editor.open(path,saved);fileTitle();return true;}catch(e){status(e.message);return false;}}
@@ -56,9 +60,10 @@ function renderPlayground(){
   button.onclick=()=>{const expanded=figure.classList.toggle('expanded');button.textContent=expanded?'Restore view':'Enlarge';button.setAttribute('aria-expanded',String(expanded));};figure.insertBefore(button,canvas);
  }
  playground=new Playground(lab.runtime,stage.querySelector('.world'),stage.querySelector('.camera'),stage.querySelector('.scan'));
+ const notebook=el('section');stage.append(notebook);odometryView?.destroy();odometryView=new OdometryView(notebook,lab.runtime,playground);
  $('#playground-start').onclick=()=>{try{playground.start();$('#playground-status').textContent='Live sensor streams';}catch(error){status(error.message);}};
  $('#playground-view').onclick=()=>{playground.overview=!playground.overview;$('#playground-view').textContent=playground.overview?'Follow robot':'Room overview';$('#playground-view').setAttribute('aria-pressed',String(playground.overview));playground.draw();};
- $('#playground-reset').onclick=()=>{playground.resetPose();status('Robot pose reset. Stop any velocity publisher before resetting.');};
+ $('#playground-reset').onclick=()=>{playground.resetPose();odometryView?.reset();status('Robot pose reset. Stop any velocity publisher before resetting.');};
  $('#playground-stop').onclick=()=>{playground.stop();$('#playground-status').textContent='Paused · simulator stopped';};
 }
 function renderLesson(){renderPlayground();$('#prepare-lesson').textContent=lessonIndex===7?'Prepare this exercise':'Prepare this lesson';$('#prepare-lesson').hidden=lessonIndex===0||lessonIndex===1||lessonIndex===8;$('#reset-lesson').hidden=lessonIndex===8;if(!lessonSnapshots.has(lessonIndex))lessonSnapshots.set(lessonIndex,snapshotLesson(lab));const root=$('#lesson');exampleUpdates=[];root.replaceChildren();$('#lesson-heading').textContent=lessonIndex===8?'Free Lab':lessonIndex===7?'Robotics Playground':`${lessonIndex+1}. ${LESSON_NAMES[lessonIndex]}`;for(const b of document.querySelectorAll('#nav button, #exercise-nav button'))b.classList.toggle('active',Number(b.dataset.index)===lessonIndex);$('#workspace').classList.toggle('intro',lessonIndex===0);
@@ -66,6 +71,7 @@ function renderLesson(){renderPlayground();$('#prepare-lesson').textContent=less
  if(lessonIndex===8){const toggle=el('button',freeRobot?'Disable robot and sensors':'Enable robot and sensors');toggle.id='free-robot';toggle.setAttribute('aria-pressed',String(freeRobot));toggle.onclick=()=>{freeRobot=!freeRobot;renderLesson();};root.append(toggle);}
  const position=Math.min(guidePositions.get(key)||0,pages.length-1),guided=!overview&&lessonIndex!==8;
  const sections=lessonIndex===7?playgroundSections(pages):[],section=sections.find(s=>position>=s.start&&position<=s.end);
+ if(odometryView)odometryView.container.hidden=lessonIndex!==7||section?.id!=='odometry';
  if(sections.length){const nav=el('nav',undefined,'playground-exercises');nav.setAttribute('aria-label','Playground exercises');for(const item of sections){const button=el('button',item.title);button.dataset.exercise=item.id;button.classList.toggle('active',guided&&item.id===section.id);if(guided&&item.id===section.id)button.setAttribute('aria-current','step');button.onclick=()=>{guidePositions.set(key,item.start);overview=false;renderLesson();$('#lesson').scrollTop=0;};nav.append(button);}root.append(nav);if(guided)root.append(el('h2',section.title,'exercise-title'));}
 
  if(lessonIndex!==8){

@@ -17,7 +17,7 @@ try{
   const idle=()=>page.waitForFunction(()=>[...document.querySelectorAll('.terminal-state')].every(e=>/^(Jazzy|ROS environment not sourced)/.test(e.textContent)),null,{timeout:180000});
   const select=async index=>{await page.locator(`button[data-index="${index}"]`).click();await page.waitForTimeout(80);};
   await command('touch course_marker');await select(7);await command('touch playground_marker');
-  assert.equal(await page.locator('[data-exercise]').count(),6);
+  assert.equal(await page.locator('[data-exercise]').count(),7);
   assert((await page.locator('[data-exercise]').allTextContents()).every(title=>!title.includes('—')));
   await select(8);await page.locator('#language').selectOption(language);
   assert.equal(await page.locator('.complete').count(),0);assert(await page.locator('#prepare-lesson').isHidden());
