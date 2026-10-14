@@ -15,7 +15,10 @@
     "build:public": "node scripts/bundle.mjs && node scripts/build.mjs --public",
     "bundle:installation": "node scripts/installation-assets.mjs",
     "test:odometry": "node scripts/odometry-check.mjs",
-    "test:odometry:native": "node scripts/native-odometry-check.mjs"
+    "test:odometry:native": "node scripts/native-odometry-check.mjs",
+    "test:tf": "node scripts/tf-runtime-check.mjs && node scripts/tf-visual-check.mjs && node scripts/tf-learning-check.mjs",
+    "test:tf-review": "node scripts/tf-adversarial-runtime.mjs && node scripts/tf-checker-attacks.mjs && node scripts/tf-session-review.mjs",
+    "test:odometry:ui": "node scripts/odometry-ui-check.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

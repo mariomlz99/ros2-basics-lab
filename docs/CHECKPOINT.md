@@ -1,3 +1,20 @@
+# 14 October 2026 — TF & Odometry exercise parity
+
+The complete five-exercise TF & Odometry unit is appended at index 9, preserving
+the seven course lessons, Playground and Free Lab indices. Runtime, language
+bindings and inspectable installation entries match the KineNest TF feature;
+the Lab keeps its own identity, source workspace and public artifact.
+
+Odometry now explains executable registration, protects incompatible language
+packages without changing files, and keeps live statuses stable. The visible
+file-card regression passes in Python and C++. Full suite: 171 tests; public
+build, TF runtime, visible learner walkthroughs and session checks pass.
+
+Active source: `.worktrees/ros2-basics-lab-analysis/`. The original dirty checkout
+is preserved. This change is local; the user requested publication of KineNest,
+not a new standalone Pages deployment. Release evidence is in the workspace
+checkpoint `checkpoints/2026-10-14-tf-odometry-release/`.
+
 # Odometry development — 14 October 2026
 
 Shared odometry notebook and motion experiments are implemented locally. See [ODOMETRY.md](ODOMETRY.md) for code, limits and verification commands. Workspace checkpoint: `/home/mari0/Desktop/ROS_COURSE_2627/checkpoints/2026-10-14-odometry/`. Earlier entries below describe historical work.

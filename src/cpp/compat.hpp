@@ -3,6 +3,7 @@
 #include <lab_types.hpp>
 namespace rclcpp {
 class Node;
+class Clock {public:using SharedPtr=std::shared_ptr<Clock>;};
 inline bool initialized=false;
 class Logger{std::string name_;public:explicit Logger(std::string name):name_(name){}const char* get_name()const{return name_.c_str();}};
 template<class... Args> inline void log(const Logger& logger,int level,const char* format,Args... args){char text[4096];std::snprintf(text,sizeof(text),format,args...);kinenest::emit("{\"kind\":\"log\",\"node\":"+kinenest::quote(logger.get_name())+",\"level\":"+std::to_string(level)+",\"text\":"+kinenest::quote(text)+"}");}
@@ -111,6 +112,7 @@ public:
  explicit Node(std::string name):name_(name.size()&&name[0]=='/'?name:"/"+name){kinenest::emit("{\"kind\":\"node\",\"node\":"+kinenest::quote(name_)+"}");}
  virtual ~Node(){parameters.erase(name_);kinenest::emit("{\"kind\":\"destroy\",\"node\":"+kinenest::quote(name_)+"}");}
 
+ Clock::SharedPtr get_clock()const{return std::make_shared<Clock>();}
  Logger get_logger()const{return Logger(name_);}const char* get_name()const{return name_.c_str();}
 
  template<class T> T declare_parameter(const std::string& name,T value){

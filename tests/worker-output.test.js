@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {TransformClient} from '../src/runtime/tf.js';
 
 function fixture(language){
  const messages=[];let now=10000,imports;
  const memory={buffer:new ArrayBuffer(65536)};
- const context=vm.createContext({URL,AbortSignal,TextDecoder,TextEncoder,setTimeout,self:{},Date:{now:()=>now},postMessage:message=>messages.push(message),loadToolchain:async()=>({metrics:{},instantiate:async(_module,value)=>{imports=value;return {exports:{memory,_start(){}}};}})});
+ const context=vm.createContext({TransformClient,URL,AbortSignal,TextDecoder,TextEncoder,setTimeout,self:{},Date:{now:()=>now},postMessage:message=>messages.push(message),loadToolchain:async()=>({metrics:{},instantiate:async(_module,value)=>{imports=value;return {exports:{memory,_start(){}}};}})});
  let source=readFileSync(new URL('../src/'+language+'/worker.js',import.meta.url),'utf8');
  if(language==='cpp')source=source.replace(/^import .+;\n/gm,'').replaceAll('import.meta.url',JSON.stringify('http://localhost/src/cpp/worker.js'));
  vm.runInContext(source,context);

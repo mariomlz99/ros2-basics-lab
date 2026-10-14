@@ -39,7 +39,10 @@ export class OdometryView {
   metric('body','Velocity · '+(s?.child??'base_link'),s?`x ${number(s.vx)} · y ${number(s.vy)} m/s`:'—');
   metric('world','Velocity · '+(s?.frame??'odom'),s?`x ${number(world.x)} · y ${number(world.y)} m/s`:'—');
   container.querySelector('.odom-mark').disabled=!s||!this.wasRunning;
-  container.querySelector('.odom-status').textContent=!s?'Start the simulator to record /odom.':!this.wasRunning?'Paused · last recorded sample':this.gap?'New recording after a sample gap':trace.trimmed?'Live /odom · showing the latest 600 path points':'Live /odom · recording published poses';
+  const status=!s?'Start the simulator to record /odom.':!this.wasRunning?'Paused · last recorded sample':this.gap?'New recording after a sample gap':trace.trimmed?'Live /odom · showing the latest 600 path points':'Live /odom · recording published poses';
+  // Keep the live region stable between state changes. Compare the source
+  // status, since localization may have translated the displayed text.
+  if(this.statusText!==status){this.statusText=status;container.querySelector('.odom-status').textContent=status;}
   this.draw();
  }
  draw(){
