@@ -21,7 +21,7 @@ try{
  await page.context().grantPermissions(['clipboard-read','clipboard-write']);
  await page.locator('.command button').first().click();await page.getByRole('button',{name:'Copied!',exact:true}).waitFor();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'pwd');await page.getByRole('button',{name:'Copy',exact:true}).first().waitFor();
  await page.evaluate(async()=>{
-  const {Lab}=await import('./src/lab.js');const lab=new Lab();const host=document.createElement('div');document.body.append(host);
+  const base=document.querySelector('script[src*="/app.js"]').src,{Lab}=await import(new URL('lab.js',base));const lab=new Lab();const host=document.createElement('div');document.body.append(host);
   const view=new window.TerminalView(lab,lab.terminal(),host,()=>{});window.copyTest={view,host};
   await new Promise(resolve=>view.xterm.write('selected command',resolve));view.xterm.selectAll();window.selectedCommand=view.xterm.getSelection();view.xterm.focus();
  });
@@ -31,19 +31,18 @@ try{
  await page.evaluate(()=>{window.copyTest.view.destroy();window.copyTest.host.remove();});
  // Every guide page remains reachable; Next alone does not complete a lesson.
  while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
- await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'0 / 6 completed');assert.equal(await page.locator('#next-lesson').count(),0);
+ await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'0 / 7 completed');assert.equal(await page.locator('#next-lesson').count(),0);
  await command('pwd');await command('echo $ROS_DISTRO');await command('ros2 node list');
- await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'1 / 6 completed');assert.equal(await page.locator('#next-lesson').textContent(),'Move to lesson 2');
+ await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'1 / 7 completed');assert.equal(await page.locator('#next-lesson').textContent(),'Move to lesson 2');
  await page.locator('#locale').selectOption('nl');await page.getByRole('button',{name:'Ga naar les 2',exact:true}).waitFor();await page.locator('#locale').selectOption('en');
- await page.locator('#next-lesson').click();assert((await page.locator('#lesson-heading').textContent()).includes('Workspace & packages'));
- // Passing the final lesson without earlier checks must not claim the whole course is complete.
+ await page.locator('#next-lesson').click();assert((await page.locator('#lesson-heading').textContent()).includes('Topics'));
+ // Completing the native-export lesson must not claim the whole course is complete.
  await page.locator('#nav button').nth(6).click();while(!await page.locator('#guide-next').isDisabled())await page.locator('#guide-next').click();
  await command('mkdir -p ~/ros2_ws/src');await page.locator('#export').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('exported'));
- await page.locator('.complete').click();assert.equal(await page.locator('.lesson-onward strong').textContent(),'Final lesson complete.');
- await page.getByRole('button',{name:'Explore exercises',exact:true}).click();await page.getByRole('button',{name:'Start playground',exact:true}).waitFor();
+ await page.locator('.complete').click();assert.equal(await page.locator('#progress').textContent(),'2 / 7 completed');assert.equal(await page.locator('.lesson-onward strong').textContent(),'Final lesson complete.');
  await page.locator('#nav button').nth(2).click();
  await command('echo course > course-only.txt');
- await page.locator('#exercise-nav button').click();assert.equal(await page.locator('#guide-next').count(),1);
+ await page.locator('#exercise-nav button[data-index="7"]').click();assert.equal(await page.locator('#guide-next').count(),1);
  assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),0);
  for(const cls of ['world','camera','scan'])assert(await page.locator('#playground-stage .'+cls).evaluate(canvas=>canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data.some(value=>value!==0)),cls+' preview is rendered');
  await command('echo exercise > exercise-only.txt');await page.locator('#playground-start').click();
@@ -60,7 +59,7 @@ try{
 
  await page.screenshot({path:'artifacts/screenshots/playground-streams.png',fullPage:true});
  await page.locator('#nav button').nth(2).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),0);assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1);
- await page.locator('#exercise-nav button').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();
+ await page.locator('#exercise-nav button[data-index="7"]').click();await page.locator('#save-session').click();await page.waitForTimeout(500);await page.reload();await page.locator('#start').click();await page.locator('.xterm').waitFor();
  assert.equal(await page.locator('#file-tree button').filter({hasText:'exercise-only.txt'}).count(),1);await page.locator('#nav button').nth(2).click();assert.equal(await page.locator('#file-tree button').filter({hasText:'course-only.txt'}).count(),1,'Both independent workspaces survive reload');
  console.log('PASS playground previews/live streams, guided steps and independent saved workspaces');
  await page.locator('#nav button').nth(5).click();

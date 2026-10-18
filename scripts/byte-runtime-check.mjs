@@ -1,4 +1,4 @@
-import {chromium} from 'playwright-core';
+import {chromium,firefox} from 'playwright-core';
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 const programs={python:`import rclpy
@@ -65,7 +65,7 @@ public:
 };
 int main(int argc,char**argv){rclcpp::init(argc,argv);rclcpp::spin(std::make_shared<Bytes>());rclcpp::shutdown();}
 `};
-const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true}),reports=[];
+const browser=await (process.env.BROWSER==='firefox'?firefox:chromium).launch({headless:true,...(process.env.BROWSER==='firefox'?{}:{executablePath:'/usr/bin/google-chrome'})}),reports=[];
 try{
  const page=await browser.newPage();await page.goto(process.env.LAB_URL||'http://127.0.0.1:8033/ros2-basics-lab/');
  for(const language of (process.env.LAB_LANGUAGE||'python,cpp').split(',')){
