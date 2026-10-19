@@ -100,3 +100,21 @@ assert len(received)==1
 assert [e for e in events if e['kind']=='publish'][-1]['message']['data']==message.data
 assert [e for e in events if e['kind']=='message_processed'][-1]['sample']==7
 `));
+
+test('topic delivery preserves signed zeros in scalar and sequence fields',()=>python(`
+import math
+from std_msgs.msg import Float32
+from sensor_msgs.msg import LaserScan
+node=Node('signed_zeros')
+received=[]
+scalar=node.create_subscription(Float32,'/scalar',lambda m:received.append(m.data),10)
+_dispatch_message(scalar,{'data':0},1,[['data']])
+_dispatch_message(scalar,{'data':0},2)
+assert [math.copysign(1,x) for x in received]==[-1.0,1.0]
+scans=[]
+sequence=node.create_subscription(LaserScan,'/scan',lambda m:scans.append(m),10)
+_dispatch_message(sequence,{'ranges':[0,0,1.25],'angle_min':0},3,[['ranges',0],['angle_min']])
+assert [math.copysign(1,x) for x in scans[0].ranges]==[-1.0,1.0,1.0]
+assert scans[0].ranges[2]==1.25
+assert math.copysign(1,scans[0].angle_min)==-1.0
+`));

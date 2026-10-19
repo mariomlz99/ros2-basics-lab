@@ -6,6 +6,14 @@ self.emit_json=text=>emit(JSON.parse(text));
 // Bound stdout and ROS logs before they enter the main-thread message queue.
 function emit(message){if(message.kind==='stdout'||message.kind==='log'){const now=Date.now();if(now-outputTime>1000){outputTime=now;outputCount=0;}if(outputCount++>=40)return;message={...message,text:String(message.text).slice(0,4000)};}postMessage(message);}
 function output(text){emit({kind:'stdout',text});}
+// Pyodide converts integral JS numbers to Python ints, which loses -0's sign.
+// Carry only its field paths alongside the normal structured message conversion.
+function negativeZeroPaths(value,path=[],paths=[]){
+  if(Object.is(value,-0))paths.push(path);
+  else if(Array.isArray(value))value.forEach((item,index)=>negativeZeroPaths(item,[...path,index],paths));
+  else if(value&&typeof value==='object')for(const [key,item]of Object.entries(value))negativeZeroPaths(item,[...path,key],paths);
+  return paths;
+}
 async function teachingAPI(){
   const url=new URL('./compat.py',self.location.href);
   for(let attempt=0;attempt<3;attempt++){
@@ -63,9 +71,10 @@ async function handle(data){
   }else if(data.kind==='message'||data.kind==='timer'){
     pyodide.globals.set('event_key',data.subscription??data.id);
     pyodide.globals.set('event_payload',data.message??null);
+    pyodide.globals.set('event_zero_paths',negativeZeroPaths(data.message));
     pyodide.globals.set('event_sample',data.sample??0);
-    try{pyodide.runPython(data.kind==='timer'?'_dispatch_timer(event_key)':'_dispatch_message(event_key, event_payload.to_py(), event_sample)');}
-    finally{pyodide.globals.delete('event_payload');postMessage({kind:'frame_done',subscription:data.subscription??('timer-'+data.id)});}
+    try{pyodide.runPython(data.kind==='timer'?'_dispatch_timer(event_key)':'_dispatch_message(event_key, event_payload.to_py(), event_sample, event_zero_paths.to_py())');}
+    finally{pyodide.globals.delete('event_payload');pyodide.globals.delete('event_zero_paths');postMessage({kind:'frame_done',subscription:data.subscription??('timer-'+data.id)});}
   }else if(data.kind==='parameter_update'){
     pyodide.globals.set('param_payload',JSON.stringify(data));
     pyodide.runPython('p = json.loads(param_payload); _nodes[p["node"]]._parameters[p["name"]] = p["value"]');
