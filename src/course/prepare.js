@@ -1,3 +1,4 @@
+import {examplePackageState,EXAMPLE_LANGUAGE_NOTICE,EXAMPLE_MANIFEST_NOTICE} from '../example-package.js';
 import {ROOT} from '../workspace.js';
 import {lesson} from '../course.js';
 
@@ -20,6 +21,11 @@ export async function prepareLesson(lab,index,language,report=()=>{}){
    specs.set(name,{name,type,node,dependencies,files:{}});
   }
   if(step.kind==='files')Object.assign(specs.get(step.pkg)?.files??{},step.items);
+ }
+ // Check every existing prerequisite before creating or building anything.
+ for(const spec of specs.values()){
+  const state=examplePackageState(lab.fs,ROOT+'/src/'+spec.name,spec.type);
+  if(state.kind==='incompatible'||state.kind==='invalid')throw Error(spec.name+': '+(state.kind==='invalid'?EXAMPLE_MANIFEST_NOTICE:EXAMPLE_LANGUAGE_NOTICE));
  }
  const names=[];
  for(const spec of specs.values()){

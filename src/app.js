@@ -1,3 +1,4 @@
+import {exampleBuildType,examplePackageState,EXAMPLE_LANGUAGE_NOTICE,EXAMPLE_MANIFEST_NOTICE} from './example-package.js';
 import {sessionScope, savedSlots} from './session-scopes.js';
 import {playgroundSections} from './playground/sections.js';
 import {pubsubDiagram} from './pubsub-diagram.js';
@@ -5,7 +6,7 @@ import{Playground}from'./playground/playground.js';
 import{prepareLesson}from'./course/prepare.js';
 import{loadSession,saveSession,captureSession,restoreSession,restoreCompiledModules}from'./session.js';
 import{initLayout}from'./layout.js';
-import{guidePages,environmentHints}from'./course/guide.js';
+import{guidePages,environmentHints,correspondingGuidePosition}from'./course/guide.js';
 import{initPreferences,t}from'./i18n.js';
 import{lessonChecks,snapshotLesson,restoreLesson}from'./course/checks.js';
 import{Lab}from'./lab.js';import{ROOT,BASE_PACKAGES}from'./workspace.js';import{LESSON_NAMES,lesson}from'./course.js';
@@ -75,7 +76,7 @@ function renderLesson(){renderPlayground();$('#prepare-lesson').textContent=less
    const indicator=el('span',undefined,'guide-progress');indicator.append(el('span','Step'),document.createTextNode(` ${section?position-section.start+1:position+1} / ${section?section.end-section.start+1:pages.length}`));indicator.setAttribute('aria-live','polite');
    const back=el('button','Back');back.id='guide-back';back.disabled=position===0;
    const next=el('button','Next');next.id='guide-next';next.disabled=position===pages.length-1;
-   const move=n=>{guidePositions.set(key,n);renderLesson();$('#lesson').scrollTop=0;$('#guide-next').focus({preventScroll:true});};
+   const move=n=>{guidePositions.set(key,n);renderLesson();$('#save-session').click();$('#lesson').scrollTop=0;$('#guide-next').focus({preventScroll:true});};
    back.onclick=()=>move(position-1);next.onclick=()=>move(position+1);
    controls.append(indicator,back,next);
   }controls.append(mode);root.append(controls);
@@ -94,13 +95,21 @@ function renderLesson(){renderPlayground();$('#prepare-lesson').textContent=less
    const base=ROOT+'/src/'+step.pkg,full=base+'/'+path;
    const starter=step.starters?.[path];if(starter){pre.hidden=true;const reveal=el('button','Show reference solution');reveal.onclick=()=>{pre.hidden=!pre.hidden;reveal.textContent=pre.hidden?'Show reference solution':'Hide reference solution';};details.append(reveal);}
    let actionState;const update=()=>{
-    const signature=JSON.stringify([lab.fs.exists(base),lab.fs.entries.get(full)]);if(signature===actionState)return;actionState=signature;actions.replaceChildren();
+    const signature=JSON.stringify([lab.fs.exists(base),lab.fs.entries.get(full),lab.fs.entries.get(base+'/package.xml')]);if(signature===actionState)return;actionState=signature;actions.replaceChildren();
     if(!lab.fs.exists(base)){
      actions.append(el('p','Create the package before adding this file.'));
      const jump=el('button','Show package command');jump.onclick=()=>{
       const target=pages.findIndex(page=>page.some(part=>part.kind==='commands'&&part.commands.some(command=>command.startsWith('ros2 pkg create ')&&command.split(/\s+/).includes(step.pkg))));
       if(target>=0){overview=false;guidePositions.set(key,target);renderLesson();$('#lesson').scrollTop=0;}else{$('#prepare-lesson').focus();status('Use Prepare this lesson to supply the prerequisite package.');}
      };actions.append(jump);return;
+    }
+    const packageState=examplePackageState(lab.fs,base,exampleBuildType(step,language));
+    if(packageState.kind==='incompatible'||packageState.kind==='invalid'){
+     const notice=el('div',undefined,'guide-observation');notice.dataset.packageGuard=packageState.kind;
+     notice.append(el('p',packageState.kind==='invalid'?EXAMPLE_MANIFEST_NOTICE:EXAMPLE_LANGUAGE_NOTICE));
+     if(packageState.buildType)notice.append(el('code','package.xml: '+packageState.buildType));
+     if(packageState.detail)notice.append(el('pre',packageState.detail));
+     actions.append(notice);return;
     }
     if(starter){const skeleton=el('button',lab.fs.exists(full)?'Replace with starter skeleton':'Add starter skeleton');skeleton.onclick=()=>{if(activeFile&&editor.value!==saved){status('Save or revert current edits first.');return;}if(lab.fs.exists(full)&&!confirm(t('Replace this file with the starter skeleton? Existing contents will be lost.')))return;lab.fs.mkdir(full.slice(0,full.lastIndexOf('/')),true);lab.fs.write(full,starter);if(activeFile===full){saved=starter;editor.open(full,starter);fileTitle();}else openFile(full);update();};actions.append(skeleton);}
     const exists=lab.fs.exists(full),open=el('button',exists?'Open file':'Add file');open.dataset.file=path;
@@ -134,7 +143,7 @@ async function start(){const stored=await restoreCompiledModules(await loadSessi
  $('#app').innerHTML=`<aside><div class="eyebrow">LESSONS</div><nav id="nav" aria-label="Lessons"></nav><div class="eyebrow exercise-heading">EXERCISES</div><nav id="exercise-nav" aria-label="Exercises"></nav><div id="progress">0 / 7 completed</div><label>Learning path<select id="language"><option value="python">Python</option><option value="cpp">C++</option></select></label><p class="disclosure">Designed for the ROS 2 exercise session at Diepenbeek.</p><button id="prepare-lesson">Prepare this lesson</button><button id="reset-lesson">Restart lesson</button><button id="reset">Reset workspace</button><button id="save-session">Save session</button><p id="session-state" role="status"></p><button id="export">Export source workspace</button></aside><section class="workarea"><div class="workspace-top"><h1 id="lesson-heading"></h1><span id="graph-state">0 nodes · 0 topics</span><button id="restore-layout">Restore layout</button></div><section id="playground-stage" hidden></section><div id="workspace"><article id="lesson"></article><section id="files"><div class="panel-title">Workspace files <button id="new-file">New file</button></div><div class="editor-layout"><div id="file-tree"></div><div class="editor-pane"><div class="editor-title"><span id="active-file">Choose a file</span><button id="save">Save</button><button id="revert">Revert</button></div><div class="editor-help">Suggestions: Ctrl+Space · Tab accepts · Esc closes</div><div id="editor"></div></div></div></section></div><div class="terminal-toolbar"><strong>Terminals</strong><span>Shared files & graph · separate environments</span><button id="add-terminal">+ Terminal</button></div><div id="terminals"></div><footer id="status" role="status"></footer></section>`;
  $('#app').className='lab';initLayout();lab=new Lab({onChange:refresh,onOutput:(id,s)=>{const match=/(?:controller\.cpp|\.py)["']?[:,](?: line )?(\d+)/.exec(s);if(match&&activeFile)editor.diagnostic(Number(match[1]),s);}});editor=new CodeEditor($('#editor'),fileTitle,save,()=>lab.workspace.registry.definitions,()=>({packages:[...BASE_PACKAGES,...lab.workspace.packages()],files:activeFile?Object.keys(lab.fs.filesUnder(activeFile.slice(0,activeFile.lastIndexOf('/')))):[]}));document.addEventListener('lab-diagnostic',event=>{if(!activeFile)return;const text=event.detail.text;const cpp=/([\w./-]+\.cpp):(\d+):/.exec(text),python=/File ["']([^"']+\.py)["'], line (\d+)/.exec(text),m=cpp??python;if(m&&(activeFile.endsWith(m[1])||m[1]==='controller.cpp'))editor.diagnostic(Number(m[2]),text);});
  LESSON_NAMES.concat('Robotics Playground · optional','Free Lab · experiment freely').forEach((name,index)=>{const b=el('button',(index<7?`${index+1}  `:'↗  ')+name);b.dataset.index=index;b.onclick=()=>changeLesson(index);$(index<7?'#nav':'#exercise-nav').append(b);});
- $('#language').onchange=e=>{language=e.target.value;renderLesson();};$('#save').onclick=save;$('#revert').onclick=()=>{if(activeFile){saved=lab.fs.read(activeFile);editor.open(activeFile,saved);fileTitle();}};$('#new-file').onclick=()=>{const p=prompt(t('New file path (absolute or relative to ~/ros2_ws):'),'src/');if(!p)return;try{const path=p.startsWith('/')?p:ROOT+'/'+p;lab.fs.touch(path);openFile(path);}catch(e){status(e.message);}};$('#add-terminal').onclick=()=>addTerminal();
+ $('#language').onchange=e=>{const requested=e.target.value;if(lessonIndex<7)guidePositions.set(lessonIndex+':'+requested,correspondingGuidePosition(lesson(lessonIndex,language),lesson(lessonIndex,requested),guidePositions.get(lessonIndex+':'+language)||0));language=requested;renderLesson();$('#save-session').click();};$('#save').onclick=save;$('#revert').onclick=()=>{if(activeFile){saved=lab.fs.read(activeFile);editor.open(activeFile,saved);fileTitle();}};$('#new-file').onclick=()=>{const p=prompt(t('New file path (absolute or relative to ~/ros2_ws):'),'src/');if(!p)return;try{const path=p.startsWith('/')?p:ROOT+'/'+p;lab.fs.touch(path);openFile(path);}catch(e){status(e.message);}};$('#add-terminal').onclick=()=>addTerminal();
  $('#reset').onclick=()=>{if(!confirm(t('Delete the virtual workspace and stop all processes?')))return;for(const v of views)v.destroy();views=[];playground?.stop();playground=null;lab.reset();lab=new Lab({onChange:refresh});lessonSnapshots=new Map();for(const key of [...guidePositions.keys()])if(sessionScope(lessonIndex)===sessionScope(Number(key.split(':')[0])))guidePositions.delete(key);if(lessonIndex<7)progress.clear();if(lessonIndex===8)lab.fs.mkdir(ROOT+'/src',true);updateProgress();activeFile=null;saved='';editor.open('','');fileTitle();addTerminal();renderLesson();refresh();status('Workspace reset.');$('#save-session').click();};
  $('#reset-lesson').onclick=()=>{if(!confirm(t('Restore files and environments to when you first opened this lesson? Current lesson edits will be replaced.')))return;playground?.stop();playground=null;restoreLesson(lab,lessonSnapshots.get(lessonIndex));activeFile=null;saved='';editor.open('','');fileTitle();for(const v of views){v.output('Lesson restored.');v.prompt();}guidePositions.delete(lessonIndex+':'+language);progress.delete(lessonIndex);updateProgress();renderLesson();status('Restored this lesson’s starting files and environments.');$('#save-session').click();};
 

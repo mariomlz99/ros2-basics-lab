@@ -13,7 +13,8 @@
     "test:acceptance": "node scripts/acceptance.mjs",
     "test:preferences": "node scripts/preferences.mjs",
     "build:public": "node scripts/bundle.mjs && node scripts/build.mjs --public",
-    "bundle:installation": "node scripts/installation-assets.mjs"
+    "bundle:installation": "node scripts/installation-assets.mjs",
+    "test:unit-language": "node scripts/unit-language-check.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

@@ -1,17 +1,17 @@
 // Keep the source order: one command or source file per guided step.
 export function guidePages(steps){
  const pages=[];let context=[];
- for(const step of steps){
+ for(const [block,step] of steps.entries()){
   if(step.kind==='section'){
    if(context.length)pages.push(context);context=[step];
   }else if(step.kind==='simulator-action'){pages.push([...context,step]);context=[];
   }else if(step.kind==='commands'){
-   for(const command of step.commands)pages.push([...context,{...step,commands:[command]}]);
+   for(const [item,command] of step.commands.entries())pages.push([...context,{...step,guideKey:`${block}:command:${item}`,commands:[command]}]);
    context=[];
   }else if(step.kind==='terminal-action'){
    pages.push([...context,step]);context=[];
   }else if(step.kind==='files'){
-   for(const [path,source] of Object.entries(step.items))pages.push([...context,{...step,items:{[path]:source}}]);
+   for(const [item,[path,source]] of Object.entries(step.items).entries())pages.push([...context,{...step,buildType:step.buildType??(Object.hasOwn(step.items,'CMakeLists.txt')?'ament_cmake':Object.hasOwn(step.items,'setup.py')?'ament_python':undefined),guideKey:`${block}:file:${item}`,items:{[path]:source}}]);
    context=[];
   }else context.push(step);
  }
@@ -37,3 +37,13 @@ export const environmentHints={
   "ros2 node list": "An empty result means no non-hidden nodes were discovered. Use ros2 node list --all to include hidden nodes.",
   "ros2 topic list": "Find /parameter_events and /rosout. System topics can exist before your own nodes start."
 };
+
+// Match the same command/file within the shared lesson structure. A separate
+// saved language cursor must not turn a selector change into a lesson jump.
+export function correspondingGuidePosition(fromSteps,toSteps,position){
+ const from=guidePages(fromSteps),to=guidePages(toSteps);
+ if(position>=from.length-1)return to.length-1;
+ const key=from[position]?.find(step=>step.guideKey)?.guideKey;
+ const match=key?to.findIndex(page=>page.some(step=>step.guideKey===key)):-1;
+ return match>=0?match:Math.min(position,to.length-1);
+}

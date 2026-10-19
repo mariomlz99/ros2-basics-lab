@@ -617,3 +617,23 @@ export const translations = {
     "Vak:"
   ]
 };
+
+// Package-language notices shared by the two course paths.
+Object.assign(translations, {
+  "This package uses the other language. You can compare the example, but adding it would mix incompatible package files. Choose the package language to continue, or export your work and recreate the package with the displayed creation command.": [
+    "Ce paquet utilise l’autre langage. Vous pouvez comparer l’exemple, mais l’ajouter mélangerait des fichiers incompatibles. Choisissez le langage du paquet pour continuer, ou exportez votre travail et recréez le paquet avec la commande de création affichée.",
+    "Dit pakket gebruikt de andere taal. Je kunt het voorbeeld vergelijken, maar toevoegen zou incompatibele pakketbestanden mengen. Kies de taal van het pakket om verder te gaan, of exporteer je werk en maak het pakket opnieuw met het getoonde commando.",
+    "Este paquete usa el otro lenguaje. Puedes comparar el ejemplo, pero añadirlo mezclaría archivos incompatibles. Elige el lenguaje del paquete para continuar, o exporta tu trabajo y vuelve a crear el paquete con el comando mostrado.",
+    "Dieses Paket verwendet die andere Sprache. Du kannst das Beispiel vergleichen, aber beim Hinzufügen würden inkompatible Paketdateien gemischt. Wähle die Sprache des Pakets oder exportiere deine Arbeit und erstelle das Paket mit dem angezeigten Befehl neu.",
+    "Este pacote usa a outra linguagem. Pode comparar o exemplo, mas adicioná-lo misturaria ficheiros incompatíveis. Escolha a linguagem do pacote para continuar, ou exporte o seu trabalho e recrie o pacote com o comando apresentado.",
+    "Questo pacchetto usa l’altro linguaggio. Puoi confrontare l’esempio, ma aggiungerlo mescolerebbe file incompatibili. Scegli il linguaggio del pacchetto per continuare, oppure esporta il lavoro e ricrea il pacchetto con il comando mostrato."
+  ],
+  "Repair this package’s package.xml before adding examples. Your existing files are preserved.": [
+    "Corrigez le fichier package.xml de ce paquet avant d’ajouter des exemples. Vos fichiers existants sont conservés.",
+    "Herstel het package.xml-bestand van dit pakket voordat je voorbeelden toevoegt. Je bestaande bestanden blijven behouden.",
+    "Corrige el archivo package.xml de este paquete antes de añadir ejemplos. Tus archivos existentes se conservan.",
+    "Korrigiere die package.xml dieses Pakets, bevor du Beispiele hinzufügst. Deine vorhandenen Dateien bleiben erhalten.",
+    "Corrija o package.xml deste pacote antes de adicionar exemplos. Os ficheiros existentes são preservados.",
+    "Correggi il file package.xml di questo pacchetto prima di aggiungere esempi. I file esistenti vengono conservati."
+  ]
+});
