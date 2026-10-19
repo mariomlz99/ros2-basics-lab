@@ -1,3 +1,4 @@
+import {navigationStorage} from './session-navigation.js';
 import {exampleBuildType,examplePackageState,EXAMPLE_LANGUAGE_NOTICE,EXAMPLE_MANIFEST_NOTICE} from './example-package.js';
 import {sessionScope, savedSlots} from './session-scopes.js';
 import {playgroundSections} from './playground/sections.js';
@@ -12,6 +13,7 @@ import{lessonChecks,snapshotLesson,restoreLesson}from'./course/checks.js';
 import{Lab}from'./lab.js';import{ROOT,BASE_PACKAGES}from'./workspace.js';import{LESSON_NAMES,lesson}from'./course.js';
 let exampleUpdates=[];let preparing=false;let overview=false;const guidePositions=new Map();
 const sessionSlots=new Map();
+const navigation=navigationStorage('ros2-basics-lab-session',4);
 let freeRobot=false;
 let playground;let lessonSnapshots=new Map();const collapsed=new Set([ROOT+'/build',ROOT+'/install',ROOT+'/log']);
 let lab,editor,views=[],activeFile=null,saved='',lessonIndex=0,language='python',progress=new Set(),refreshPending=false;
@@ -164,9 +166,11 @@ async function start(){const stored=await restoreCompiledModules(await loadSessi
   if(stored.ui.activeFile&&lab.fs.exists(stored.ui.activeFile)){openFile(stored.ui.activeFile);if(stored.ui.draft!==null){editor.open(activeFile,stored.ui.draft);fileTitle();}}
   status('Saved session restored. Start your nodes again when needed.');
  }else addTerminal();
+ const restoredNavigation=navigation.load({lessonIndex,language,guidePositions:[...guidePositions]},stored?.savedAt??0);
+ lessonIndex=restoredNavigation.lessonIndex;language=restoredNavigation.language;guidePositions.clear();for(const [key,value]of restoredNavigation.guidePositions)guidePositions.set(key,value);$('#language').value=language;
  let signature='',saving=false,savePending=false;
  const persist=async(force=false)=>{
-  if(saving){savePending||=force;return;}if(preparing)return;const ui=currentSessionUI();
+  if(preparing)return;const ui=currentSessionUI();navigation.save(ui);if(saving){savePending||=force;return;}
   const current=JSON.stringify([lab.fs.revision,ui,[...lab.terminals.values()].map(t=>[t.cwd,t.env,t.vars,[...t.overlays],t.history,t.completedCommands]),!!lab.exported]);
   if(!force&&current===signature)return;
   saving=true;try{const record=captureSession(lab,ui);record.slots=Object.fromEntries([...sessionSlots].map(([scope,state])=>[scope,state.record??captureSession(state.lab,state.ui)]));await saveSession(record);signature=current;$('#session-state').textContent='Saved in this browser';}catch(error){$('#session-state').textContent='Session could not be saved. Export your workspace to keep a copy.';console.error(error);}finally{saving=false;if(savePending){savePending=false;persist(true);}}

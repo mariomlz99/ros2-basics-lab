@@ -44,6 +44,11 @@ try{
   record.unsafeAdd=await panel.getByRole('button',{name:'Add file',exact:true}).count();
   record.warning=await panel.locator('[data-package-guard]').count();
   await page.screenshot({path:`artifacts/unit-language/${initial}-package.png`});
+  await page.waitForTimeout(300);
+  await page.evaluate(()=>{
+   const descriptor=Object.getOwnPropertyDescriptor(IDBRequest.prototype,'onsuccess');
+   Object.defineProperty(IDBRequest.prototype,'onsuccess',{configurable:true,get:descriptor.get,set(handler){descriptor.set.call(this,event=>setTimeout(()=>handler.call(this,event),2000));}});
+  });
   await page.locator('#language').selectOption(initial);
   record.ownFile=await panel.getByRole('button',{name:'Open file',exact:true}).count();
   // A language/step selection must survive an immediate reload.
