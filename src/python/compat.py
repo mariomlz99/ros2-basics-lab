@@ -179,9 +179,15 @@ def _run_student(source):
     except _Spin:
         pass
 
-def _dispatch_message(key, payload, sample):
+def _dispatch_message(key, payload, sample, negative_zeros=()):
     if key in _subscriptions:
-        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), json.loads(payload) if isinstance(payload, str) else payload))
+        values = json.loads(payload) if isinstance(payload, str) else payload
+        for path in negative_zeros:
+            target = values
+            for field in path[:-1]:
+                target = target[field]
+            target[path[-1]] = -0.0
+        _subscriptions[key][1](_from_payload(_subscriptions[key][2](), values))
         _send('message_processed', sample=sample)
 
 def _dispatch_timer(key):

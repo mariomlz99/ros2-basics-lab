@@ -22,19 +22,54 @@ export class TerminalView{
     return false;
    }if(e.ctrlKey&&!e.altKey&&e.code==='KeyZ'){e.preventDefault();e.stopPropagation();if(e.type==='keydown')this.suspend();return false;}return true;
   });
-  this.resize=new ResizeObserver(()=>{if(this.element.isConnected){this.fit.fit();}});this.resize.observe(this.element);terminal.ready.then(()=>{if(!this.disposed)this.prompt();});
+  this.resize=new ResizeObserver(()=>{if(this.element.isConnected){this.fitInput();}});this.resize.observe(this.element);terminal.ready.then(()=>{if(!this.disposed)this.prompt();});
   this.poll=setInterval(()=>{if(!this.executing&&terminal.busy&&terminal.foreground==='process'&&!lab.processes.active().some(p=>p.terminal===terminal.id)){terminal.busy=false;terminal.stopTask=null;terminal.foreground=null;this.prompt();}const state=this.element.querySelector('.terminal-state');const owned=lab.processes.active().filter(p=>p.terminal===terminal.id&&p.language!=='cli');state.textContent=this.nano?'Editing · nano':terminal.busy?(owned.length?(owned.every(p=>p.status==='Running')?'Running · callbacks ready':owned.map(p=>p.status||'Loading').join(' / ')):'Running · foreground'):lab.workspace.visible(terminal).length?'Jazzy + workspace overlay':(terminal.env.AMENT_PREFIX_PATH||'').split(':').includes('/opt/ros/jazzy')?'Jazzy base':'ROS environment not sourced';},150);
  }
  promptText(){if(this.terminal.pythonShell)return this.terminal.pythonShell.more?'... ':'>>> ';return `student@ros2lab:${this.terminal.cwd===HOME?'~':this.terminal.cwd.replace(HOME+'/','~/')}$ `;}
- prompt(){if(this.disposed)return;this.historyIndex=this.terminal.history.length;this.line='';this.cursor=0;this.renderedRows=1;this.renderedCursor=0;this.xterm.write('\x1b[38;2;162;231;196m'+this.promptText()+'\x1b[0m');}
- redraw(){const cols=this.xterm.cols,prompt=this.promptText(),oldRow=Math.floor((prompt.length+this.renderedCursor)/cols);this.xterm.write('\r'+(oldRow?`\x1b[${oldRow}A`:'')+'\x1b[J\x1b[38;2;162;231;196m'+prompt+'\x1b[0m'+this.line);const end=prompt.length+this.line.length,target=prompt.length+this.cursor,endRow=Math.floor(end/cols),targetRow=Math.floor(target/cols);if(endRow>targetRow)this.xterm.write(`\x1b[${endRow-targetRow}A`);this.xterm.write('\r'+(target%cols?`\x1b[${target%cols}C`:''));this.renderedCursor=this.cursor;}
+ // Xterm deliberately does not reflow the cursor line. Remove our editable
+ // input using the OLD width, fit, then render it at the new width. The write
+ // callback keeps fitting after pending keyboard redraws have reached xterm.
+ fitInput(){
+  if(this.fitting||this.disposed)return;
+  const dimensions=this.fit.proposeDimensions();
+  if(!dimensions||dimensions.cols===this.xterm.cols&&dimensions.rows===this.xterm.rows)return;
+  if(this.executing||this.terminal.busy||this.completionMode||!this.prompted){this.fit.fit();return;}
+  this.fitting=true;
+  this.xterm.write('',()=>{
+   if(this.disposed){this.fitting=false;return;}
+   const row=Math.floor((this.renderedOffset??this.promptText().length+this.renderedCursor)/this.xterm.cols);
+   this.xterm.write('\r'+(row?`\x1b[${row}A`:'')+'\x1b[J',()=>{
+    if(this.disposed){this.fitting=false;return;}
+    this.fit.fit();this.renderedOffset=0;this.redraw();this.fitting=false;
+    const queued=this.resizeInput??[];this.resizeInput=[];for(const data of queued)this.input(data);
+   });
+  });
+ }
+ prompt(){if(this.disposed)return;this.prompted=true;this.historyIndex=this.terminal.history.length;this.line='';this.cursor=0;this.renderedRows=1;this.renderedCursor=0;const prompt=this.promptText();this.renderedOffset=prompt.length;this.renderedStart=0;this.xterm.write('\x1b[38;2;162;231;196m'+prompt+'\x1b[0m');this.finishWrap(prompt.length);}
+ // xterm delays wrapping until the next printable character. Make an exact-width
+ // line end occupy column zero of the next row, matching the cursor arithmetic.
+ // Merely sending CR leaves it on the previous row and later redraws erase output.
+ finishWrap(length){if(length>0&&length%this.xterm.cols===0)this.xterm.write(' \r\x1b[K');}
+ redraw(){
+  const cols=this.xterm.cols,prompt=this.promptText(),full=prompt+this.line,target=prompt.length+this.cursor;
+  // A command taller than the terminal cannot be addressed with cursor-up into
+  // scrollback. Keep a bounded editing window containing the cursor instead.
+  const capacity=Math.max(cols,(this.xterm.rows-2)*cols),start=full.length<capacity?0:Math.max(0,Math.floor(target/cols)-Math.floor(capacity/cols)+1)*cols;
+  const text=full.slice(start,start+capacity-1),offset=target-start;
+  const oldRow=Math.floor((this.renderedOffset??prompt.length+this.renderedCursor)/cols);
+  this.xterm.write('\r'+(oldRow?`\x1b[${oldRow}A`:'')+'\x1b[J'+(start?'':'\x1b[38;2;162;231;196m')+text.slice(0,start?0:prompt.length)+'\x1b[0m'+text.slice(start?0:prompt.length));
+  const endRow=Math.floor(text.length/cols),targetRow=Math.floor(offset/cols);this.finishWrap(text.length);
+  if(endRow>targetRow)this.xterm.write(`\x1b[${endRow-targetRow}A`);
+  this.xterm.write('\r'+(offset%cols?`\x1b[${offset%cols}C`:''));this.renderedCursor=this.cursor;this.renderedOffset=offset;this.renderedStart=start;
+ }
+
 
  record(s){const pre=this.element.querySelector('.terminal-transcript pre');pre.textContent=(pre.textContent+String(s).replace(/\x1b\[[0-9;]*m/g,'')+'\n').slice(-80000);}
  output(s){if(this.disposed)return;this.record(s);document.dispatchEvent(new CustomEvent('lab-diagnostic',{detail:{text:String(s),terminal:this.terminal.id}}));if(s==='\x1bc'){this.xterm.clear();return;}this.xterm.writeln(String(s).replace(/\x1b\][^\x07]*(\x07|$)/g,''));}
  interrupt(){if(this.disposed)return;this.completionMode=null;this.completionRows=null;this.completionKey=null;if(this.nano){this.nano.requestExit();return;}if(this.terminal.pythonShell&&!this.executing&&!this.terminal.busy){this.terminal.pythonShell.interrupt();this.line='';this.cursor=0;this.xterm.write('^C\r\n');this.prompt();return;}this.cancelled=true;const executing=this.executing;this.executing=true;this.lab.stop(this.terminal.id);this.executing=executing;this.terminal.foreground=null;this.record('^C');this.xterm.write('^C\r\n');this.line='';this.cursor=0;if(!this.executing)this.prompt();}
  suspend(){if(this.disposed||this.nano)return;try{const notice=this.terminal.suspend();if(notice){this.output('^Z\n'+notice);if(!this.executing)this.prompt();}}catch(error){this.output(error.message);}}
  async submit(){const line=this.line;this.record(this.promptText()+line);this.cursor=this.line.length;this.redraw();this.xterm.write('\r\n');this.line='';this.cursor=0;this.executing=true;this.element.querySelector('.terminal-state').textContent='Running · foreground';this.cancelled=false;try{const value=await (this.terminal.pythonShell?this.terminal.pythonShell.send(line):this.terminal.execute(line));if(value&&!this.cancelled)this.output(value);}catch(e){if(!this.cancelled)this.output(e.message);}finally{this.executing=false;if(!this.terminal.busy&&!this.disposed)this.prompt();}}
- input(data){if(data==='\x1a'){this.suspend();return;}if(data==='\x03'){this.interrupt();return;}if(this.executing||this.terminal.busy)return;
+ input(data){if(this.fitting){(this.resizeInput??=[]).push(data);return;}if(data==='\x1a'){this.suspend();return;}if(data==='\x03'){this.interrupt();return;}if(this.executing||this.terminal.busy)return;
   if(this.completionMode){this.completionInput(data);return;}
   if(data!=='\t')this.completionKey=null;
   if(data.length>1&&!data.startsWith('\x1b')){const lines=data.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');if(lines.length>1){(async()=>{for(let i=0;i<lines.length;i++){if(this.disposed||this.terminal.busy)break;this.line+=lines[i];this.cursor=this.line.length;this.redraw();if(i<lines.length-1)await this.submit();}})();return;}}
@@ -63,12 +98,12 @@ export class TerminalView{
   if(!repeated){this.xterm.write('\x07');return;}
   this.completionKey=null;
   // Move below the complete input line before presenting a question or list.
-  const cursor=this.cursor;this.cursor=this.line.length;this.redraw();this.cursor=cursor;this.xterm.write('\r\n');this.renderedCursor=0;
+  const cursor=this.cursor;this.cursor=this.line.length;this.redraw();this.cursor=cursor;this.xterm.write('\r\n');this.renderedCursor=0;this.renderedOffset=0;
   this.completionRows=completionColumns(choices,this.xterm.cols);this.completionOffset=0;
   if(choices.length>=COMPLETION_QUERY_ITEMS){this.completionMode='query';const question=`Display all ${choices.length} possibilities? (y or n)`;this.record(question);this.xterm.write(question);}
   else this.showCompletions();
  }
- restoreCompletionInput(){this.completionMode=null;this.completionRows=null;this.completionOffset=0;this.renderedCursor=0;this.redraw();}
+ restoreCompletionInput(){this.completionMode=null;this.completionRows=null;this.completionOffset=0;this.renderedCursor=0;this.renderedOffset=0;this.redraw();}
  showCompletions(count=Math.max(1,this.xterm.rows-1)){
   const page=this.completionRows.slice(this.completionOffset,this.completionOffset+count);this.completionOffset+=page.length;
   if(page.length)this.output(page.join('\n'));

@@ -152,7 +152,12 @@ export class Terminal{
    case 'cat':flags('');count(1);return paths.map(p=>this.fs.read(this.path(p))).join('');
    case 'cp':flags('r');count(2,2);this.fs.copy(this.path(paths[0]),this.path(paths[1]),{recursive:options.has('r')});return '';
    case 'mv':flags('');count(2,2);this.fs.move(this.path(paths[0]),this.path(paths[1]));return '';
-   case 'rm':flags('rf');if(!options.has('f'))count(1);for(const p of paths)this.fs.remove(this.path(p),{recursive:options.has('r'),force:options.has('f')});return '';
+   case 'rm':{flags('rf');if(!options.has('f'))count(1);const errors=[];for(const p of paths){try{
+    // GNU rm protects these operand spellings even with -rf. Check before
+    // normalization, which would erase the final dot component.
+    if(/(?:^|\/)\.{1,2}\/*$/.test(p))throw Error("rm: refusing to remove '.' or '..' directory: skipping '"+p+"'");
+    this.fs.remove(this.path(p),{recursive:options.has('r'),force:options.has('f')});
+   }catch(error){errors.push(error.message);}}if(errors.length)throw Error(errors.join('\n'));return '';}
    case 'tree':flags('');count(0,1);return this.fs.tree(this.path(paths[0]||'.'),{label:paths[0]||'.',format:(name,entry)=>this.formatEntry(name,entry)});
    case 'echo':{const noNewline=args[0]==='-n',text=(noNewline?args.slice(1):args).join(' ');if(!redirect)return text;const previous=redirect.append&&this.fs.exists(redirect.path)?this.fs.read(redirect.path):'';this.fs.write(redirect.path,previous+text+(noNewline?'':'\n'));return '';}
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');

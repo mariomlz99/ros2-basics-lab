@@ -28,8 +28,21 @@ export class InterfaceRegistry{
   }
  }
  validateScalar(type,v,label){if(!PRIMITIVES[type])return this.validate(type,v);if(type==='string'||type==='wstring'){if(typeof v!=='string')throw Error(label+' must be string');return;}if(type==='bool'){if(typeof v!=='boolean')throw Error(label+' must be bool');return;}if(typeof v!=='number'||!Number.isFinite(v))throw Error(label+' must be finite number');if(!type.startsWith('float')){const signed=type.startsWith('int'),bits=Number(type.match(/\d+/)?.[0]??8);const low=signed?-(2**(bits-1)):0,high=signed?2**(bits-1)-1:2**bits-1;if(!Number.isSafeInteger(v)||v<low||v>high)throw Error(label+' integer outside supported exact range');}else if(type==='float32'&&Math.abs(v)>3.402823466e38)throw Error(label+' exceeds float32 range');}
+ // Match the precision of native ROS topic serialization, using the canonical
+ // schema. Copy only changed fields; large byte arrays keep their fast path.
+ roundFloat32(name,value){
+  let out=value;
+  for(const field of this.get(name).fields){
+   const type=splitType(field.type,name),before=value[field.name];let after=before;
+   if(type.base==='float32')after=type.array?Array.from(before,Math.fround):Math.fround(before);
+   else if(!PRIMITIVES[type.base])after=type.array?Array.from(before,item=>this.roundFloat32(type.base,item)):this.roundFloat32(type.base,before);
+   if(type.array&&after!==before&&after.every((v,i)=>Object.is(v,before[i])))after=before;
+   if(after!==before){if(out===value)out={...value};out[field.name]=after;}
+  }
+  return out;
+ }
  defaultMessage(name){const fields=this.get(name).fields;return Object.fromEntries(fields.map(f=>{const t=splitType(f.type,name),value=()=>f.default??(['string','wstring'].includes(t.base)?'':t.base==='bool'?false:PRIMITIVES[t.base]?0:this.defaultMessage(t.base));return [f.name,t.array?Array.from({length:t.length??0},value):value()];}));}
- complete(name,input,response=false){const fields=response?this.get(name).response:this.get(name).fields;if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Message must be a mapping');const out=response?Object.fromEntries(fields.map(f=>{const single=new InterfaceRegistry({temporary:{fields:[f]}});return [f.name,single.defaultMessage('temporary')[f.name]];})):this.defaultMessage(name);for(const [key,v]of Object.entries(input)){const f=fields.find(f=>f.name===key);if(!f)throw Error('Unknown field '+key);const t=splitType(f.type,name);out[key]=!t.array&&!PRIMITIVES[t.base]?this.complete(t.base,v):v;}this.validate(name,out,response);return out;}
+ complete(name,input,response=false){const fields=response?this.get(name).response:this.get(name).fields;if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Message must be a mapping');const out=response?Object.fromEntries(fields.map(f=>{const single=new InterfaceRegistry({temporary:{fields:[f]}});return [f.name,single.defaultMessage('temporary')[f.name]];})):this.defaultMessage(name);for(const [key,v]of Object.entries(input)){const f=fields.find(f=>f.name===key);if(!f)throw Error('Unknown field '+key);const t=splitType(f.type,name);out[key]=!PRIMITIVES[t.base]?(t.array?(Array.isArray(v)?v.map(item=>this.complete(t.base,item)):v):this.complete(t.base,v)):v;}this.validate(name,out,response);return out;}
  cppHeaders(){
   const headers={},done=new Set(),cpp=name=>name.replaceAll('/','::'),snake=s=>s.replace(/([A-Z]+)([A-Z][a-z])/g,'$1_$2').replace(/([a-z0-9])([A-Z])/g,'$1_$2').toLowerCase();
   const emit=name=>{if(done.has(name))return;done.add(name);const r=this.get(name),parts=name.split('/'),fields=[...r.fields,...r.response??[]];for(const f of fields){const t=splitType(f.type,name);if(!PRIMITIVES[t.base])emit(t.base);}

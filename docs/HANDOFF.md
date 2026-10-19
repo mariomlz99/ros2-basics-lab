@@ -117,3 +117,18 @@ that an arbitrary physical robot will have the same topic names or geometry.
 ### Free Lab
 
 Free Lab uses the same supported filesystem, terminal, build and runtime implementation without a checker. Its workspace saves and resets independently from the course and Playground. Enable the optional robotics tools when needed.
+
+## Python spin control flow
+
+The callback bridge currently unwinds the Python stack at `rclpy.spin()`.
+`finally` blocks and context-manager exits around it run immediately; cleanup
+there can destroy the node before callbacks run. Code after `spin()` is not
+resumed. Stop/Ctrl+C cleans up browser endpoints and terminates the worker,
+without running Python cleanup. This is an open runtime defect. The displayed
+callback examples work within this constraint; full native Python control-flow
+parity is not claimed.
+
+Switching the learning path preserves the corresponding lesson step. It changes
+examples, not existing packages. Example buttons and preparation reject
+incompatible package types while preserving files; export your work before
+explicitly recreating a package in another language.
