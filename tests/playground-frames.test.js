@@ -62,7 +62,7 @@ test('every introductory exercise command runs against the live playground; rese
 test('playground sections are navigable and remain outside all seven required lessons',()=>{
  for(const language of ['python','cpp']){
   const steps=lesson(7,language),pages=guidePages(steps).slice(0,-1),sections=playgroundSections(pages);
-  assert.deepEqual(sections.map(s=>s.id),['intro','odom','tf','lidar','camera','readers']);
+  assert.deepEqual(sections.map(s=>s.id),['intro','odom','tf','lidar','camera','readers','odometry']);
   for(const section of sections)assert(section.end>=section.start);
   for(let i=0;i<7;i++)assert(!lesson(i,language).some(s=>s.kind==='section'||s.kind==='simulator-action'));
  }

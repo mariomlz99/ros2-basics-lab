@@ -2,7 +2,7 @@ import {NATIVE_INTERFACE_TEXT} from './interfaces/native-text.js';
 import {BUILTIN} from './interfaces/builtin.js';
 import {InterfaceRegistry,splitType,PRIMITIVES} from './interfaces/registry.js';
 import {RUNTIME_FILES} from './installation-assets.js';
-export const BASE_PACKAGES=[...new Set([...['rcl_interfaces','builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'],...Object.keys(BUILTIN).map(name=>name.split('/')[0]),...RUNTIME_FILES.modules.map(name=>name.split('.')[0])])];
+export const BASE_PACKAGES=[...new Set([...['rcl_interfaces','builtin_interfaces','action_msgs','unique_identifier_msgs','nav_msgs','rclpy','rclcpp','std_msgs','geometry_msgs','sensor_msgs','example_interfaces','std_srvs','ament_python','ament_cmake','ros2launch','launch','launch_ros','rosidl_default_generators','rosidl_default_runtime'],...Object.keys(BUILTIN).map(name=>name.split('/')[0]),...RUNTIME_FILES.modules.map(name=>name.split('.')[0]),...Object.keys(RUNTIME_FILES.files).map(path=>path.split('/')[2]).filter(name=>!name.includes('.'))])];
 
 const INTERFACE_LIBRARY_SUFFIXES=['rosidl_generator_c','rosidl_typesupport_c','rosidl_typesupport_cpp','rosidl_typesupport_introspection_c','rosidl_typesupport_introspection_cpp'];
 const PREFIX='/opt/ros/jazzy',PYTHON=PREFIX+'/lib/python3.12/site-packages';
@@ -78,7 +78,7 @@ export function seedEcosystem(fs){
   file(PREFIX+'/share/ament_index/resource_index/rosidl_interfaces/'+pkg,interfaces.join('\n')+'\n');
   for(const suffix of INTERFACE_LIBRARY_SUFFIXES)library(pkg+'__'+suffix,'Interface support for '+pkg+':\n'+interfaces.join('\n'));
  }
- for(const pkg of ['rclcpp',...(BASE_PACKAGES.includes('rclcpp_action')?['rclcpp_action']:[])])library(pkg,'Simulated '+pkg+' runtime; headers are in '+PREFIX+'/include/'+pkg+'.');
+ for(const pkg of ['rclcpp','tf2','tf2_ros'])library(pkg,'Simulated '+pkg+' runtime; headers are in '+PREFIX+'/include/'+pkg+'.');
  file(PYTHON+'/rclpy/_rclpy_pybind11.so','SIMULATED Python extension: rclpy transport is implemented by the browser graph bridge.\n');
  for(const pkg of ['ament_python','launch','launch_ros','ros2launch'])file(PYTHON+'/'+pkg+'/__init__.py','# Simulated '+pkg+' package. Build/launch behavior is handled by the browser workspace and launch parser.\n');
 }

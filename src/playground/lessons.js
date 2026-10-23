@@ -1,3 +1,4 @@
+import {odometryExercise} from './odometry-lesson.js';
 import {sensorFiles,sensorSkeletons} from './examples.js';
 const text=body=>({kind:'text',body});
 const commands=(terminal,...commands)=>({kind:'commands',terminal,commands});
@@ -54,4 +55,4 @@ export function playgroundExercises(language){const py=language==='python';retur
   text('Compare the front/nearest LiDAR values and image dimensions with your earlier terminal observations. Stop each reader with Ctrl+C. A useful mistake to investigate: ros2 run cannot find sensor_lab in a new terminal until you source its install overlay.')
  ]}
 ];}
-export function playgroundLesson(language){return playgroundExercises(language).flatMap(({id,title,steps})=>[{kind:'section',id,title},...steps]);}
+export function playgroundLesson(language){return [...playgroundExercises(language),odometryExercise(language)].flatMap(({id,title,steps})=>[{kind:'section',id,title},...steps]);}

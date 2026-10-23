@@ -5,7 +5,7 @@ import {RuntimeAdapter} from '../runtime/adapter.js';
 export class PythonBridge extends RuntimeAdapter {
   run(code){
     this.stop();this.processed.clear();this.reports.clear();
-    const worker=new Worker(new URL('./worker.js',import.meta.url));this.worker=worker;
+    const worker=new Worker(new URL('./worker.js',import.meta.url));this.worker=worker;this.attachTransforms();
     worker.onmessage=event=>{if(this.worker!==worker)return;try{this.handle(event.data);}catch(error){this.output('Error: '+error.message);this.stop();}};
     worker.onerror=event=>{if(this.worker!==worker)return;this.output('Python worker error: '+(event.message||'Runtime worker failed to load. Save your session, reload the page and retry.'));this.stop();};
     this.status('Loading real Python… first load requires internet.');

@@ -1,0 +1,23 @@
+import {chromium} from 'playwright-core';import assert from 'node:assert/strict';import {mkdir,writeFile} from 'node:fs/promises';
+const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome',headless:true}),report=[];
+const url=process.env.LAB_URL||'http://127.0.0.1:8044/ros2-basics-lab/';await mkdir('artifacts/review',{recursive:true});
+try{
+ const context=await browser.newContext(),page=await context.newPage();page.on('dialog',dialog=>dialog.accept());
+ const observe=async page=>page.evaluate(async()=>{const base=document.querySelector('script[src*="/app.js"]').src,{Lab}=await import(new URL('lab.js',base)),original=Lab.prototype.terminal;Lab.prototype.terminal=function(...a){window.sessionLab=this;return original.apply(this,a);};});
+ const start=async page=>{await observe(page);await page.locator('#start').click();await page.locator('.xterm').waitFor();};
+ const save=async()=>{await page.locator('#save-session').click();await page.waitForFunction(()=>/saved/i.test(document.querySelector('#session-state').textContent));await page.waitForTimeout(200);};
+ await page.goto(url);await start(page);
+ await page.evaluate(()=>window.sessionLab.fs.write('/home/student/course-review.txt','course'));await page.locator('[data-index="7"]').click();await page.evaluate(()=>window.sessionLab.fs.write('/home/student/playground-review.txt','playground'));
+ await page.locator('[data-index="9"]').click();await page.locator('#prepare-lesson').click();await page.waitForFunction(()=>!document.querySelector('#prepare-lesson').disabled);
+ const path='/home/student/ros2_ws/src/tf_lab/tf_lab/lookup.py';await page.locator(`[data-path="${path}"]`).click();
+ const content=page.locator('.cm-content');await content.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n# unsaved TF review draft\n');
+ await page.locator('#language').selectOption('cpp');assert((await content.innerText()).includes('unsaved TF review draft'),'language switch must preserve current draft');await page.locator('#language').selectOption('python');
+ await page.locator('#tf-start').click();await page.locator('[data-frame="laser_link"]').click();await save();
+ for(const index of [0,7,9])await page.locator(`[data-index="${index}"]`).click();assert((await content.innerText()).includes('unsaved TF review draft'));assert.equal(await page.locator('.tf-node').count(),0);report.push('TF draft survives course/playground transitions; simulator stays stopped');
+ await save();await page.reload();await start(page);assert.equal(await page.locator('#lesson-heading').textContent(),'TF & Odometry');assert((await content.innerText()).includes('unsaved TF review draft'));assert.equal(await page.locator('.tf-node').count(),0);report.push('reload restores unsaved draft without processes');
+ const tab=await context.newPage();tab.on('dialog',dialog=>dialog.accept());await tab.goto(url);await start(tab);assert((await tab.locator('.cm-content').innerText()).includes('unsaved TF review draft'));assert.equal(await tab.locator('.tf-node').count(),0);await tab.close();report.push('new tab restores saved session without reviving simulator');
+ await page.locator('#save').click();await save();await page.goto('about:blank');await page.goBack();await start(page);assert((await content.innerText()).includes('unsaved TF review draft'));report.push('browser Back restores TF workspace');
+ await page.locator('#reset').click();assert.equal(await page.locator('.tf-node').count(),0);assert(!(await page.locator('#file-tree').textContent()).includes('lookup.py'));await page.locator('[data-index="0"]').click();assert((await page.locator('#file-tree').textContent()).includes('course-review.txt'));await page.locator('[data-index="7"]').click();assert((await page.locator('#file-tree').textContent()).includes('playground-review.txt'));report.push('Reset TF leaves course and playground files intact');
+ await page.locator('[data-index="9"]').click();await page.locator('#language').selectOption('cpp');await page.locator('#prepare-lesson').click();await page.waitForFunction(()=>!document.querySelector('#prepare-lesson').disabled);const cpp='/home/student/ros2_ws/src/tf_lab/src/lookup.cpp';await page.locator(`[data-path="${cpp}"]`).click();await content.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n// C++ review draft\n');await save();await page.reload();await start(page);assert.equal(await page.locator('#language').inputValue(),'cpp');assert((await content.innerText()).includes('C++ review draft'));report.push('C++ draft and language survive reload');
+ await writeFile('artifacts/review/session.json',JSON.stringify(report,null,2));console.log('PASS '+report.join('; '));
+}finally{await browser.close();}

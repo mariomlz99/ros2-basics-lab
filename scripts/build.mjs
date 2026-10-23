@@ -12,6 +12,7 @@ if(publicBuild){
  await rm(output+'/src/assets',{recursive:true,force:true});
  await mkdir(output+'/docs',{recursive:true});
  for(const name of ['HANDOFF.md','ARCHITECTURE.md','INTERFACES.md'])await cp('docs/'+name,output+'/docs/'+name);
+ await mkdir(output+'/docs/tf',{recursive:true});await cp('docs/tf/runtime.md',output+'/docs/tf/runtime.md');
 }else await cp('docs',output+'/docs',{recursive:true});
 await writeFile(output+'/.nojekyll','');
 // Version the complete module tree, including relative imports and workers.

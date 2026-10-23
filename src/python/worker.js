@@ -1,5 +1,5 @@
 // Modified for ROS 2 Basics Lab: lean CPython load and finite program lifecycle.
-let pyodide, chain=Promise.resolve();
+let pyodide, chain=Promise.resolve(),tfClient,tfSnapshot,tfClientReady;
 const INDEX='https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
 let outputCount=0, outputTime=0;
 self.emit_json=text=>emit(JSON.parse(text));
@@ -20,6 +20,10 @@ async function teachingAPI(){
     try{const response=await fetch(url,{signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('HTTP '+response.status);return await response.text();}
     catch(error){if(attempt===2)throw Error('Python teaching API failed to load: '+url.pathname+' ('+error.message+'). Reload the page and try again.');await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));}
   }
+}
+async function prepareTransforms(){
+  await tfClientReady;
+  self.tf_request_json=text=>{try{return JSON.stringify({result:tfClient.request(JSON.parse(text))});}catch(error){return JSON.stringify({error:error.message});}};
 }
 async function preparePython(){
   postMessage({kind:'loading',text:'Loading Python runtime…'});
@@ -48,6 +52,7 @@ async function handle(data){
       const imports=pyodide.runPython(`import ast, json\n_imports = set()\nfor _path, _source in bridge_files.to_py().items():\n    if _path.endswith('.py'):\n        _tree = ast.parse(_source, filename=_path)\n        compile(_tree, _path, 'exec')\n        for _node in ast.walk(_tree):\n            if not _path.startswith(bridge_name + '/'):\n                continue\n            if isinstance(_node, ast.Import):\n                _imports.update(_alias.name for _alias in _node.names)\n            elif isinstance(_node, ast.ImportFrom) and _node.module and _node.level == 0:\n                _imports.add(_node.module)\njson.dumps(sorted(_imports))`);
       postMessage({kind:'build_ok',imports:JSON.parse(imports)});return;
     }
+    await prepareTransforms();
     // Packaging checks compile source without importing or executing it.
     // setup.py is build metadata, not a runtime dependency of the executable.
     const sources=data.files?Object.entries(data.files).filter(([path])=>path.endsWith('.py')&&path!=='setup.py').map(([,source])=>source).join('\n'):(data.code??'');
@@ -90,4 +95,4 @@ async function handle(data){
     pyodide.runPython('_service_response(response_key, response_json)');
   }
 }
-onmessage=event=>{chain=chain.then(()=>handle(event.data)).catch(error=>postMessage({kind:'error',text:String(error)}));};
+onmessage=event=>{if(event.data.kind==='tf_snapshot'){tfSnapshot=event.data.snapshot;if(!tfClientReady){const proof=event.data.proof;tfClientReady=import('../runtime/tf.js').then(({TransformClient})=>{tfClient=new TransformClient(emit,proof);tfClient.update(tfSnapshot);});}else tfClient?.update(tfSnapshot);return;}chain=chain.then(()=>handle(event.data)).catch(error=>postMessage({kind:'error',text:String(error)}));};

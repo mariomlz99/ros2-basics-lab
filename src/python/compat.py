@@ -321,3 +321,67 @@ def _service_response(key, payload):
     future._done = True
     for callback in future._callbacks:
         callback(future)
+
+# Latest-time TF subset. The worker uses the same publication-derived snapshot
+# and quaternion implementation as the graph and visualizer; no Python pose copy.
+class Time:
+    def __init__(self, *, seconds=0, nanoseconds=0):
+        self.nanoseconds = int(seconds * 1000000000) + int(nanoseconds)
+    def to_msg(self):
+        from builtin_interfaces.msg import Time as TimeMessage
+        return TimeMessage(sec=self.nanoseconds // 1000000000, nanosec=self.nanoseconds % 1000000000)
+
+class TransformException(Exception):
+    pass
+
+class LookupException(TransformException):
+    pass
+
+def _tf_request(**request):
+    from js import tf_request_json
+    response = json.loads(tf_request_json(json.dumps(request)))
+    if 'error' in response:
+        raise LookupException(response['error'])
+    return response['result']
+
+def _latest_time(time):
+    if getattr(time, 'nanoseconds', 0) or getattr(time, 'sec', 0) or getattr(time, 'nanosec', 0):
+        raise TransformException('This lab supports latest TF only: use Time() or a zero PointStamped stamp.')
+
+class Buffer:
+    def __init__(self):
+        self._listeners = set()
+    def _ready(self):
+        if not any(listener.node.name in _nodes for listener in self._listeners):
+            raise LookupException('Create a TransformListener(buffer, node) before looking up TF.')
+    def lookup_transform(self, target_frame, source_frame, time):
+        from geometry_msgs.msg import TransformStamped
+        self._ready()
+        _latest_time(time)
+        return _from_payload(TransformStamped(), _tf_request(operation='lookup', target=target_frame, source=source_frame))
+    def transform(self, object_stamped, target_frame):
+        from geometry_msgs.msg import PointStamped
+        self._ready()
+        if not isinstance(object_stamped, PointStamped):
+            raise TypeError('This TF lesson supports geometry_msgs.msg.PointStamped.')
+        _latest_time(object_stamped.header.stamp)
+        return _from_payload(PointStamped(), _tf_request(operation='point', target=target_frame, input=_payload(object_stamped)))
+
+class TransformListener:
+    def __init__(self, buffer, node, *, spin_thread=False):
+        if node.name not in _nodes:
+            raise LookupException('TF listener needs a live ROS node.')
+        if spin_thread:
+            raise TransformException('Use the existing node executor: spin_thread is not supported.')
+        self.buffer, self.node, self.id = buffer, node, _id()
+        buffer._listeners.add(self)
+        _send('tf_listener', node=node.name, id=self.id)
+    def unregister(self):
+        self.buffer._listeners.discard(self)
+        _send('tf_unlistener', id=self.id)
+
+_module('rclpy.time', Time=Time)
+_module('tf2_ros', Buffer=Buffer, TransformListener=TransformListener, TransformException=TransformException, LookupException=LookupException)
+_module('tf2_ros.buffer', Buffer=Buffer)
+_module('tf2_ros.transform_listener', TransformListener=TransformListener)
+_module('tf2_geometry_msgs')  # PointStamped registration for Buffer.transform.
