@@ -121,7 +121,25 @@ export function parsePythonSetup(source,packageName){
     if(values[cursor]===',')cursor++;else if(values[cursor]!==']')throw Error('Expected comma in console_scripts list.');
   }
 
-  const launchAt=tokens.findIndex((token,index)=>token.kind==='string'&&(token.value==='share/'+packageName+'/launch'||(token.value==='/launch'&&values[index-1]==='+'&&values[index-2]==='package_name'&&values[index-3]==='+'&&tokens[index-4]?.kind==='string'&&tokens[index-4].value==='share/')));
+  // Only an actual setup(data_files=[...]) argument installs data files.
+  // Matching an unrelated tuple elsewhere in the module must not install it.
+  const setupAt=tokens.findIndex((token,index)=>token.kind==='name'&&token.value==='setup'&&values[index+1]==='(');
+  let dataStart=-1,dataEnd=-1,depth=1;
+  for(let index=setupAt+2;setupAt>=0&&index<tokens.length&&depth;index++){
+    const token=tokens[index];if(token.kind==='symbol'){
+      if(['(', '[', '{'].includes(token.value))depth++;
+      if([')', ']', '}'].includes(token.value))depth--;
+    }
+    if(depth===1&&token.kind==='name'&&token.value==='data_files'&&values[index+1]==='='&&values[index+2]==='['){
+      dataStart=index+3;let listDepth=1;
+      for(let end=dataStart;end<tokens.length;end++){
+        if(tokens[end].kind==='symbol'&&values[end]==='[')listDepth++;
+        if(tokens[end].kind==='symbol'&&values[end]===']'&&--listDepth===0){dataEnd=end;break;}
+      }
+      break;
+    }
+  }
+  const launchAt=tokens.findIndex((token,index)=>index>=dataStart&&index<dataEnd&&token.kind==='string'&&(token.value==='share/'+packageName+'/launch'||(token.value==='/launch'&&values[index-1]==='+'&&values[index-2]==='package_name'&&values[index-3]==='+'&&tokens[index-4]?.kind==='string'&&tokens[index-4].value==='share/')));
   if(launchAt<0){scripts.launchFiles=new Set();return scripts;}
   if(values[launchAt+1]!==','||values[launchAt+2]!=='[')throw Error('Use a literal launch file list in setup.py.');
   scripts.launchFiles=new Set();let fileAt=launchAt+3;

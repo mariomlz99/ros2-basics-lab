@@ -16,3 +16,13 @@ test('unrelated destinations do not install launch files into this package',()=>
  const metadata=parsePythonSetup(setup("'share/another_package/launch'"),'my_first_package');
  assert.deepEqual([...metadata.launchFiles],[]);
 });
+
+test('unused launch tuples outside data_files do not install files',()=>{
+ const declaration="unused = ('share/' + package_name + '/launch', ['launch/system.launch.py'])\n";
+ const without=setup("'share/another_package/launch'");
+ for(const source of [declaration+without,without+'\n'+declaration])assert.deepEqual([...parsePythonSetup(source,'my_first_package').launchFiles],[]);
+});
+test('an unused data_files variable outside setup does not install files',()=>{
+ const source="data_files = [('share/my_first_package/launch', ['launch/system.launch.py'])]\n"+setup("'share/another_package/launch'");
+ assert.deepEqual([...parsePythonSetup(source,'my_first_package').launchFiles],[]);
+});
