@@ -122,7 +122,32 @@ test('lookup without output, wrong values and output from another program cannot
   other.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});assert(!passed(lab,'lookup'),'different program');
   p.adapter.handle({kind:'stdout',text:'iteration 12: 0.12 0.00'});assert(!passed(lab,'lookup'),'unrelated diagnostics');
   p.adapter.handle({kind:'stdout',text:'0.12 0.00'});assert(passed(lab,'lookup'));
-  client.request(lookup);assert(!passed(lab,'lookup'),'new request needs fresh output');
+  client.request(lookup);assert(passed(lab,'lookup'),'a pending request does not undo earlier completed output');
   p.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});assert(passed(lab,'lookup'));
+ }finally{lab.reset();}
+});
+
+test('completed TF output remains valid while a later same-key lookup awaits output',async()=>{
+ const lab=await fixture();try{
+  const p=await program(lab),client=new TransformClient(event=>p.adapter.handle(event),p.adapter.tfProof);
+  client.update(lab.runtime.tf.snapshot());
+  client.request(lookup);assert(!passed(lab,'lookup'),'a first silent lookup is not enough');
+  p.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});assert(passed(lab,'lookup'));
+  for(let i=0;i<250;i++){
+   client.request(lookup);
+   assert(passed(lab,'lookup'),'next callback awaiting stdout must not erase completed work');
+  }
+  assert.equal(lab.runtime.tfEvidence.length,2,'one completed record and one pending record per request key');
+  p.adapter.handle({kind:'stdout',text:'x = 9.00, y = 9.00 m'});
+  assert(!passed(lab,'lookup'),'actually observed wrong output replaces prior matching output');
+  assert.equal(lab.runtime.tfEvidence.length,1);
+  request(lab,p,lookup);assert(passed(lab,'lookup'));
+  client.request(lookup);client.request(point);
+  p.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});
+  assert(passed(lab,'lookup'));assert(!passed(lab,'point'),'lookup coordinates cannot certify a pending point');
+  request(lab,p,point);assert(passed(lab,'point'));
+  client.request(lookup);p.adapter.handle({kind:'stdout',text:'x = 9, y = 9'});
+  assert(!passed(lab,'lookup'));assert(passed(lab,'point'),'other completed request key is retained');
+  lab.runtime.invalidateTfEvidence();assert(!passed(lab,'lookup'));assert(!passed(lab,'point'));
  }finally{lab.reset();}
 });
