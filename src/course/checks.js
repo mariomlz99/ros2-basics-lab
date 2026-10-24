@@ -1,3 +1,4 @@
+import {serviceClientCheck} from '../runtime/service-evidence.js';
 import {shellChecks} from '../runtime/shell-evidence.js';
 import {programOwners,programDeliveries} from '../runtime/program-evidence.js';
 import {topicsChecks} from '../topics-lesson.js';
@@ -11,7 +12,7 @@ export function lessonChecks(lab,index){const w=lab.workspace,r=lab.runtime,ts=[
  case 1:return [check('Create workspace src/',[...lab.fs.entries].some(([path,entry])=>entry.kind==='dir'&&path.startsWith('/home/student/')&&path.endsWith('/src')&&(path.endsWith('/ros2_ws/src')||ts.some(t=>t.cwd===path||t.cwd===path.slice(0,-4))||[...w.sourcePaths.values()].some(source=>source.startsWith(path+'/'))))),check('Build a package',current.length),check('Source the workspace in a terminal',ts.some(t=>w.visible(t).length))];
  case 2:return [check('Build executable packages',current.some(n=>w.installed.get(n).executables.size>=2)),check('Run a publisher and subscriber',deliveries.length>0),check('Deliver a message to a subscribing node',deliveries.length>0)];
  case 3:return [check('Build a custom interface',current.some(n=>w.installed.get(n).generated)),check('Publish a custom message',[...r.programPublications].some(([owner,publications])=>owners.has(owner)&&[...publications.values()].some(s=>!Object.hasOwn(BUILTIN,s.type)&&current.some(n=>Object.hasOwn(w.installed.get(n).generated??{},s.type))))),check('Change a parameter and observe later output',r.parameterChanges.some(c=>owners.has(c.owner)&&c.observed))];
- case 4:return [check('Run the service client and make a successful terminal service call',[true,false].every(client=>r.serviceCalls.some(c=>owners.has(c.owner)&&!!c.caller===client&&(!client||owners.has(c.caller))&&c.type==='example_interfaces/srv/AddTwoInts'&&c.result.sum===c.request.a+c.request.b))),check('Start two processes from one launch', [...lab.processes.groups.values()].some(ids=>ids.size>=2)),check('Exchange messages in the launched system',deliveries.some(s=>activeOwners.get(s.publisher).group&&activeOwners.get(s.publisher).group===activeOwners.get(s.receiver).group))];
+ case 4:return [check('Run the service client and make a successful terminal service call',serviceClientCheck(r,owners)),check('Start two processes from one launch', [...lab.processes.groups.values()].some(ids=>ids.size>=2)),check('Exchange messages in the launched system',deliveries.some(s=>activeOwners.get(s.publisher).group&&activeOwners.get(s.publisher).group===activeOwners.get(s.receiver).group))];
  case 5:return [check('Export source for native ROS 2',lab.exported),check('Review the browser-to-native mapping',true)];
  default:return [];
  }

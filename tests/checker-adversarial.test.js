@@ -102,3 +102,24 @@ test('workspace check requires an actual current build and per-terminal source',
   await t.execute('rm src/alternate_pkg/package.xml');assert.equal(lessonChecks(lab,2)[1].passed,false);
  }finally{lab.reset();}
 });
+
+test('observed wrong service sums veto credit for that server endpoint until a new run',async()=>{
+ const lab=await fixture(),r=lab.runtime,type='example_interfaces/srv/AddTwoInts';
+ try{
+  const server=await program(lab,'talker','/sum_server'),client=await program(lab,'listener','/sum_client');
+  r.services.set('/sum',{owner:server.adapter,type,handler:async()=>({sum:5})});
+  const call=(a,b,caller=null)=>r.callService('/sum',type,{a,b},{caller});
+  await call(2,3,client.adapter);await call(2,3);assert.equal(lessonChecks(lab,5)[0].passed,true);
+  await call(-4,10);assert.equal(lessonChecks(lab,5)[0].passed,false,'observed contradiction must invalidate previous credit');
+  for(let i=0;i<105;i++)await call(2,3,i%2?client.adapter:null);
+  assert.equal(lessonChecks(lab,5)[0].passed,false,'bounded transcript eviction must not erase a same-run contradiction');
+  lab.processes.stop(server.id);const replacement=await program(lab,'talker','/sum_server');
+  r.services.set('/sum',{owner:replacement.adapter,type,handler:async({a,b})=>({sum:a+b})});
+  await call(-4,10);assert.equal(lessonChecks(lab,5)[0].passed,false,'CLI alone does not substitute for a program client');
+  await call(2,3,client.adapter);assert.equal(lessonChecks(lab,5)[0].passed,true,'new correct server can recover');
+  r.services.set('/other',{owner:replacement.adapter,type,handler:async()=>({sum:0})});
+  await r.callService('/other',type,{a:1,b:2});assert.equal(lessonChecks(lab,5)[0].passed,true,'another endpoint does not poison the valid one');
+  r.services.set('/unrelated',{owner:{},type,handler:async()=>({sum:0})});
+  await r.callService('/unrelated',type,{a:1,b:2});assert.equal(lessonChecks(lab,5)[0].passed,true,'another owner does not poison the valid one');
+ }finally{lab.reset();}
+});
