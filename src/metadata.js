@@ -121,7 +121,7 @@ export function parsePythonSetup(source,packageName){
     if(values[cursor]===',')cursor++;else if(values[cursor]!==']')throw Error('Expected comma in console_scripts list.');
   }
 
-  const launchAt=tokens.findIndex((token,index)=>token.kind==='string'&&token.value==='/launch'&&values[index-1]==='+'&&values[index-2]==='package_name'&&values[index-3]==='+'&&tokens[index-4]?.kind==='string'&&tokens[index-4].value==='share/');
+  const launchAt=tokens.findIndex((token,index)=>token.kind==='string'&&(token.value==='share/'+packageName+'/launch'||(token.value==='/launch'&&values[index-1]==='+'&&values[index-2]==='package_name'&&values[index-3]==='+'&&tokens[index-4]?.kind==='string'&&tokens[index-4].value==='share/')));
   if(launchAt<0){scripts.launchFiles=new Set();return scripts;}
   if(values[launchAt+1]!==','||values[launchAt+2]!=='[')throw Error('Use a literal launch file list in setup.py.');
   scripts.launchFiles=new Set();let fileAt=launchAt+3;
