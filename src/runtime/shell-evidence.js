@@ -1,6 +1,6 @@
 import {tokenize} from '../shell.js';
 export function shellChecks(lab){
- const completed=[...lab.terminals.values()].flatMap(t=>t.completedCommands??[]);
+ const completed=[...lab.terminals.values()].flatMap(t=>t.completedCommands??[]).filter(c=>!c.error);
  const ran=words=>completed.some(c=>JSON.stringify(c.words)===JSON.stringify(words));
  const distribution=completed.some(c=>{
   if(!c.rosDistro||c.result!==c.rosDistro)return false;
@@ -10,5 +10,5 @@ export function shellChecks(lab){
  });
  return [{label:'Inspect your directory with pwd',passed:ran(['pwd'])},
   {label:'Inspect the ROS distribution',passed:distribution},
-  {label:'Inspect the node graph',passed:ran(['ros2','node','list'])}];
+  {label:'Inspect the node graph',passed:completed.some(c=>c.words.slice(0,3).join(' ')==='ros2 node list'&&!c.words.some(w=>['-h','--help'].includes(w)))}];
 }
