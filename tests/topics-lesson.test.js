@@ -70,3 +70,18 @@ test('topic checkers reject print-only, wrong topics, incomplete counts and stal
   lab.reset();assert(topicsChecks(lab).every(c=>!c.passed));
  }finally{lab.reset();}
 });
+
+test('Twist rate credit belongs to the measured message type, including after replacement',async()=>{
+ const lab=new Lab(),publisher=lab.terminal(),monitor=lab.terminal();
+ const measured=()=>[...lab.runtime.cliTopicEvidence.values()].find(e=>e.kind==='rate');
+ try{
+  await publisher.execute("ros2 topic pub -r 5 -w 0 /lab_twist std_msgs/msg/String '{data: wrong-type}'");
+  await monitor.execute('ros2 topic hz /lab_twist');await until(()=>!!measured());
+  assert.equal(topicsChecks(lab)[3].passed,false,'String traffic is not Twist rate evidence');
+  lab.stop(monitor.id);lab.stop(publisher.id);
+  await publisher.execute("ros2 topic pub -r 5 -w 0 /lab_twist geometry_msgs/msg/Twist '{linear: {x: 0.2}}'");
+  assert.equal(topicsChecks(lab)[3].passed,false,'Changing the topic type cannot reclassify old measurements');
+  await monitor.execute('ros2 topic hz /lab_twist');await until(()=>measured()?.type==='geometry_msgs/msg/Twist');
+  assert.equal(topicsChecks(lab)[3].passed,true);
+ }finally{lab.reset();}
+});

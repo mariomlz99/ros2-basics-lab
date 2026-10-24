@@ -85,8 +85,9 @@ export function topicCLI(lab,t,args){
   if(durability===null){const publishers=r.topics.get(topic)?.publishers;durability=publishers?.size&&[...publishers].every(node=>r.retained.has(JSON.stringify([topic,node])))?'transient_local':'volatile';}
   const node='/_ros2cli_'+t.id+'_'+(++r.discoverySequence);let dispose=null,discover=null,report=null,process,job,received=0,lastReported=null;const times=[],pending=[];
   const complete=()=>{lab.processes.stop(process.id);t.finishJob(job);};
-  let deliver;
+  let deliver,measuredType;
   const subscribe=resolvedType=>{
+   measuredType=resolvedType;
    discover?.();discover=null;
    deliver=(message,publisher,sample)=>{
     received++;r.samples.get(sample)?.receivedBy.add(node);
@@ -103,7 +104,7 @@ export function topicCLI(lab,t,args){
   process=lab.processes.task('topic '+action,t.id,()=>{
    r.addNode(node);
    if(type)subscribe(type);else discover=r.every(.1,()=>{if(job.state==='Stopped')return;const known=r.topics.get(topic)?.type;if(known)subscribe(known);});
-   if(action==='hz')report=r.every(1,()=>{if(job.state==='Stopped'||times.length<2||lastReported===times.at(-1))return;lastReported=times.at(-1);const rate=(times.length-1)*1000/(times.at(-1)-times[0]);output(formatHzStatistics(times));evidence('hz:'+t.id+':'+topic,{kind:'rate',terminal:t.id,topic,rate,samples:times.length});});
+   if(action==='hz')report=r.every(1,()=>{if(job.state==='Stopped'||times.length<2||lastReported===times.at(-1))return;lastReported=times.at(-1);const rate=(times.length-1)*1000/(times.at(-1)-times[0]);output(formatHzStatistics(times));evidence('hz:'+t.id+':'+topic,{kind:'rate',terminal:t.id,topic,type:measuredType,rate,samples:times.length});});
    return()=>{dispose?.();discover?.();report?.();r.removeNode(node);r.removeEmptyTopics();t.finishJob(job);};
   });t.stopTask=()=>lab.processes.stop(process.id);return type?'':'Waiting for topic '+topic+' to become available...';
  }

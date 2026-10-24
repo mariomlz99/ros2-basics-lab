@@ -34,6 +34,6 @@ export function topicsChecks(lab){const values=[...lab.runtime.cliTopicEvidence.
  check('Receive a String message in another terminal',values.some(e=>e.kind==='received'&&e.topic==='/lab_chat'&&e.type==='std_msgs/msg/String'&&e.publisherTerminal!==undefined&&e.publisherTerminal!==e.terminal)),
  check('Complete a three-message publisher at 2 Hz',values.some(e=>e.kind==='published'&&e.topic==='/lab_chat'&&e.limit===3&&e.count===3&&e.rate===2&&e.finished)),
  check('Receive the Twist stream',values.some(e=>e.kind==='received'&&e.topic==='/lab_twist'&&e.type==='geometry_msgs/msg/Twist')),
- check('Measure the Twist receiving rate',values.some(e=>e.kind==='rate'&&e.topic==='/lab_twist'&&e.samples>=2)),
+ check('Measure the Twist receiving rate',values.some(e=>e.kind==='rate'&&e.topic==='/lab_twist'&&e.type==='geometry_msgs/msg/Twist'&&e.samples>=2)),
  check('Connect a listener to the waiting one-shot publisher',values.some(e=>e.kind==='received'&&e.topic==='/lab_wait'&&e.publisherTerminal!==e.terminal))
 ];}
