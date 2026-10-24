@@ -24,7 +24,21 @@ try{
  await page.locator('#language').selectOption('python');
  await page.locator('#prepare-unit,#prepare-lesson').click();
  await page.waitForFunction(()=>!document.querySelector('#prepare-unit,#prepare-lesson').disabled);
- const file=page.locator('[data-path$="/tf_lab/tf_lab/lookup.py"]');await file.click();
+ const file=page.locator('[data-path$="/tf_lab/tf_lab/lookup.py"]');await file.click();await save();
+ await page.waitForFunction(async()=>{
+  const base=document.querySelector('script[src*="/app.js"]').src,{loadSession}=await import(new URL('session.js',base));
+  return (await loadSession())?.ui.activeFile?.endsWith('/tf_lab/lookup.py');
+ });
+ // Hold an older snapshot at the database-open boundary, then request a save
+ // containing a new draft. A previous "saved" message must not acknowledge it.
+ await page.evaluate(()=>{
+  window.heldSessionOpens=[];window.holdSessionOpens=true;
+  const descriptor=Object.getOwnPropertyDescriptor(IDBRequest.prototype,'onsuccess');
+  Object.defineProperty(IDBRequest.prototype,'onsuccess',{configurable:true,get:descriptor.get,set(handler){descriptor.set.call(this,event=>{
+   if(window.holdSessionOpens&&this instanceof IDBOpenDBRequest)window.heldSessionOpens.push(()=>handler.call(this,event));else handler.call(this,event);
+  });}});
+ });
+ await page.locator('#save-session').click();await page.waitForFunction(()=>window.heldSessionOpens.length>0);
  await page.locator('.cm-content').focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n# preserved TF draft\n');
  const before=await page.locator('.cm-content').innerText();
  await page.locator('#language').selectOption('cpp');assert.equal(await language(),'python');
@@ -33,7 +47,15 @@ try{
  await page.locator('#locale').selectOption('fr');
  assert.match(await page.locator('.odom-language-notice').innerText(),/tf_lab/);
  assert(!/belongs to another learning path/.test(await page.locator('.odom-language-notice').innerText()));
- await page.locator('#locale').selectOption('en');await save();await page.reload();await start();
+ await page.locator('#locale').selectOption('en');await page.locator('#save-session').click();
+ assert.match(await page.locator('#session-state').textContent(),/Saving session/,'An older completed save must not acknowledge the queued draft');
+ await page.evaluate(()=>{window.holdSessionOpens=false;for(const release of window.heldSessionOpens.splice(0))release();});
+ await page.waitForFunction(()=>/saved/i.test(document.querySelector('#session-state').textContent));
+ const storedDraft=await page.evaluate(async()=>{
+  const base=document.querySelector('script[src*="/app.js"]').src,{loadSession}=await import(new URL('session.js',base));return (await loadSession())?.ui.draft;
+ });
+ assert(storedDraft?.includes('preserved TF draft'),'Save confirmation preceded persistence of the current draft');
+ await page.reload();await start();await page.locator('.cm-content').focus();await page.keyboard.press('Control+End');
  assert.equal(await language(),'python');assert((await page.locator('.cm-content').innerText()).includes('preserved TF draft'));
  results.push('TF language guard preserves existing package and unsaved draft, translates its warning and survives reload');
  await page.locator('#reset').click();await page.locator('#language').selectOption('cpp');

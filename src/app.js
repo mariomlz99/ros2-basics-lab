@@ -219,10 +219,10 @@ async function start(){const stored=await restoreCompiledModules(await loadSessi
  lessonIndex=restoredNavigation.lessonIndex;language=restoredNavigation.language;guidePositions.clear();for(const [key,value]of restoredNavigation.guidePositions)guidePositions.set(key,value);$('#language').value=language;
  let signature='',saving=false,savePending=false;
  const persist=async(force=false)=>{
-  if(preparing)return;const ui=currentSessionUI();navigation.save(ui);if(saving){savePending||=force;return;}
+  if(preparing)return;const ui=currentSessionUI();navigation.save(ui);if(saving){if(force){savePending=true;$('#session-state').textContent='Saving session…';}return;}
   const current=JSON.stringify([lab.fs.revision,ui,[...lab.terminals.values()].map(t=>[t.cwd,t.env,t.vars,[...t.overlays],t.history,t.completedCommands]),!!lab.exported]);
   if(!force&&current===signature)return;
-  saving=true;try{const record=captureSession(lab,ui);record.slots=Object.fromEntries([...sessionSlots].map(([scope,state])=>[scope,state.record??captureSession(state.lab,state.ui)]));await saveSession(record);signature=current;$('#session-state').textContent='Saved in this browser';}catch(error){$('#session-state').textContent='Session could not be saved. Export your workspace to keep a copy.';console.error(error);}finally{saving=false;if(savePending){savePending=false;persist(true);}}
+  saving=true;$('#session-state').textContent='Saving session…';try{const record=captureSession(lab,ui);record.slots=Object.fromEntries([...sessionSlots].map(([scope,state])=>[scope,state.record??captureSession(state.lab,state.ui)]));await saveSession(record);signature=current;if(!savePending)$('#session-state').textContent='Saved in this browser';}catch(error){$('#session-state').textContent='Session could not be saved. Export your workspace to keep a copy.';console.error(error);}finally{saving=false;if(savePending){savePending=false;persist(true);}}
  };
  $('#save-session').onclick=()=>persist(true);setInterval(()=>persist(),1500);document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();});
  renderLesson();refresh();if(new URLSearchParams(location.search).get('unit')==='tf')changeLesson(9);window.addEventListener('beforeunload',e=>{if(activeFile&&editor.value!==saved||views.some(v=>v.nano?.buffer.dirty)){e.preventDefault();e.returnValue='';}});
