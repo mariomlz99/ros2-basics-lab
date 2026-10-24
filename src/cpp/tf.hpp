@@ -6,9 +6,11 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 extern "C" {
 __attribute__((import_module("kinenest"),import_name("tf_request"))) void kn_tf_request(const char*,int);
+__attribute__((import_module("kinenest"),import_name("tf_can"))) int kn_tf_can(const char*,int);
 __attribute__((import_module("kinenest"),import_name("tf_done"))) void kn_tf_done();
 }
 namespace tf2 {
+using Duration=std::chrono::nanoseconds;
 using TimePoint=std::chrono::time_point<std::chrono::system_clock,std::chrono::nanoseconds>;
 inline const TimePoint TimePointZero=TimePoint(std::chrono::nanoseconds::zero());
 }
@@ -20,12 +22,21 @@ class Buffer {
  friend class TransformListener;
 public:
  explicit Buffer(rclcpp::Clock::SharedPtr){}
+
+ bool canTransform(const std::string& target,const std::string& source,const tf2::TimePoint& time,const tf2::Duration timeout=tf2::Duration::zero(),std::string* error=nullptr)const{
+  ready();
+  if(time!=tf2::TimePointZero||timeout!=tf2::Duration::zero())kinenest::fail("This browser supports latest TF with a zero timeout.");
+  const auto query="{\"target\":"+kinenest::quote(target)+",\"source\":"+kinenest::quote(source)+"}";
+  const bool available=kn_tf_can(query.data(),query.size());
+  if(error)*error=kinenest::field_string("error");
+  kn_tf_done();return available;
+ }
  geometry_msgs::msg::TransformStamped lookupTransform(const std::string& target,const std::string& source,const tf2::TimePoint& time)const{
-  ready();if(time!=tf2::TimePointZero)kinenest::fail("This lab supports latest TF only: use tf2::TimePointZero.");
+  ready();if(time!=tf2::TimePointZero)kinenest::fail("This browser supports latest TF only: use tf2::TimePointZero.");
   return request<geometry_msgs::msg::TransformStamped>("{\"operation\":\"lookup\",\"target\":"+kinenest::quote(target)+",\"source\":"+kinenest::quote(source)+"}");
  }
  geometry_msgs::msg::PointStamped transform(const geometry_msgs::msg::PointStamped& point,const std::string& target)const{
-  ready();if(point.header.stamp.sec||point.header.stamp.nanosec)kinenest::fail("This lab supports latest TF only: leave the PointStamped stamp zero.");
+  ready();if(point.header.stamp.sec||point.header.stamp.nanosec)kinenest::fail("This browser supports latest TF only: leave the PointStamped stamp zero.");
   return request<geometry_msgs::msg::PointStamped>("{\"operation\":\"point\",\"target\":"+kinenest::quote(target)+",\"input\":"+kinenest::MessageTraits<geometry_msgs::msg::PointStamped>::encode(point)+"}");
  }
 };

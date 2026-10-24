@@ -116,7 +116,7 @@ export class TFVisualizer {
    for(const side of [-1,1])body.append(svg('rect',{x:-WHEELS.radius*scale,y:(side*WHEELS.track/2-WHEELS.width/2)*scale,width:WHEELS.radius*2*scale,height:WHEELS.width*scale,class:'tf-wheel'}));
    body.append(svg('path',{d:`M ${ROBOT_RADIUS*scale} 0 L ${.075*scale} ${-.035*scale} L ${.075*scale} ${.035*scale} Z`,class:'tf-nose'}));this.space.append(body);
   }
-  if(a&&b)line(a.origin,b.origin,'tf-selected-edge'+(model.edges.find(e=>e.parent===this.reference&&e.child===this.frame)?.static?' static':''));
+  if(a&&b&&model.selected)line(a.origin,b.origin,'tf-selected-edge'+(model.selectedKind==='static'?' static':''));
   if(showTarget){
    if(robot)line(robot.origin,TF_TARGET,'tf-target-vector');
    add('path',{d:`M ${px(TF_TARGET)-7} ${py(TF_TARGET)} h 14 M ${px(TF_TARGET)} ${py(TF_TARGET)-7} v 14`,class:'tf-target-mark'});

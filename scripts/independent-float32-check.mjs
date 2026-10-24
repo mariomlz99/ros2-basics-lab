@@ -55,3 +55,18 @@ def main():
   return rows;
  }finally{await page.locator('.terminal-card textarea').first().press('Control+c');}
 }
+
+// Also executable directly: a passing process must actually run the browser probe.
+if(process.argv[1] && import.meta.url === (await import('node:url')).pathToFileURL(process.argv[1]).href){
+ const {chromium,firefox}=await import('playwright-core');
+ const {mkdir,writeFile}=await import('node:fs/promises');
+ const url=new URL(process.env.LAB_URL||'http://127.0.0.1:8017/ros2-basics-lab/');
+ const lab=!url.pathname.endsWith('.html'),base=lab?url.href.replace(/\/$/,''):new URL('./',url).href.replace(/\/$/,'');
+ const results=[];
+ for(const [name,engine]of [['chrome',chromium],['firefox',firefox]]){
+  const browser=await engine.launch({headless:true,...(name==='chrome'?{executablePath:process.env.CHROME_BIN||'/usr/bin/google-chrome'}:{})});
+  try{const page=await browser.newPage();const rows=await checkFloat32(page,base,{lab});results.push({browser:name,version:browser.version(),rows});console.log('PASS '+name+' native float32 rounding and negative-zero delivery');}
+  finally{await browser.close();}
+ }
+ await mkdir('artifacts/product-fixes',{recursive:true});await writeFile('artifacts/product-fixes/signed-zero.json',JSON.stringify(results,null,2));
+}

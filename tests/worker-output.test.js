@@ -40,3 +40,18 @@ for(const language of ['python','cpp'])test(language+' output budget preserves p
  f.send({kind:'destroy',node:'/noisy'});assert.equal(f.messages.at(-1).kind,'destroy');
  f.advance();f.log('recovered');assert.equal(f.messages.at(-1).text,'recovered');
 });
+
+test('Python delivery preserves floating negative zero without traversing integer camera bytes',()=>{
+ const f=fixture('python');
+ const paths=vm.runInContext(`JSON.stringify(negativeZeroPaths({image:new Uint8Array(230400),ranges:new Float32Array([-0,0,1]),point:{x:-0,y:0},values:[0,-0]}))`,f.context);
+ assert.deepEqual(JSON.parse(paths),[['ranges',0],['point','x'],['values',1]]);
+});
+test('Python executor bounds queued events and interrupt discards pending callbacks',async()=>{
+ const f=fixture('python');
+ vm.runInContext(`for(let i=0;i<300;i++)enqueue({kind:'service_request',id:String(i)});`,f.context);
+ assert(vm.runInContext('events.length',f.context)<=256);
+ assert.equal(vm.runInContext('events[0].kind',f.context),'executor_error');
+ vm.runInContext(`enqueue({kind:'interrupt'});enqueue({kind:'timer',id:'late'});`,f.context);
+ assert.equal((await f.context.self.next_ros_event()).kind,'interrupt');
+ assert.equal((await f.context.self.next_ros_event()).kind,'interrupt');
+});

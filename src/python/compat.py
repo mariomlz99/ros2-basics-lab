@@ -1,5 +1,5 @@
 """Adapted from KineNest (Apache-2.0). Bounded ROS API in real CPython.
-ROS 2 Basics Lab: removed curriculum, perception, actions and TF dependencies.
+ROS 2 Basics Lab: communication, parameters and latest-time TF.
 """
 import sys
 import types
@@ -156,9 +156,6 @@ class Node:
         _nodes.pop(self.name, None)
         _send('destroy', node=self.name)
 
-class _Spin(BaseException):
-    pass
-
 def init(args=None):
     global _initialized
     _initialized = True
@@ -168,15 +165,49 @@ def shutdown():
     for node in list(_nodes.values()):
         node.destroy_node()
     _initialized = False
-    _send('shutdown')
 
 def spin(node):
-    raise _Spin()
+    # JSPI suspends the live CPython stack: callbacks execute inside spin(),
+    # so normal exception propagation, finally and context managers are intact.
+    from pyodide.ffi import run_sync, can_run_sync
+    from js import next_ros_event
+    if not can_run_sync():
+        raise RuntimeError('Python ROS callbacks require WebAssembly stack switching. Update your browser or use a current Chrome, Edge or Firefox release.')
+    if not _initialized or node.name not in _nodes:
+        raise RuntimeError('spin() needs an initialized context and a live node')
+    _send('ready')
+    while _initialized and node.name in _nodes:
+        event = run_sync(next_ros_event()).to_py()
+        _dispatch_event(event)
+
+def _dispatch_event(event):
+    kind = event['kind']
+    if kind == 'interrupt':
+        raise KeyboardInterrupt()
+    if kind == 'executor_error':
+        raise RuntimeError(event['text'])
+    if kind in ('message', 'timer'):
+        key = event['subscription'] if kind == 'message' else 'timer-' + event['id']
+        try:
+            if kind == 'timer':
+                _dispatch_timer(event['id'])
+            else:
+                _dispatch_message(event['subscription'], event['message'], event.get('sample', 0), event.get('negative_zeros', ()))
+        finally:
+            _send('frame_done', subscription=key)
+    elif kind == 'parameter_update':
+        node = _nodes.get(event['node'])
+        if node:
+            node._parameters[event['name']] = event['value']
+    elif kind == 'service_request':
+        _service_request(event['id'], event['token'], json.dumps(event['request']))
+    elif kind == 'service_response':
+        _service_response(event['id'], json.dumps(event['response']))
 
 def _run_student(source):
     try:
         exec(compile(source, '<student>', 'exec'), {'__name__': '__main__'})
-    except _Spin:
+    except KeyboardInterrupt:
         pass
 
 def _dispatch_message(key, payload, sample, negative_zeros=()):

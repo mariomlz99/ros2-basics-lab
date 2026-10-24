@@ -19,7 +19,9 @@
     "test:odometry:native": "node scripts/native-odometry-check.mjs",
     "test:tf": "node scripts/tf-runtime-check.mjs && node scripts/tf-visual-check.mjs && node scripts/tf-learning-check.mjs",
     "test:tf-review": "node scripts/tf-adversarial-runtime.mjs && node scripts/tf-checker-attacks.mjs && node scripts/tf-session-review.mjs",
-    "test:odometry:ui": "node scripts/odometry-ui-check.mjs"
+    "test:odometry:ui": "node scripts/odometry-ui-check.mjs",
+    "test:python-spin": "node scripts/python-spin-check.mjs",
+    "test:product-regressions": "node scripts/product-regressions-check.mjs && node scripts/course-localization-check.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.3",

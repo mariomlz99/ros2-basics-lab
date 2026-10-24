@@ -289,3 +289,9 @@ export const odometryTranslations = {
   "Usa linguaggio del pacchetto"
  ]
 };
+
+// The same manifest/language guard also protects the TF exercise package.
+for(const [source,values] of Object.entries(odometryTranslations)){
+ if(source.startsWith('odom_lab belongs')||source.startsWith('The odom_lab folder'))
+  odometryTranslations[source.replaceAll('odom_lab','tf_lab')]=values.map(value=>value.replaceAll('odom_lab','tf_lab'));
+}

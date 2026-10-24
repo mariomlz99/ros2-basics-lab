@@ -1,3 +1,4 @@
+import {courseTranslations} from './course-translations.js';
 export const translations = {
 "Introduction to the simulator":["Introduction au simulateur", "Inleiding tot de simulator"],
 "1. Odometry: where is the robot?":["1. Odométrie: où est le robot ?", "1. Odometrie: waar is de robot?"],
@@ -637,3 +638,5 @@ Object.assign(translations, {
     "Correggi il file package.xml di questo pacchetto prima di aggiungere esempi. I file esistenti vengono conservati."
   ]
 });
+
+Object.assign(translations,courseTranslations);

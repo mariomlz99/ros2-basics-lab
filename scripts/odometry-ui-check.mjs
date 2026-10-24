@@ -121,7 +121,11 @@ async function run(language){
   // An existing package must never silently run the opposite implementation.
   // A dirty draft makes data preservation observable through the actual editor.
   const fileSuffix=language==='python'?'/odom_lab/reader.py':'/src/reader.cpp';
-  await page.locator(`#file-tree [data-path$="${fileSuffix}"]`).click();
+  const file=page.locator(`#file-tree [data-path$="${fileSuffix}"]`),original=await file.elementHandle(),beforeSelection=await readState();
+  await page.waitForTimeout(400);
+  assert((await readState()).samples>beforeSelection.samples,'Sensors must remain live while choosing a file');
+  assert(await original.evaluate(node=>node.isConnected),'Sensor updates detached the file being selected');
+  await file.click();await original.dispose();
   const marker=language==='python'?'# odometry UI preserved draft':'// odometry UI preserved draft';
   await page.locator('.cm-content').focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n'+marker+'\n');
   const draft=await page.locator('.cm-content').innerText();
@@ -140,7 +144,9 @@ async function run(language){
   const usePackageLanguage=page.getByRole('button',{name:'Use package language',exact:true});
   await usePackageLanguage.waitFor();
   assert.equal(await page.locator('.cm-content').innerText(),draft,'Entering mismatched exercise lost the draft');
-  const blockedPages=Number((await page.locator('.guide-progress').innerText()).split('/')[1]);
+  const switchRejected=await page.locator('#language').inputValue()===language;
+  if(tf)assert(switchRejected,'TF workspace language guard must apply from every exercise');
+  const blockedPages=switchRejected?0:Number((await page.locator('.guide-progress').innerText()).split('/')[1]);
   for(let index=0;index<blockedPages;index++){
    const offered=await page.locator(root+' .command code').allTextContents();
    assert(!offered.some(line=>/ros2 pkg create|colcon build|ros2 run odom_lab/.test(line)),'Mismatched exercise offered a package/build/run command');

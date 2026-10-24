@@ -92,3 +92,12 @@ test('TF uses an isolated session and repeat preparation preserves edited files'
   await assert.rejects(()=>prepareLesson(lab,9,language==='python'?'cpp':'python'),/other language/);lab.reset();
  }
 });
+
+test('static relationships remain static in reverse and across fixed paths',()=>{
+ const r=new Runtime(),stamp={sec:0,nanosec:0};
+ r.publish('/tf_static','tf2_msgs/msg/TFMessage',staticTransforms(stamp),{node:'mounts'});
+ r.publish('/tf','tf2_msgs/msg/TFMessage',dynamicTransforms({x:0,y:0,yaw:0},stamp),{node:'robot'});
+ for(const [a,b]of [['base_link','laser_link'],['laser_link','base_link'],['laser_link','camera_optical_frame'],['camera_optical_frame','laser_link']])assert.equal(tfViewModel(r.tf,a,b).selectedKind,'static',a+' -> '+b);
+ for(const [a,b]of [['odom','laser_link'],['laser_link','odom'],['left_wheel_link','base_link']])assert.equal(tfViewModel(r.tf,a,b).selectedKind,'dynamic');
+ assert.equal(tfViewModel(r.tf,'missing','laser_link').selectedKind,'unavailable');r.reset();
+});

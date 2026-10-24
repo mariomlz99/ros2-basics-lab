@@ -17,7 +17,8 @@ export function tfViewModel(tf, reference='odom', frame='base_link') {
  let selected=null,relativeTarget=null,error='';
  try{if(names.length)selected=tf.lookup(reference,frame);}catch(e){error=e.message;}
  try{relativeTarget=tf.transformPoint('base_link',{header:{frame_id:'odom',stamp:{sec:0,nanosec:0}},point:{...TF_TARGET}});}catch{}
- return {edges,names,roots,root,poses,selected,relativeTarget,error};
+ const selectedKind=selected?relationshipKind(edges,reference,frame):'unavailable';
+ return {edges,names,roots,root,poses,selected,selectedKind,relativeTarget,error};
 }
 
 export function tfTreeRows(edges,names) {
@@ -30,4 +31,18 @@ export function tfTreeRows(edges,names) {
  for(const name of names.filter(name=>!edges.some(edge=>edge.child===name)))visit(name,0);
  for(const name of names)visit(name,0);
  return rows;
+}
+
+// Edge direction does not change whether a mounting relationship is fixed.
+function relationshipKind(edges,reference,frame){
+ const queue=[{name:reference,static:true}],seen=new Set();
+ for(const current of queue){
+  if(current.name===frame)return current.static?'static':'dynamic';
+  seen.add(current.name);
+  for(const edge of edges){
+   const next=edge.parent===current.name?edge.child:edge.child===current.name?edge.parent:null;
+   if(next&&!seen.has(next))queue.push({name:next,static:current.static&&edge.static});
+  }
+ }
+ return 'unavailable';
 }

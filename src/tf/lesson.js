@@ -57,7 +57,7 @@ function cppProgram(exercise,starter){
  const body=point?(starter?`    // TODO: express target in base_link with buffer.transform.
     // Print the result's point.x and point.y.
     RCLCPP_INFO(node->get_logger(), "Target is ready in odom");`:`    auto result = buffer.transform(target, "base_link");
-    RCLCPP_INFO(node->get_logger(), "x = %.2f, y = %.2f m", result.point.x, result.point.y);`):`    auto transform = buffer.lookupTransform("base_link", "${starter?'laser':'laser_link'}", tf2::TimePointZero);
+    RCLCPP_INFO(node->get_logger(), "x = %.2f, y = %.2f m", result.point.x, result.point.y);`):`    auto transform = buffer.lookupTransform("base_link", source_frame, tf2::TimePointZero);
     RCLCPP_INFO(node->get_logger(), "x = %.2f, y = %.2f m",
       transform.transform.translation.x, transform.transform.translation.y);`;
  return `#include <chrono>
@@ -77,6 +77,12 @@ ${point?`    geometry_msgs::msg::PointStamped target;
     target.point.x = ${TF_TARGET.x.toFixed(1)};
     target.point.y = ${TF_TARGET.y.toFixed(1)};
 `:''}
+    const std::string source_frame = "${point?'odom':starter?'laser':'laser_link'}";
+    std::string error;
+    if (!buffer.canTransform("base_link", source_frame, tf2::TimePointZero, tf2::Duration::zero(), &error)) {
+      RCLCPP_INFO(node->get_logger(), "TF lookup failed: %s", error.c_str());
+      return;
+    }
 ${body}
   });
   rclcpp::spin(node);
@@ -115,10 +121,10 @@ export function tfExercises(language){const py=language==='python';return [
   reflection('Does a static laser transform mean the laser stays still in the room?','No. laser_link stays fixed relative to base_link, and both move relative to odom. “Static” describes a relationship between frames. Select odom → laser_link to see that combined relationship change.')
  ]},
  {id:'lookup',title:'3. Lookup | ask TF from your code',steps:[
-  text('Prepare this unit to create the small tf_lab package and starter files. Keep the simulator running. The listener receives TF into a Buffer; a timer lets incoming transforms arrive before each lookup. This program prints twice per second. Ctrl+C or Stop ends it.'),
+  text('Prepare this unit to create the small tf_lab package and starter files. Keep the simulator running. The listener receives TF into a Buffer; a timer lets incoming transforms arrive before each lookup. This program prints twice per second. If TF is unavailable it reports the missing frame and waits; starting or restarting the simulator resumes readings. Ctrl+C or Stop ends the reader.'),
   text(py?"lookup_transform('base_link', 'laser_link', Time()) asks for laser_link expressed in base_link: target frame first, source frame second. Time() requests the latest available transform.":'lookupTransform("base_link", "laser_link", tf2::TimePointZero) asks for laser_link expressed in base_link: target frame first, source frame second. TimePointZero requests the latest available transform.'),
   {kind:'files',pkg:TF_PACKAGE,items:tfFiles(language,'lookup'),starters:tfFiles(language,'lookup',{starter:true})},
-  text('Run the starter unchanged once. It deliberately asks for laser, which is not a frame in this tree. Expect a clear TF lookup failure.'+(py?' Stop the program.':' This uncaught error ends the C++ program.')+' Inspect the tree and change laser to laser_link. Save, rebuild, source and run again using the commands below. Expect x = 0.12, y = 0.00 m.'),
+  text('Run the starter unchanged once. It deliberately asks for laser, which is not a frame in this tree. Expect a clear TF lookup failure.'+' The reader keeps waiting; stop it before editing.'+' Inspect the tree and change laser to laser_link. Save, rebuild, source and run again using the commands below. Expect x = 0.12, y = 0.00 m.'),
   build('lookup'),
   text('The result is a TransformStamped. transform.translation.x and .y locate the laser origin in base_link. Reading the live transform is the task; printing copied numbers does not pass. Frame names must match the TF tree.'),
   {kind:'tf-check',exercise:'lookup'}
@@ -144,8 +150,8 @@ const finitePoint=point=>point&&['x','y','z'].every(key=>Number.isFinite(point[k
 export function tfChecks(lab,exercise){
  if(exercise==='frames'||exercise==='tree')return [];
  const owners=programOwners(lab),events=(lab.runtime.tfEvidence??[]).filter(event=>owners.has(event.owner));
- const lookup=events.some(event=>event.operation==='lookup'&&event.target==='base_link'&&event.source==='laser_link'&&event.result?.header?.frame_id==='base_link'&&event.result?.child_frame_id==='laser_link'&&finitePoint(event.result?.transform?.translation));
- const point=events.some(event=>event.operation==='point'&&event.target==='base_link'&&event.source==='odom'&&event.input?.header?.frame_id==='odom'&&pointMatches(event.input?.point,TF_TARGET)&&event.result?.header?.frame_id==='base_link'&&finitePoint(event.result?.point));
- const checks={lookup:{label:'Your current program looked up laser_link in base_link',passed:lookup},point:{label:'Your current program expressed the odom target in base_link',passed:point}};
+ const lookup=events.some(event=>event.operation==='lookup'&&event.target==='base_link'&&event.source==='laser_link'&&event.result?.header?.frame_id==='base_link'&&event.result?.child_frame_id==='laser_link'&&finitePoint(event.result?.transform?.translation)&&event.outputMatches===true);
+ const point=events.some(event=>event.operation==='point'&&event.target==='base_link'&&event.source==='odom'&&event.input?.header?.frame_id==='odom'&&pointMatches(event.input?.point,TF_TARGET)&&event.result?.header?.frame_id==='base_link'&&finitePoint(event.result?.point)&&event.outputMatches===true);
+ const checks={lookup:{label:'Your current program looked up laser_link in base_link and printed matching x/y',passed:lookup},point:{label:'Your current program expressed the odom target in base_link and printed matching x/y',passed:point}};
  return exercise?[checks[exercise]].filter(Boolean):[checks.lookup,checks.point];
 }

@@ -38,7 +38,7 @@ test('odometry guard follows the source manifest, rejects missing or invalid ide
    lab.fs.write(base+'/package.xml',xml);assert.equal(odometryPackageState(lab.fs,'python').kind,'invalid');
   }
   lab.fs.write(base+'/package.xml',manifest('odom_lab','ament_cmake'));
-  assert.deepEqual(odometryPackageState(lab.fs,'cpp'),{kind:'ready',language:'cpp',buildType:'ament_cmake'});
+  assert.deepEqual(odometryPackageState(lab.fs,'cpp'),{packageName:'odom_lab',kind:'ready',language:'cpp',buildType:'ament_cmake'});
   assert.equal(odometryPackageState(lab.fs,'python').kind,'incompatible');
   lab.fs.write(base+'/package.xml',manifest('odom_lab','ament_python'));
   assert.equal(odometryPackageState(lab.fs,'python').kind,'ready');
@@ -63,4 +63,17 @@ test('all six translated paths explain metadata replacement, timed motion and la
   assert.equal(odometryTranslations[source]?.length,6,source);
   for(const translated of odometryTranslations[source])assert(translated&&translated!==source,source);
  }
+});
+
+test('TF package guard checks its own manifest and preserves incompatible files',()=>{
+ const lab=new Lab();try{
+  lab.fs.mkdir(ROOT+'/src',true);lab.workspace.create('tf_lab','ament_python');
+  const before=lab.fs.filesUnder(ROOT);
+  assert.equal(odometryPackageState(lab.fs,'cpp','tf_lab').kind,'incompatible');
+  assert.equal(odometryPackageState(lab.fs,'python','tf_lab').kind,'ready');
+  assert.equal(odometryPackageState(lab.fs,'cpp').kind,'missing');
+  assert.deepEqual(lab.fs.filesUnder(ROOT),before);
+  lab.fs.write(ROOT+'/src/tf_lab/package.xml',manifest('wrong_name','ament_python'));
+  assert.equal(odometryPackageState(lab.fs,'python','tf_lab').kind,'invalid');
+ }finally{lab.reset();}
 });

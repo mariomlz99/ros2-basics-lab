@@ -34,7 +34,10 @@ async function program(lab,executable='lookup',{listen=true}={}){
 }
 function request(lab,process,options){
  const client=new TransformClient(event=>process.adapter.handle(event),process.adapter.tfProof);
- client.update(lab.runtime.tf.snapshot());return client.request(options);
+ client.update(lab.runtime.tf.snapshot());const result=client.request(options);
+ // Successful work includes the visible output, tied to this run's real result.
+ const value=options.operation==='point'?result.point:result.transform.translation;
+ process.adapter.handle({kind:'stdout',text:`x = ${value.x.toFixed(2)}, y = ${value.y.toFixed(2)} m`});return result;
 }
 const lookup={operation:'lookup',target:'base_link',source:'laser_link'};
 const point={operation:'point',target:'base_link',input:{header:{frame_id:'odom',stamp},point:{...TF_TARGET}}};
@@ -107,5 +110,19 @@ test('valid alternate implementations count without matching reference source st
   const path=ROOT+'/src/tf_lab/tf_lab/lookup.py';
   lab.fs.write(path,lab.fs.read(path).replace("'base_link', 'laser_link'","target_frame, sensor_frame").replace('        try:',"        target_frame = 'base_link'\n        sensor_frame = 'laser_link'\n        try:"));
   await lab.builder.build();const p=await program(lab);request(lab,p,lookup);assert(passed(lab,'lookup'));
+ }finally{lab.reset();}
+});
+
+test('lookup without output, wrong values and output from another program cannot pass',async()=>{
+ const lab=await fixture();try{
+  const p=await program(lab),other=await program(lab,'point');
+  const client=new TransformClient(event=>p.adapter.handle(event),p.adapter.tfProof);client.update(lab.runtime.tf.snapshot());
+  client.request(lookup);assert(!passed(lab,'lookup'),'silent lookup');
+  p.adapter.handle({kind:'stdout',text:'x = 9.00, y = 9.00 m'});assert(!passed(lab,'lookup'),'wrong printed values');
+  other.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});assert(!passed(lab,'lookup'),'different program');
+  p.adapter.handle({kind:'stdout',text:'iteration 12: 0.12 0.00'});assert(!passed(lab,'lookup'),'unrelated diagnostics');
+  p.adapter.handle({kind:'stdout',text:'0.12 0.00'});assert(passed(lab,'lookup'));
+  client.request(lookup);assert(!passed(lab,'lookup'),'new request needs fresh output');
+  p.adapter.handle({kind:'stdout',text:'x = 0.12, y = 0.00 m'});assert(passed(lab,'lookup'));
  }finally{lab.reset();}
 });

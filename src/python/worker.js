@@ -2,6 +2,22 @@
 let pyodide, chain=Promise.resolve(),tfClient,tfSnapshot,tfClientReady;
 const INDEX='https://cdn.jsdelivr.net/pyodide/v0.28.3/full/';
 let outputCount=0, outputTime=0;
+// Main-thread mailboxes bound timer/topic traffic. Bound service/action traffic
+// here too; never let a suspended program accumulate an unbounded event queue.
+let events=[], waiting=null, interrupted=false;
+self.next_ros_event=()=>{
+  if(interrupted)return Promise.resolve({kind:'interrupt'});
+  if(events.length)return Promise.resolve(events.shift());
+  return new Promise(resolve=>{waiting=resolve;});
+};
+function enqueue(event){
+  if(event.kind==='interrupt'){interrupted=true;events=[];}
+  else if(interrupted)return;
+  if(event.kind==='message')event={...event,negative_zeros:negativeZeroPaths(event.message)};
+  if(waiting){const resolve=waiting;waiting=null;resolve(event);}
+  else if(events.length<256)events.push(event);
+  else{events=[{kind:'executor_error',text:'Python executor queue exceeded 256 events; stopped.'}];}
+}
 self.emit_json=text=>emit(JSON.parse(text));
 // Bound stdout and ROS logs before they enter the main-thread message queue.
 function emit(message){if(message.kind==='stdout'||message.kind==='log'){const now=Date.now();if(now-outputTime>1000){outputTime=now;outputCount=0;}if(outputCount++>=40)return;message={...message,text:String(message.text).slice(0,4000)};}postMessage(message);}
@@ -9,6 +25,13 @@ function output(text){emit({kind:'stdout',text});}
 // Pyodide converts integral JS numbers to Python ints, which loses -0's sign.
 // Carry only its field paths alongside the normal structured message conversion.
 function negativeZeroPaths(value,path=[],paths=[]){
+  if(ArrayBuffer.isView(value)){
+    // Integer image buffers cannot contain -0. Enumerating every byte here
+    // creates hundreds of thousands of arrays before each camera callback.
+    if(value instanceof Float32Array||value instanceof Float64Array)
+      for(let i=0;i<value.length;i++)if(Object.is(value[i],-0))paths.push([...path,i]);
+    return paths;
+  }
   if(Object.is(value,-0))paths.push(path);
   else if(Array.isArray(value))value.forEach((item,index)=>negativeZeroPaths(item,[...path,index],paths));
   else if(value&&typeof value==='object')for(const [key,item]of Object.entries(value))negativeZeroPaths(item,[...path,key],paths);
@@ -63,36 +86,9 @@ async function handle(data){
       pyodide.globals.set('student_source',`from ${module} import ${callable} as _bridge_main\n_bridge_main()`);
     }else pyodide.globals.set('student_source',data.code);
     postMessage({kind:'executing'});
-    pyodide.runPython('_run_student(student_source)');
-    postMessage({kind:'ready'});
-    if(!pyodide.runPython('bool(_nodes)'))postMessage({kind:'shutdown'});
-  }else if(data.kind==='image'){
-    pyodide.globals.set('image_key',data.subscription);
-    pyodide.globals.set('image_meta',JSON.stringify(data.meta));
-    pyodide.globals.set('image_bytes',data.bytes);
-    pyodide.globals.set('image_frame',data.frame);
-    try{pyodide.runPython('_dispatch_image(image_key, image_meta, image_bytes, image_frame)');}
-    finally{pyodide.globals.delete('image_bytes');postMessage({kind:'frame_done',subscription:data.subscription});}
-  }else if(data.kind==='message'||data.kind==='timer'){
-    pyodide.globals.set('event_key',data.subscription??data.id);
-    pyodide.globals.set('event_payload',data.message??null);
-    pyodide.globals.set('event_zero_paths',negativeZeroPaths(data.message));
-    pyodide.globals.set('event_sample',data.sample??0);
-    try{pyodide.runPython(data.kind==='timer'?'_dispatch_timer(event_key)':'_dispatch_message(event_key, event_payload.to_py(), event_sample, event_zero_paths.to_py())');}
-    finally{pyodide.globals.delete('event_payload');pyodide.globals.delete('event_zero_paths');postMessage({kind:'frame_done',subscription:data.subscription??('timer-'+data.id)});}
-  }else if(data.kind==='parameter_update'){
-    pyodide.globals.set('param_payload',JSON.stringify(data));
-    pyodide.runPython('p = json.loads(param_payload); _nodes[p["node"]]._parameters[p["name"]] = p["value"]');
-  }else if(data.kind==='action_event'){
-    pyodide.globals.set('action_key',data.id);pyodide.globals.set('action_event',data.event);pyodide.globals.set('action_payload',JSON.stringify(data.payload));
-    pyodide.runPython('_action_event(action_key, action_event, action_payload)');
-  }else if(data.kind==='service_request'){
-    pyodide.globals.set('request_key',data.id);pyodide.globals.set('request_token',data.token);pyodide.globals.set('request_payload',JSON.stringify(data.request));
-    pyodide.runPython('_service_request(request_key, request_token, request_payload)');
-  }else if(data.kind==='service_response'){
-
-    pyodide.globals.set('response_key',data.id);pyodide.globals.set('response_json',JSON.stringify(data.response));
-    pyodide.runPython('_service_response(response_key, response_json)');
+    await pyodide.runPythonAsync('_run_student(student_source)');
+    postMessage({kind:'shutdown'});
   }
 }
-onmessage=event=>{if(event.data.kind==='tf_snapshot'){tfSnapshot=event.data.snapshot;if(!tfClientReady){const proof=event.data.proof;tfClientReady=import('../runtime/tf.js').then(({TransformClient})=>{tfClient=new TransformClient(emit,proof);tfClient.update(tfSnapshot);});}else tfClient?.update(tfSnapshot);return;}chain=chain.then(()=>handle(event.data)).catch(error=>postMessage({kind:'error',text:String(error)}));};
+
+onmessage=event=>{if(event.data.kind==='tf_snapshot'){tfSnapshot=event.data.snapshot;if(!tfClientReady){const proof=event.data.proof;tfClientReady=import('../runtime/tf.js').then(({TransformClient})=>{tfClient=new TransformClient(emit,proof);tfClient.update(tfSnapshot);});}else tfClient?.update(tfSnapshot);return;}if(event.data.kind!=='start'&&event.data.kind!=='build'){enqueue(event.data);return;}chain=chain.then(()=>handle(event.data)).catch(error=>postMessage({kind:'error',text:String(error)}));};

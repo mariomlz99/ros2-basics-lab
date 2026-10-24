@@ -1,5 +1,6 @@
 // Adapted from KineNest RuntimeAdapter (Apache-2.0): communication-only graph,
 // explicit owner cleanup, no curriculum evidence or mandatory simulator.
+import {recordTfOutput} from './tf-output.js';
 import {TransformStore} from './tf.js';
 import {LatestMailbox} from './mailbox.js';
 export class RuntimeAdapter{
@@ -10,7 +11,8 @@ export class RuntimeAdapter{
  removeService(name){this.runtime.services.delete(name);for(const [token,pending]of this.pendingServices)if(pending.service===name){clearTimeout(pending.timer);pending.reject(Error('Service stopped before responding: '+name));this.pendingServices.delete(token);}}
  cleanupNode(node){for(const [id,listener]of this.tfListeners)if(listener.node===node){listener.dispose();this.tfListeners.delete(id);}for(const [id,p]of this.publishers)if(p.node===node){p.dispose();this.publishers.delete(id);}for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.removeService(name);this.runtime.removeNode(node);this.nodes.delete(node);this.sourceNames.delete(node);for(const [name,id]of this.mappedNodes)if(id===node)this.mappedNodes.delete(name);this.runtime.removeEmptyTopics();}
  attachTransforms(){this.tfProof=crypto.randomUUID();let first=true;this.runtime.tfEvidence=this.runtime.tfEvidence.filter(event=>event.owner!==this);this.tfSnapshots.clear();this.tfObserver=snapshot=>{this.tfSnapshots.set(snapshot.revision,snapshot);if(this.tfSnapshots.size>256)this.tfSnapshots.delete(this.tfSnapshots.keys().next().value);this.worker?.postMessage({kind:'tf_snapshot',snapshot,...(first?{proof:this.tfProof}:{})});first=false;};this.runtime.tf.listeners.add(this.tfObserver);this.tfObserver(this.runtime.tf.snapshot());}
- stop(){this.runtime.tf.listeners.delete(this.tfObserver);for(const listener of this.tfListeners.values())listener.dispose();this.tfListeners.clear();const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);this.worker?.terminate();this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
+ releaseWorker(worker){worker.terminate();}
+ stop(){this.runtime.tf.listeners.delete(this.tfObserver);for(const listener of this.tfListeners.values())listener.dispose();this.tfListeners.clear();const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);if(this.worker)this.releaseWorker(this.worker);this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
  handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node,d.kind==='node')};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
   switch(d.kind){
    case 'tf_listener':{if(!this.nodes.has(d.node))throw Error('TF listener needs a live ROS node');const disposers=['/tf','/tf_static'].map(topic=>r.subscribe(topic,d.node,()=>{},{type:'tf2_msgs/msg/TFMessage',durability:topic==='/tf_static'?'transient_local':'volatile'}));this.tfListeners.set(d.id,{node:d.node,dispose:()=>disposers.forEach(dispose=>dispose())});break;}
@@ -19,8 +21,8 @@ export class RuntimeAdapter{
    case 'loading':this.status(d.text);break;
    case 'executing':this.watchdog(10000,'Program took too long; stopped.');break;
    case 'ready':clearTimeout(this.timer);this.status('Running');break;
-   case 'stdout':this.output(d.text);break;
-   case 'log':r.log(d.node,d.text,d.level);this.output('['+r.nodeName(d.node)+'] '+d.text);break;
+   case 'stdout':recordTfOutput(r,this,d.text);this.output(d.text);break;
+   case 'log':recordTfOutput(r,this,d.text);r.log(d.node,d.text,d.level);this.output('['+r.nodeName(d.node)+'] '+d.text);break;
    case 'error':this.output(d.text);this.stop();break;
    case 'shutdown':this.stop();break;
    case 'node':if(r.nodes.has(d.node))throw Error('Node already exists: '+d.node);r.addNode(d.node);this.nodes.add(d.node);break;

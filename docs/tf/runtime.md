@@ -22,7 +22,10 @@ places (lesson program output uses two).
 
 `RuntimeAdapter` verifies successful operations against the corresponding
 dispatched snapshot before recording `runtime.tfEvidence`. Evidence belongs to
-the executing adapter and deduplicates repeated observations. Each run also has
+the executing adapter and deduplicates repeated observations. The exercise
+checker also requires that this run print matching x/y values after its verified
+operation (within the two-decimal output rounding tolerance). A silent lookup,
+wrong values, unrelated diagnostics or output from another run cannot pass. Each run also has
 an opaque worker proof, captured before learner code starts and held privately
 by `TransformClient`. It is sent only with the initial snapshot and is omitted
 from stored checker evidence. A copied result submitted through `emit_json`
@@ -37,11 +40,13 @@ snapshot revision floor so a queued pre-reset callback cannot restore old proof.
 
 Supported lesson APIs are `Buffer`, `TransformListener`, latest-time
 `lookup_transform` / `lookupTransform`, and `Buffer.transform(PointStamped,
-target)`. Historical timestamps, blocking transform waits, a transform cache,
+target)`, plus C++ `canTransform` at latest time with a zero timeout. Historical timestamps, blocking transform waits, a transform cache,
 and listener threads are deliberately unsupported and diagnosed. Python exposes
 `TransformException`; C++ lookup failures stop the program with a clear message,
-following the platform's existing worker error model. The lesson C++ source uses
-an uncaught lookup, which is also valid on native Jazzy. No `tf2_echo` executable
+following the platform's existing worker error model. The lesson C++ source checks
+`canTransform` before a lookup, reports missing frames and keeps waiting when the
+simulator is stopped. It resumes when publications return. This same source is
+compiled and executed on native Jazzy. No `tf2_echo` executable
 or free `do_transform_point` API is advertised.
 
 Multiple listeners may share a buffer. C++ tracks their lifetimes with a count;

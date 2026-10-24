@@ -31,3 +31,20 @@ test('one simulation acquisition shares pose and timestamp across odometry, TF, 
   }
  }finally{scene.stop();lab.reset();globalThis.ImageData=prior;}
 });
+
+test('reset immediately republishes coherent pose and sensor samples; preview creates no publishers',()=>{
+ const prior=globalThis.ImageData;globalThis.ImageData=class{};
+ const lab=new Lab(),scene=new Playground(lab.runtime,canvas(),canvas());let clock=0;
+ lab.runtime.stamp=()=>({sec:200,nanosec:++clock});
+ try{
+  scene.resetPose();assert.equal(lab.runtime.samples.size,0);
+  scene.start();clearInterval(scene.timer);Object.assign(scene.robot,{x:.7,y:.4,yaw:1.2});
+  const first=lab.runtime.sampleCounter;scene.resetPose();
+  const messages=Object.fromEntries([...lab.runtime.samples].filter(([id])=>id>first).map(([,s])=>[s.topic,s.message]));
+  assert.deepEqual(Object.keys(messages),['/odom','/tf','/scan','/camera/image_raw']);
+  assert.deepEqual(messages['/odom'].pose.pose.position,{x:0,y:0,z:0});
+  for(const topic of ['/scan','/camera/image_raw'])assert.deepEqual(messages[topic].header.stamp,messages['/odom'].header.stamp);
+  assert.deepEqual(messages['/camera/image_raw'].data,renderCamera(scene.robot).data);
+  assert.equal(messages['/camera/image_raw'].encoding,'rgb8');assert.equal(messages['/camera/image_raw'].step,960);
+ }finally{scene.stop();lab.reset();globalThis.ImageData=prior;}
+});
