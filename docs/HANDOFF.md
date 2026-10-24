@@ -120,13 +120,27 @@ Free Lab uses the same supported filesystem, terminal, build and runtime impleme
 
 ## Python spin control flow
 
-The callback bridge currently unwinds the Python stack at `rclpy.spin()`.
-`finally` blocks and context-manager exits around it run immediately; cleanup
-there can destroy the node before callbacks run. Code after `spin()` is not
-resumed. Stop/Ctrl+C cleans up browser endpoints and terminates the worker,
-without running Python cleanup. This is an open runtime defect. The displayed
-callback examples work within this constraint; full native Python control-flow
-parity is not claimed.
+`rclpy.spin()` suspends the live CPython stack through Pyodide's WebAssembly
+stack switching. Timer, topic, and service callbacks execute
+inside the executor; callback exceptions propagate to the caller. `finally`
+and context-manager cleanup run when spin exits, and code after spin resumes
+on normal context shutdown. A finite program exits even if it left a node alive.
+
+Stop/Ctrl+C detaches graph endpoints immediately and interrupts the suspended
+Python executor. The worker has up to one second to finish Python cleanup before
+forced termination; a non-yielding program or stuck cleanup can still be killed.
+Retired workers cannot publish messages or recreate graph endpoints. Queues are
+bounded: topic/timer traffic keeps the existing latest-sample policy, with a
+256-event ceiling for worker input. Reset and reload never restart processes.
+
+Callback execution requires browser WebAssembly stack switching (JSPI). It is
+verified in Chrome 141 and Firefox 155 without experimental flags. Unsupported
+browsers receive an explicit error; the runtime does not simulate suspension
+by unwinding student code. Native Jazzy comparisons cover normal shutdown,
+callback exceptions, interruption, context managers and sequential runs. This
+bounded API does not implement arbitrary native executors or DDS.
+
+See `scripts/python-spin-check.mjs` and `scripts/native-python-spin-check.mjs`.
 
 Switching the learning path preserves the corresponding lesson step. It changes
 examples, not existing packages. Example buttons and preparation reject

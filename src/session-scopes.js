@@ -1,4 +1,4 @@
-export const sessionScope=index=>index===8?'free':index===7?'playground':'course';
+export const sessionScope=index=>index===9?'tf':index===8?'free':index===7?'playground':'course';
 
 // Read older two-workspace sessions and the current collection without nesting
 // live workspaces inside one another or sharing mutable filesystem snapshots.
