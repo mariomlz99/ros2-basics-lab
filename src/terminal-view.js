@@ -4,14 +4,23 @@ import{NanoEditor}from'./nano-editor.js';
 import{t}from'./i18n.js';
 import{Terminal as XTerm,FitAddon}from'./vendor/ui.js';
 import{HOME}from'./fs.js';
+const shortcuts=[['Esc, then Tab / Shift+Tab','Move focus outside terminal']];
 export class TerminalView{
  constructor(lab,terminal,parent,onClose,onOpenFile){this.lab=lab;this.terminal=terminal;terminal.color=true;this.line='';this.cursor=0;this.historyIndex=0;this.executing=false;this.disposed=false;this.renderedRows=1;this.renderedCursor=0;
-  this.element=document.createElement('section');this.element.className='terminal-card';this.element.innerHTML=`<div class="terminal-title"><strong><span aria-hidden="true">🐧</span> Terminal ${terminal.id}</strong><span class="terminal-state">Jazzy base</span><button class="stop">Stop · Ctrl+C</button><button class="close" aria-label="Close Terminal ${terminal.id}">×</button></div><div class="terminal-screen"></div><details class="terminal-transcript"><summary>Plain-text transcript</summary><pre></pre></details>`;parent.append(this.element);
+  this.element=document.createElement('section');this.element.className='terminal-card';this.element.innerHTML=`<div class="terminal-title"><strong><span aria-hidden="true">🐧</span> Terminal ${terminal.id}</strong><span class="terminal-state">Jazzy base</span><details class="terminal-shortcuts"><summary>Keyboard</summary><div tabindex="0" role="region" aria-label="Terminal keyboard shortcuts" data-i18n-label="Terminal keyboard shortcuts"><p>While terminal input is focused.</p><dl>${shortcuts.map(([keys,label])=>`<dt><kbd translate="no">${keys}</kbd></dt><dd>${label}</dd>`).join('')}</dl></div></details><button class="stop">Stop · Ctrl+C</button><button class="close" aria-label="Close Terminal ${terminal.id}">×</button></div><div class="terminal-screen"></div><details class="terminal-transcript"><summary>Plain-text transcript</summary><pre></pre></details>`;parent.append(this.element);
+  const keyboard=this.element.querySelector('.terminal-shortcuts');keyboard.addEventListener('keydown',e=>{if(e.key==='Escape'&&keyboard.open){keyboard.open=false;keyboard.querySelector('summary').focus();e.stopPropagation();}});
   this.xterm=new XTerm({convertEol:true,cursorBlink:true,cursorStyle:'block',fontSize:13,fontFamily:'"DejaVu Sans Mono", monospace',scrollback:2000,theme:{background:'#101a20',foreground:'#dceae5',cursor:'#a2e7c4',cursorAccent:'#101a20',selectionBackground:'#406358',blue:'#79aaff',brightBlue:'#79aaff'}});this.fit=new FitAddon();this.xterm.loadAddon(this.fit);this.xterm.open(this.element.querySelector('.terminal-screen'));this.fit.fit();this.xterm.textarea?.setAttribute('aria-label',`Terminal ${terminal.id} input`);
   this.element.querySelector('.stop').onclick=()=>this.interrupt();this.element.querySelector('.close').onclick=()=>{if(this.nano?.buffer.dirty&&!confirm(t('Discard unsaved terminal edits?')))return;onClose();};
   terminal.editFile=(mode,path)=>{if(mode==='gedit'){if(!onOpenFile)throw Error('Workspace editor unavailable');onOpenFile(path);return;}this.nano=new NanoEditor(lab.fs,path,this.element,()=>{this.nano=null;terminal.busy=false;terminal.foreground=null;terminal.stopTask=null;this.element.classList.remove('editing');this.xterm.focus();if(!this.executing)this.prompt();});this.element.classList.add('editing');terminal.busy=true;terminal.foreground='editor';terminal.stopTask=()=>{this.nano?.destroy();this.nano=null;this.element.classList.remove('editing');terminal.foreground=null;};};
   terminal.onForegroundEnd=()=>{if(!this.executing&&!this.disposed)this.prompt();};
   terminal.output=s=>this.output(s);this.xterm.onData(s=>this.input(s));this.xterm.attachCustomKeyEventHandler(e=>{
+   // Match the editor's Escape-then-Tab convention without losing the draft or stopping a job.
+   if(e.type==='keydown'){
+    if(e.key==='Shift')return true;
+    if(e.key==='Tab'&&this.tabNavigation){this.tabNavigation=false;return false;}
+    this.tabNavigation=e.key==='Escape'&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!this.completionMode;
+    if(this.tabNavigation)return false;
+   }
    if(e.ctrlKey&&!e.altKey&&e.code==='KeyC'){
     e.preventDefault();e.stopPropagation();
     if(e.type==='keydown'){

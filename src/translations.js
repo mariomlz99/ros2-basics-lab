@@ -1,5 +1,11 @@
 import {courseTranslations} from './course-translations.js';
 export const translations = {
+"Terminal keyboard shortcuts":["Raccourcis clavier du terminal", "Sneltoetsen van de terminal"],
+"Code editor":["Éditeur de code", "Code-editor"],
+"Move focus outside terminal":["Déplacer le focus hors du terminal", "Focus buiten de terminal verplaatsen"],
+"Suggestions: Ctrl+Space · Tab accepts · Esc closes · Esc then Tab moves focus":["Suggestions : Ctrl+Espace · Tab accepte · Échap ferme · Échap puis Tab déplace le focus", "Suggesties: Ctrl+Spatie · Tab accepteert · Esc sluit · Esc en daarna Tab verplaatst de focus"],
+"Keyboard":["Clavier", "Toetsenbord"],
+"While terminal input is focused.":["Quand la saisie du terminal est active.", "Wanneer de terminalinvoer actief is."],
 "Another tab saved newer work. Changes in this tab are not saved. Export your source workspace before closing or reloading.":["Un autre onglet a enregistré un travail plus récent. Les modifications de cet onglet ne sont pas enregistrées. Exportez votre espace de travail source avant de fermer ou de recharger.", "Een ander tabblad heeft recenter werk opgeslagen. Wijzigingen in dit tabblad zijn niet opgeslagen. Exporteer je bronwerkruimte voordat je sluit of herlaadt."],
 "Introduction to the simulator":["Introduction au simulateur", "Inleiding tot de simulator"],
 "1. Odometry: where is the robot?":["1. Odométrie: où est le robot ?", "1. Odometrie: waar is de robot?"],
