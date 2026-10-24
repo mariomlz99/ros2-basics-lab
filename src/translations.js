@@ -1,5 +1,6 @@
 import {courseTranslations} from './course-translations.js';
 export const translations = {
+"Another tab saved newer work. Changes in this tab are not saved. Export your source workspace before closing or reloading.":["Un autre onglet a enregistré un travail plus récent. Les modifications de cet onglet ne sont pas enregistrées. Exportez votre espace de travail source avant de fermer ou de recharger.", "Een ander tabblad heeft recenter werk opgeslagen. Wijzigingen in dit tabblad zijn niet opgeslagen. Exporteer je bronwerkruimte voordat je sluit of herlaadt."],
 "Introduction to the simulator":["Introduction au simulateur", "Inleiding tot de simulator"],
 "1. Odometry: where is the robot?":["1. Odométrie: où est le robot ?", "1. Odometrie: waar is de robot?"],
 "2. TF: how do frames connect?":["2. TF: comment les repères sont-ils reliés ?", "2. TF: hoe zijn coördinatenstelsels verbonden?"],
