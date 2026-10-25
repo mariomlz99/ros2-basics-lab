@@ -12,11 +12,17 @@ export function linuxUnit(index){return [
  [text('A shell variable belongs to one terminal. export makes it available to commands started by that shell. A new terminal has its own environment. echo prints text and expands $NAME; history lists this terminal’s commands.'),commands(['export NOTE=terminal_practice','echo $NOTE','printenv NOTE','unset NOTE','echo $NOTE','history']),text('Open another terminal and run pwd. It starts in your home directory, while files created in the first terminal remain available. Try cd ~/linux_ws there.')],
  [text('Use the same tools to organise a small workspace. rm deletes files; rm -r deletes a directory and its contents. The commands below delete only the temporary copy you create here.'),commands(['cd ~/linux_ws','mkdir -p project/source project/archive','echo "My first workspace" > project/source/README.txt','cp project/source/README.txt project/archive/README.txt','mv project/source/README.txt project/source/notes.txt','cat project/source/notes.txt','tree project','rm project/archive/README.txt','rm -r project/archive','tree project']),text('You can now navigate, create, inspect, edit, copy, move and delete files. Continue to ROS 2 Basics to use those skills with packages, builds and running nodes.')]
 ][index]||[];}
-export function linuxChecks(lab,index){const fs=lab.fs,home=[...lab.terminals.values()][0]?.env.HOME,root=home+'/linux_ws',completed=[...lab.terminals.values()].flatMap(t=>t.completedCommands??[]),has=s=>completed.some(c=>!c.error&&JSON.stringify(c.words)===JSON.stringify(tokenize(s))),inspected=(command,path,{failed=false}={})=>completed.some(c=>{
+export function linuxChecks(lab,index){const fs=lab.fs,home=[...lab.terminals.values()][0]?.env.HOME,root=home+'/linux_ws',completed=[...lab.terminals.values()].flatMap(t=>t.completedCommands??[]),has=s=>completed.some(c=>!c.error&&JSON.stringify(c.words)===JSON.stringify(tokenize(s))),inspected=(command,path,{failed=false,currentTree=false}={})=>completed.some(c=>{
  if(c.words[0]!==command||!c.cwd||!!c.error!==failed)return false;
  const operands=c.words.slice(1);if(operands.some(p=>typeof p!=='string'||p.startsWith('-')))return false;
  const paths=operands.length?operands:command==='tree'?['.']:[];
- return paths.some(p=>{try{return normalize(p,c.cwd)===normalize(root+'/'+path);}catch{return false;}})&&
+ return paths.some(p=>{try{
+  const resolved=normalize(p,c.cwd);
+  if(resolved!==normalize(root+'/'+path))return false;
+  // A past listing proves inspection of the final hierarchy only while its
+  // visible structure still matches. Colors and equivalent paths are cosmetic.
+  return !currentTree||c.result.replace(/\x1b\[[0-9;]*m/g,'')===fs.tree(resolved,{label:p});
+ }catch{return false;}})&&
   (failed?c.error===root+'/'+path+': No such file or directory':command!=='tree'||!c.result.includes('[error opening dir]'));
  }),read=p=>fs.exists(root+'/'+p)?fs.read(root+'/'+p):'',check=(label,passed)=>({label,passed:!!passed});return [
  [check('Inspect the current directory',has('pwd')),check('Create a workspace',fs.exists(root+'/practice'))],
@@ -25,5 +31,5 @@ export function linuxChecks(lab,index){const fs=lab.fs,home=[...lab.terminals.va
  [check('Inspect a hierarchy',inspected('tree','')),check('Try a missing file',inspected('cat','practice/missing.txt',{failed:true}))],
  [check('Open a terminal editor',inspected('nano','practice/journal.txt')),check('Save a changed file',read('practice/journal.txt')!==read('practice/archive/backup.txt'))],
  [check('Export and inspect a variable',has('export NOTE=terminal_practice')&&has('printenv NOTE')),check('Remove the variable',has('unset NOTE'))],
- [check('Keep the renamed source',read('project/source/notes.txt').includes('My first workspace')),check('Remove the temporary archive',!fs.exists(root+'/project/archive')),check('Inspect the final tree',inspected('tree','project'))]
+ [check('Keep the renamed source',read('project/source/notes.txt').includes('My first workspace')),check('Remove the temporary archive',!fs.exists(root+'/project/archive')),check('Inspect the final tree',!fs.exists(root+'/project/archive')&&inspected('tree','project',{currentTree:true}))]
 ][index]||[];}
