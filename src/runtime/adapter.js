@@ -1,6 +1,6 @@
 // Adapted from KineNest RuntimeAdapter (Apache-2.0): communication-only graph,
 // explicit owner cleanup, no curriculum evidence or mandatory simulator.
-import {recordTfOutput} from './tf-output.js';
+import {recordTfOutput,sameTfRequest} from './tf-output.js';
 import {TransformStore} from './tf.js';
 import {LatestMailbox} from './mailbox.js';
 export class RuntimeAdapter{
@@ -17,7 +17,7 @@ export class RuntimeAdapter{
   switch(d.kind){
    case 'tf_listener':{if(!this.nodes.has(d.node))throw Error('TF listener needs a live ROS node');const disposers=['/tf','/tf_static'].map(topic=>r.subscribe(topic,d.node,()=>{},{type:'tf2_msgs/msg/TFMessage',durability:topic==='/tf_static'?'transient_local':'volatile'}));this.tfListeners.set(d.id,{node:d.node,dispose:()=>disposers.forEach(dispose=>dispose())});break;}
    case 'tf_unlistener':this.tfListeners.get(d.id)?.dispose();this.tfListeners.delete(d.id);break;
-   case 'tf_evidence':{if(d.proof!==this.tfProof||!this.tfListeners.size||d.revision<(r.tfEvidenceFloor??0))break;const snapshot=this.tfSnapshots.get(d.revision);if(!snapshot)break;const store=new TransformStore();store.replace(snapshot);let expected;if(d.operation==='lookup')expected=store.lookup(d.target,d.source);else if(d.operation==='point')expected=store.transformPoint(d.target,d.input);else break;if(JSON.stringify(expected)!==JSON.stringify(d.result))break;r.tfEvidence=r.tfEvidence.filter(event=>!(event.owner===this&&event.operation===d.operation&&event.target===d.target&&event.source===d.source&&JSON.stringify(event.input)===JSON.stringify(d.input)));r.tfEvidence.push({owner:this,operation:d.operation,target:d.target,source:d.source,input:d.input,result:expected,revision:d.revision});if(r.tfEvidence.length>200)r.tfEvidence.shift();break;}
+   case 'tf_evidence':{if(d.proof!==this.tfProof||!this.tfListeners.size||d.revision<(r.tfEvidenceFloor??0))break;const snapshot=this.tfSnapshots.get(d.revision);if(!snapshot)break;const store=new TransformStore();store.replace(snapshot);let expected;if(d.operation==='lookup')expected=store.lookup(d.target,d.source);else if(d.operation==='point')expected=store.transformPoint(d.target,d.input);else break;if(JSON.stringify(expected)!==JSON.stringify(d.result))break;const event={owner:this,operation:d.operation,target:d.target,source:d.source,input:d.input,result:expected,revision:d.revision};r.tfEvidence=r.tfEvidence.filter(previous=>!sameTfRequest(previous,event)||previous.outputMatches!==undefined);r.tfEvidence.push(event);if(r.tfEvidence.length>200)r.tfEvidence.shift();break;}
    case 'loading':this.status(d.text);break;
    case 'executing':this.watchdog(10000,'Program took too long; stopped.');break;
    case 'ready':clearTimeout(this.timer);this.status('Running');break;

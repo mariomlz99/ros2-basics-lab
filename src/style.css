@@ -1,3 +1,4 @@
+@import './terminal-shortcuts.css';
 @import './tf/style.css';
 @import "./playground/odometry.css";
 @import './vendor/ui.css';

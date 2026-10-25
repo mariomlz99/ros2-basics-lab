@@ -97,14 +97,18 @@ export class Terminal{
   if(!options.internal)await this.ready;
   if(this.closed)throw Error('Terminal is closed');
   if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
-  const environment={...this.env,...this.vars};
-  const result=await this.executeCommand(line,options);
-  if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
-  if(options.recordHistory!==false&&line.trim()){
-   const words=tokenize(line,environment,{redirects:true});
-   this.completedCommands.push({line,words,result:String(result??'').slice(0,4000),rosDistro:environment.ROS_DISTRO});
+  const environment={...this.env,...this.vars},cwd=this.cwd;
+  // Preserve execution context, not just text typed into history. Failed attempts
+  // matter for error-recovery exercises, but cannot prove successful inspection.
+  const record=(result,error=null)=>{
+   if(options.recordHistory===false||!line.trim()||generation!==this.commandGeneration||this.closed)return;
+   let words;try{words=tokenize(line,environment,{redirects:true});}catch{return;}
+   this.completedCommands.push({line,words,cwd,result:String(result??'').slice(0,4000),rosDistro:environment.ROS_DISTRO,...(error?{error:String(error.message??error)}:{})});
    if(this.completedCommands.length>500)this.completedCommands.shift();
-  }
+  };
+  let result;try{result=await this.executeCommand(line,options);}catch(error){record('',error);throw error;}
+  if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
+  record(result);
   return result;
  }
  async executeCommand(line,{internal=false,recordHistory=true}={}){
