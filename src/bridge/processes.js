@@ -20,6 +20,7 @@ export class ProcessManager {
   async run(name,executable,{terminal=null,group=null,ros={},installedRecord=null}={}){
     const installed=installedRecord??this.workspace.installedPackage(name),entry=installed.executables.get(executable);
     if(!entry||!this.workspace.executableExists(name,executable,installed))throw Error('Executable '+executable+' is not installed in '+name+'.');
+    if(entry.missingEntryPoint)throw Error('StopIteration: installed console script '+executable+' has no current entry point in '+name+'.');
     const id=++this.nextId,token=this.generation;
     const process={id,name,executable,terminal,group,ros,state:'loading',language:installed.type,adapter:null,entrySignature:JSON.stringify([entry.module,entry.function,entry.code]),entryCode:installed.type==='python'?installed.files[entry.module.replaceAll('.','/')+'.py']:entry.code,output:[],sampleStart:this.runtime.sampleCounter};
     this.processes.set(id,process);this.runs.set(name+'/'+executable,process);if(this.runs.size>100)this.runs.delete(this.runs.keys().next().value);if(group)this.groups.get(group)?.add(id);this.onChange();

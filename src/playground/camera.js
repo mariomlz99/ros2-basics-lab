@@ -20,11 +20,13 @@ export function renderCamera(robot,world=TRAINING_WORLD){
   data.set(color,(y*width+x)*3);
  }
  for(let x=0;x<width;x++){
-  const lateral=(focal-x-.5)/focal,angle=pose.yaw+Math.atan(lateral);let range=Infinity,hit;
-  for(const surface of surfaces){const distance=rayBox(pose.x,pose.y,Math.cos(angle),Math.sin(angle),surface);if(distance<range){range=distance;hit=surface;}}
-  if(!hit)continue;
+  const lateral=(focal-x-.5)/focal,angle=pose.yaw+Math.atan(lateral);
+  // Draw far surfaces first: a low nearby obstacle only occludes the pixels
+  // within its vertical silhouette, not the taller wall behind it.
+  const hits=surfaces.map(hit=>({hit,range:rayBox(pose.x,pose.y,Math.cos(angle),Math.sin(angle),hit)})).filter(hit=>Number.isFinite(hit.range)).sort((a,b)=>b.range-a.range);
+  for(const {hit,range}of hits){
   const depth=Math.max(.02,range/Math.sqrt(1+lateral*lateral));
-  const top=Math.max(0,Math.floor(horizon-focal*((hit.height??1)-cameraHeight)/depth)),bottom=Math.min(height,Math.ceil(horizon+focal*cameraHeight/depth));
+  const top=Math.max(0,Math.ceil(horizon-focal*((hit.height??1)-cameraHeight)/depth-.5)),bottom=Math.min(height,Math.floor(horizon+focal*cameraHeight/depth-.5)+1);
   const hx=pose.x+range*Math.cos(angle),hy=pose.y+range*Math.sin(angle);
   const side=Math.min(Math.abs(hx-hit.x),Math.abs(hx-hit.x-hit.w))<.001;
   const shade=Math.max(.60,1-depth*.025)*(side?.84:1),obstacle=world.obstacles.includes(hit);
@@ -34,6 +36,7 @@ export function renderCamera(robot,world=TRAINING_WORLD){
    const trim=!obstacle&&elevation<.10;
    const base=obstacle?(seam?[206,171,133]:hit.color):(trim?[100,120,129]:[188,200,207]);
    data.set(base.map(value=>Math.round(value*shade)),(y*width+x)*3);
+  }
   }
  }
  return {height,width,encoding:'rgb8',is_bigendian:0,step:width*3,data};

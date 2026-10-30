@@ -157,12 +157,19 @@ export class Workspace{
  }
  install(record){
   const {name}=record,root=record.buildRoot??ROOT,prefix=root+'/install/'+name;
+  const previous=this.installedRecords().get(prefix),retained=new Set();
+  // Native installs overwrite their listed outputs, but do not uninstall an
+  // executable merely because its install rule or console entry was removed.
+  for(const [executable,entry]of previous?.executables??[])if(!record.executables.has(executable)&&this.fs.exists(prefix+'/lib/'+name+'/'+executable)){
+   record.executables.set(executable,{...entry,retainedFromPreviousBuild:true,...(record.type==='python'?{missingEntryPoint:true}:{})});retained.add(executable);
+  }
   const write=(path,content)=>{this.fs.mkdir(path.slice(0,path.lastIndexOf('/')),true);this.fs.write(path,content);};
   write(root+'/build/'+name+'/status.txt','Validated '+record.type+' package\n');
   write(prefix+'/share/'+name+'/package.xml',record.files['package.xml']);
   write(prefix+'/share/ament_index/resource_index/packages/'+name,'');
   for(const path of record.launch)write(prefix+'/share/'+name+'/'+path,record.files[path]);
   for(const executable of record.executables.keys()){
+   if(retained.has(executable))continue;
    const path=prefix+'/lib/'+name+'/'+executable;write(path,'# Installed browser executable; rebuilt from source by colcon build.\n');Object.assign(this.fs.entry(path),{executable:true,package:name,program:executable});
   }
   if(record.type==='python')for(const [path,source]of Object.entries(record.files))if(path.startsWith(name+'/')&&path.endsWith('.py'))write(prefix+'/lib/python3.12/site-packages/'+path,source);

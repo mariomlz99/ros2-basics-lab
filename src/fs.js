@@ -23,8 +23,8 @@ export class FileSystem{
  list(p){p=normalize(p);this.dir(p);return [...this.entries].filter(([key])=>key!==p&&parent(key)===p).map(([path,e])=>({path,name:path.split('/').at(-1),...e})).sort((a,b)=>a.name.localeCompare(b.name));}
  filesUnder(p){p=normalize(p);this.dir(p);return Object.fromEntries([...this.entries].filter(([key,e])=>e.kind==='file'&&key.startsWith(p+'/')).map(([key,e])=>[key.slice(p.length+1),e.content]));}
  remove(p,{recursive=false,force=false}={}){p=normalize(p);if(!this.exists(p)){if(force)return;this.entry(p);}if(p==='/')throw Error('Refusing to remove the virtual root');if(this.entry(p).kind==='dir'&&!recursive)throw Error(p+': Is a directory (use -r)');for(const key of [...this.entries.keys()])if(key===p||key.startsWith(p+'/'))this.entries.delete(key);this.parentChanged(p);this.changed(p);}
- copy(from,to,{recursive=false,move=false}={}){
-  from=normalize(from);to=normalize(to);const item=this.entry(from);if(this.exists(to)&&this.entry(to).kind==='dir')to=normalize(to+'/'+from.split('/').at(-1));
+ copy(from,to,{recursive=false,move=false,contents=false}={}){
+  from=normalize(from);to=normalize(to);const item=this.entry(from);if(!contents&&this.exists(to)&&this.entry(to).kind==='dir')to=normalize(to+'/'+from.split('/').at(-1));
   if(from==='/'||to===from||to.startsWith(from+'/'))throw Error('Cannot copy or move a path into itself');
   if(item.kind==='dir'&&!recursive)throw Error(from+': Omitting directory (use -r)');this.dir(parent(to));
   if(this.exists(to)&&(this.entry(to).kind!==item.kind||(move&&item.kind==='dir'&&this.list(to).length)))throw Error(to+': Incompatible or nonempty destination');

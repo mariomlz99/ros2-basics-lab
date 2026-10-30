@@ -27,7 +27,7 @@ export class InterfaceRegistry{
    }else this.validateScalar(t.base,v,f.name);
   }
  }
- validateScalar(type,v,label){if(!PRIMITIVES[type])return this.validate(type,v);if(type==='string'||type==='wstring'){if(typeof v!=='string')throw Error(label+' must be string');return;}if(type==='bool'){if(typeof v!=='boolean')throw Error(label+' must be bool');return;}if(typeof v!=='number'||!Number.isFinite(v))throw Error(label+' must be finite number');if(!type.startsWith('float')){const signed=type.startsWith('int'),bits=Number(type.match(/\d+/)?.[0]??8);const low=signed?-(2**(bits-1)):0,high=signed?2**(bits-1)-1:2**bits-1;if(!Number.isSafeInteger(v)||v<low||v>high)throw Error(label+' integer outside supported exact range');}else if(type==='float32'&&Math.abs(v)>3.402823466e38)throw Error(label+' exceeds float32 range');}
+ validateScalar(type,v,label){if(!PRIMITIVES[type])return this.validate(type,v);if(type==='string'||type==='wstring'){if(typeof v!=='string')throw Error(label+' must be string');return;}if(type==='bool'){if(typeof v!=='boolean')throw Error(label+' must be bool');return;}if(typeof v!=='number'||!Number.isFinite(v))throw Error(label+' must be finite number');if(!type.startsWith('float')){const signed=type.startsWith('int'),bits=Number(type.match(/\d+/)?.[0]??8);const low=signed?-(2**(bits-1)):0,high=signed?2**(bits-1)-1:2**bits-1;if(!Number.isSafeInteger(v)||v<low||v>high)throw Error(label+' integer outside supported exact range');}else if(type==='float32'&&Math.abs(v)>3.4028234663852886e38)throw Error(label+' exceeds float32 range');}
  // Match the precision of native ROS topic serialization, using the canonical
  // schema. Copy only changed fields; large byte arrays keep their fast path.
  roundFloat32(name,value){

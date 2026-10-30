@@ -18,7 +18,7 @@ New `ament_cmake` packages preserve the native Jazzy `CMakeLists.txt` template, 
 
 The course uses `~/ros2_ws`, but builds discover packages recursively below the current terminal directory. Folders marked `COLCON_IGNORE` are skipped. Package names come from package.xml. An empty build creates build/install/log spaces and reports zero packages; unknown `--packages-select` names produce warnings. Building from src/ creates src/build and src/install, so the setup file to source depends on where you built. The model retains one current install record per package name; full native overlay precedence between multiple versions of the same package is not implemented. `ros2 pkg create` supports `ament_python`, `ament_cmake`, dependencies, node name and the Apache-2.0 template license. The package parser reads beginner metadata and dependencies, rejecting malformed or unsupported configuration.
 
-`colcon build` and `colcon build --packages-select ...` validate current files. Python checks actual syntax in CPython without executing package modules. Imports and entry-point lookup happen when the installed executable runs. C++ uses actual Clang/LLD diagnostics. A failed first build produces no installed package; a failed rebuild preserves the last successful installation. Successful builds create virtual build/install/log directories and setup scripts. Source edits mark the workspace as needing a rebuild but leave the installed program runnable. A successful rebuild replaces that installation. Builds at different directory levels remain separate; AMENT_PREFIX_PATH selects the installed package. Re-sourcing a prefix already present does not reorder it.
+`colcon build` and `colcon build --packages-select ...` validate current files. Python checks actual syntax in CPython without executing package modules. Imports and entry-point lookup happen when the installed executable runs. C++ uses actual Clang/LLD diagnostics. A failed first build produces no installed package; a failed rebuild preserves the last successful installation. Successful builds create virtual build/install/log directories and setup scripts. Source edits mark the workspace as needing a rebuild but leave the installed program runnable. A successful rebuild updates its declared installation outputs. Removing a C++ install rule leaves the previously installed executable runnable until that file or install directory is removed. Removing a Python console entry leaves its old script discoverable, but running it fails with StopIteration because its entry point is gone. Builds at different directory levels remain separate; AMENT_PREFIX_PATH selects the installed package. Re-sourcing a prefix already present does not reorder it.
 
 Supported CMake calls are `cmake_minimum_required`, `project`, `find_package(... REQUIRED)`, `add_executable`, `ament_target_dependencies`, `install(TARGETS ... DESTINATION lib/${PROJECT_NAME})`, `install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})`, and `ament_package`. Executables have one source file each. Interface packages additionally accept the demonstrated `rosidl_generate_interfaces` form. Arbitrary CMake, external libraries, colcon plugins and arbitrary setup.py execution are not supported.
 
@@ -92,15 +92,19 @@ Fixed transforms use modeled transient-local retention while the publisher lives
 Inspection uses standard `ros2 topic echo --once`, composite/scalar `--field`, and
 explicit `--qos-durability transient_local --qos-reliability reliable` for static TF.
 
-The robot model advances at 20 Hz; camera, scan, odometry and dynamic TF publish at
-10 Hz while the tab is active. These are browser scheduling targets, not real-time
+The robot model, odometry and dynamic TF advance at 20 Hz; camera and scan publish
+at 10 Hz while the tab is active. These are browser scheduling targets, not real-time
 guarantees. Stamps use the browser wall clock. Odometry is ideal simulator pose,
 with zero covariance; no wheel noise, localization, drift, DDS transport or Gazebo
-physics is implied. The browser currently teaches TF by inspecting its standard
-messages, not by providing a complete tf2 buffer, tf2_echo executable or RViz.
+physics is implied. The small Playground TF exercise inspects standard messages.
+The supported latest-time Python/C++ Buffer APIs remain available in Free Lab;
+see [TF runtime](tf/runtime.md) for their bounds. There is no separate TF/Odometry
+course unit, full historical transform cache, tf2_echo executable or RViz.
 QoS support here models the retained latest sample for each static publisher;
-it does not model network loss or every DDS QoS policy. Array-valued `--field`
-selection is not modeled; the full scan message exposes its ranges.
+it does not model network loss or every DDS QoS policy. `--field ranges` can
+select the scan array; the full scan message also exposes its ranges.
+The example LiDAR readers report an empty range array and wait for the next scan
+in both languages, instead of indexing or dereferencing missing data.
 
 The native reference capture (`scripts/capture-playground-native.py`, after sourcing
 Jazzy) runs every inspection command with native messages on a private ROS domain,

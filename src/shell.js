@@ -1,9 +1,10 @@
 import {listDirectory} from './ls.js';
 import {baseEnvironment,sourceBase} from './ros-installation.js';
 import {HOME,normalize} from './fs.js';
+import {contentFingerprint} from './file-buffer.js';
 // Bounded tokenizer: quoted strings and variable expansion, never eval or Bash.
 const regexLiteral=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-export function tokenize(input,env={},{redirects=false,patterns=false}={}){
+export function tokenize(input,env={},{redirects=false,patterns=false,onExpand=null}={}){
  const result=[];let token='',pattern='',hasPattern=false,quote=null,started=false;
  const add=(s,wild=false)=>{token+=s;pattern+=wild?(s==='*'?'.*':'.'):regexLiteral(s);hasPattern||=wild;started=true;};
  const push=()=>{if(started)result.push(patterns&&hasPattern?{value:token,pattern}:token);token='';pattern='';hasPattern=false;started=false;};
@@ -15,7 +16,7 @@ export function tokenize(input,env={},{redirects=false,patterns=false}={}){
   if(c==='\\'&&quote!=="'"){if(i+1>=input.length)throw Error('Incomplete escape');add(input[++i]);continue;}
   if(c===quote){quote=null;continue;}if(!quote&&(c==='"'||c==="'")){quote=c;started=true;continue;}
   if(!quote&&/\s/.test(c)){push();continue;}
-  if(c==='$'&&quote!=="'"){if(input[i+1]==='{'){const end=input.indexOf('}',i+2),name=input.slice(i+2,end);if(end<0||!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name))throw Error('Unsupported parameter expansion');add(env[name]??'');i=end;continue;}const m=/^[A-Za-z_][A-Za-z_0-9]*/.exec(input.slice(i+1));if(m){add(env[m[0]]??'');i+=m[0].length;continue;}}
+  if(c==='$'&&quote!=="'"){if(input[i+1]==='{'){const end=input.indexOf('}',i+2),name=input.slice(i+2,end);if(end<0||!/^[A-Za-z_][A-Za-z_0-9]*$/.test(name))throw Error('Unsupported parameter expansion');onExpand?.(name);add(env[name]??'');i=end;continue;}const m=/^[A-Za-z_][A-Za-z_0-9]*/.exec(input.slice(i+1));if(m){onExpand?.(m[0]);add(env[m[0]]??'');i+=m[0].length;continue;}}
   add(c,!quote&&(c==='*'||c==='?'));
  }
  if(quote)throw Error('Unclosed quote');push();return result;
@@ -57,7 +58,26 @@ export class Terminal{
   job.resume();return '';
  }
  finishForeground(){this.busy=false;this.foreground=null;this.stopTask=null;this.onForegroundEnd?.();}
- path(p){return normalize(p,this.cwd);}
+ path(p,{parents=false,directory=false}={}){
+  normalize(p,this.cwd); // Validate before walking; do not erase meaningful components.
+  if(p==='~'||p.startsWith('~/'))p=HOME+p.slice(1);
+  const parts=(p.startsWith('/')?p:this.cwd+'/'+p).split('/').filter(Boolean);let current='/';
+  for(let i=0;i<parts.length;i++){
+   const part=parts[i];
+   if(part==='.')continue;
+   if(part==='..'){current=current.slice(0,current.lastIndexOf('/'))||'/';continue;}
+   current=(current==='/'?'':current)+'/'+part;
+   if(i===parts.length-1&&!p.endsWith('/'))continue;
+   const entry=this.fs.entries.get(current);
+   if(!entry){
+    if(parents){this.fs.mkdir(current);continue;}
+    if(directory&&i===parts.length-1)continue;
+    throw Object.assign(Error(current+': No such file or directory'),{code:'ENOENT'});
+   }
+   if(entry.kind!=='dir')throw Object.assign(Error(current+': Not a directory'),{code:'ENOTDIR'});
+  }
+  return current;
+ }
  formatEntry(name,entry){return this.color&&(entry.kind==='dir'||entry.executable)?'\x1b[1;'+(entry.kind==='dir'?'34':'32')+'m'+name+'\x1b[0m':name;}
  close(){this.closed=true;for(const child of this.childShells)child.close();this.childShells.clear();this.stop();for(const job of this.jobs.values())job.stop();this.jobs.clear();}
  stop(){this.commandGeneration++;for(const child of this.childShells)child.close();this.childShells.clear();this.stopTask?.();this.stopTask=null;this.busy=false;}
@@ -98,27 +118,28 @@ export class Terminal{
   if(this.closed)throw Error('Terminal is closed');
   if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
   const environment={...this.env,...this.vars},cwd=this.cwd;
+  const execution={command:null,operands:[]};
   // Preserve execution context, not just text typed into history. Failed attempts
   // matter for error-recovery exercises, but cannot prove successful inspection.
   const record=(result,error=null)=>{
    if(options.recordHistory===false||!line.trim()||generation!==this.commandGeneration||this.closed)return;
    let words;try{words=tokenize(line,environment,{redirects:true});}catch{return;}
-   this.completedCommands.push({line,words,cwd,result:String(result??'').slice(0,4000),rosDistro:environment.ROS_DISTRO,...(error?{error:String(error.message??error)}:{})});
+   this.completedCommands.push({line,words,cwd,result:String(result??'').slice(0,4000),rosDistro:environment.ROS_DISTRO,...execution,...(error?{error:String(error.message??error)}:{})});
    if(this.completedCommands.length>500)this.completedCommands.shift();
   };
-  let result;try{result=await this.executeCommand(line,options);}catch(error){record('',error);throw error;}
+  let result;try{result=await this.executeCommand(line,{...options,execution});}catch(error){record('',error);throw error;}
   if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
   record(result);
   return result;
  }
- async executeCommand(line,{internal=false,recordHistory=true}={}){
+ async executeCommand(line,{internal=false,recordHistory=true,execution={}}={}){
   const generation=this.commandGeneration;
   if(!internal)await this.ready;
   if(this.closed)throw Error('Terminal is closed');
   if(generation!==this.commandGeneration)throw Error('Terminal command cancelled');
   if(this.busy)throw Error('Terminal has a running process. Use Ctrl+C or Stop first.');
   if(!line.trim())return '';if(recordHistory)this.history.push(line);
-  const words=tokenize(line,{...this.env,...this.vars},{redirects:true,patterns:true}).flatMap(word=>expandPattern(word,this.fs,this.cwd));if(!words.length)return '';
+  const words=tokenize(line,{...this.env,...this.vars},{redirects:true,patterns:true,onExpand:name=>{if(name==='NOTE')execution.expandedNote=true;}}).flatMap(word=>expandPattern(word,this.fs,this.cwd));if(!words.length)return '';
   if(words.every(word=>typeof word==='string'&&/^[A-Za-z_][A-Za-z_0-9]*=/.test(word))){for(const word of words){const at=word.indexOf('='),key=word.slice(0,at),value=word.slice(at+1);if(Object.hasOwn(this.env,key))this.env[key]=value;else this.vars[key]=value;}return '';}
   const builtins=new Set(['cd','pwd','echo','history','source','.','export','unset','jobs','fg','bg','kill']);
   const requested=words[0];
@@ -136,37 +157,39 @@ export class Terminal{
   const redirects=words.flatMap((word,index)=>typeof word==='object'?[index]:[]);let redirect;
   if(redirects.length){const at=redirects[0];if(redirects.length!==1||at!==words.length-2||typeof words[at+1]!=='string'||!words[at+1])throw Error('Use echo text > filename or echo text >> filename');if(words[0]!=='echo')throw Error('Output redirection currently supports echo only');redirect={append:words[at].redirect==='>>',path:this.path(words[at+1])};words.splice(at);}
   const [cmd,...args]=words;
-  const options=new Set(args.filter(a=>a.startsWith('-')).flatMap(a=>a.slice(1).split(''))),paths=args.filter(a=>!a.startsWith('-'));
+  const options=new Set(),paths=[];let operands=false;
+  for(const arg of args){if(!operands&&arg==='--'){operands=true;continue;}if(!operands&&arg.startsWith('-'))for(const flag of arg.slice(1))options.add(flag);else paths.push(arg);}
+  execution.command=cmd;execution.operands=[...paths];
   const flags=allowed=>{for(const f of options)if(!allowed.includes(f))throw Error(cmd+': unsupported option -'+f);};
   const count=(min,max=Infinity)=>{if(paths.length<min||paths.length>max)throw Error(cmd+': expected '+(min===max?min:`${min} or more`)+' operand(s)');};
   switch(cmd){
    case 'jobs':case 'fg':case 'bg':case 'kill':return this.jobCommand(cmd,args);
-   case 'export':{for(const arg of args){const match=/^([A-Za-z_][A-Za-z_0-9]*)(?:=(.*))?$/s.exec(arg);if(!match)throw Error('export: invalid identifier '+arg);const key=match[1];this.env[key]=match[2]??this.vars[key]??this.env[key]??'';delete this.vars[key];}return args.length?'':Object.entries(this.env).map(([key,value])=>'declare -x '+key+'='+JSON.stringify(value)).join('\n');}
+   case 'export':{for(const arg of args){const match=/^([A-Za-z_][A-Za-z_0-9]*)(?:=(.*))?$/s.exec(arg);if(!match)throw Error('export: invalid identifier '+arg);const key=match[1];this.env[key]=match[2]??this.vars[key]??this.env[key]??'';delete this.vars[key];}if(args.some(arg=>/^NOTE(?:=|$)/.test(arg)))execution.exportedNote=this.env.NOTE==='terminal_practice';return args.length?'':Object.entries(this.env).map(([key,value])=>'declare -x '+key+'='+JSON.stringify(value)).join('\n');}
    case 'unset':{for(const key of args){if(!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key))throw Error('unset: invalid identifier '+key);delete this.env[key];delete this.vars[key];}return '';}
    case 'source':case '.':{if(args.length!==1)throw Error('Usage: source <file>');if(this.dispatch)return this.dispatch(this,words);const p=this.path(args[0]);this.fs.read(p);if(/^\/opt\/ros\/jazzy\/(?:local_)?setup\.(?:bash|sh)$/.test(p)){sourceBase(this.env,this.vars);return '';}return this.sourceFile(args[0]);}
    case 'bash':{if(args[0]==='-c'&&args.length===2)return this.runScript(null,[],args[1]);if(args.length===1&&!args[0].startsWith('-'))return this.runScript(this.path(args[0]));throw Error('Supported: bash <script> or bash -c "command". Use + Terminal for a new interactive shell.');}
    case 'chmod':{if(args.length!==2||!['+x','-x','u+x','u-x','755','644'].includes(args[0]))throw Error('Supported: chmod +x|-x|755|644 <file>');const entry=this.fs.entry(this.path(args[1]));if(entry.kind!=='file')throw Error('chmod: expected a file');const meta=this.fs.metadata(this.path(args[1]));meta.mode=args[0]==='755'?0o755:args[0]==='644'?0o644:args[0]==='u+x'?meta.mode|0o100:args[0]==='u-x'?meta.mode&~0o100:args[0]==='+x'?meta.mode|0o111:meta.mode&~0o111;entry.executable=!!(meta.mode&0o111);this.fs.changed(this.path(args[1]));return '';}
-   case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file>: Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file>: opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');await this.editFile(cmd,path);return '';}
+   case 'nano':case 'gedit':{if(args.length===1&&['-h','--help'].includes(args[0]))return cmd==='nano'?'nano <file>: Ctrl+O, Enter to save; Ctrl+X to exit.':'gedit <file>: opens the workspace editor; Save or Ctrl+S writes the file.';flags('');count(1,1);const path=this.path(paths[0]);this.fs.dir(path.slice(0,path.lastIndexOf('/'))||'/');if(this.fs.exists(path))this.fs.read(path);if(!this.editFile)throw Error('Open this editor in a browser terminal.');execution.editorBefore={path,fingerprint:this.fs.exists(path)?contentFingerprint(this.fs.read(path)):null};await this.editFile(cmd,path);return '';}
    case 'vim':case 'vi':throw Error('Vim is not implemented in this lab. Use nano <file> or gedit <file>.');
    case 'pwd':flags('');count(0,0);return this.cwd;
    case 'cd':flags('');count(0,1);{const p=this.path(paths[0]||'~');this.fs.dir(p);this.env.OLDPWD=this.cwd;this.cwd=p;this.env.PWD=p;return '';}
    case 'ls':flags('la');return listDirectory(this,paths,options);
-   case 'mkdir':flags('p');count(1);for(const p of paths)this.fs.mkdir(this.path(p),options.has('p'));return '';
+   case 'mkdir':flags('p');count(1);for(const p of paths)this.fs.mkdir(this.path(p,{parents:options.has('p'),directory:true}),options.has('p'));return '';
    case 'touch':flags('');count(1);for(const p of paths)this.fs.touch(this.path(p));return '';
    case 'cat':flags('');count(1);return paths.map(p=>this.fs.read(this.path(p))).join('');
-   case 'cp':flags('r');count(2,2);this.fs.copy(this.path(paths[0]),this.path(paths[1]),{recursive:options.has('r')});return '';
-   case 'mv':flags('');count(2,2);this.fs.move(this.path(paths[0]),this.path(paths[1]));return '';
+   case 'cp':{flags('r');count(2,2);const from=this.path(paths[0]);this.fs.copy(from,this.path(paths[1],{directory:options.has('r')&&this.fs.entry(from).kind==='dir'}),{recursive:options.has('r'),contents:/(?:^|\/)\.\/*$/.test(paths[0])});return '';}
+   case 'mv':{flags('');count(2,2);if(/(?:^|\/)\.{1,2}\/*$/.test(paths[0]))throw Error('mv: refusing to move dot directory: Device or resource busy');const from=this.path(paths[0]);this.fs.move(from,this.path(paths[1],{directory:this.fs.entry(from).kind==='dir'}));return '';}
    case 'rm':{flags('rf');if(!options.has('f'))count(1);const errors=[];for(const p of paths){try{
     // GNU rm protects these operand spellings even with -rf. Check before
     // normalization, which would erase the final dot component.
     if(/(?:^|\/)\.{1,2}\/*$/.test(p))throw Error("rm: refusing to remove '.' or '..' directory: skipping '"+p+"'");
     this.fs.remove(this.path(p),{recursive:options.has('r'),force:options.has('f')});
-   }catch(error){errors.push(error.message);}}if(errors.length)throw Error(errors.join('\n'));return '';}
+   }catch(error){if(!options.has('f')||!['ENOENT','ENOTDIR'].includes(error.code))errors.push(error.message);}}if(errors.length)throw Error(errors.join('\n'));return '';}
    case 'tree':flags('');count(0,1);return this.fs.tree(this.path(paths[0]||'.'),{label:paths[0]||'.',format:(name,entry)=>this.formatEntry(name,entry)});
-   case 'echo':{const noNewline=args[0]==='-n',text=(noNewline?args.slice(1):args).join(' ');if(!redirect)return text;const previous=redirect.append&&this.fs.exists(redirect.path)?this.fs.read(redirect.path):'';this.fs.write(redirect.path,previous+text+(noNewline?'':'\n'));return '';}
+   case 'echo':{const noNewline=args[0]==='-n',text=(noNewline?args.slice(1):args).join(' ');if(!redirect){execution.inspectedNote=!!execution.expandedNote&&this.env.NOTE==='terminal_practice'&&text==='terminal_practice';return text;}const previous=redirect.append&&this.fs.exists(redirect.path)?this.fs.read(redirect.path):'';this.fs.write(redirect.path,previous+text+(noNewline?'':'\n'));return '';}
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');
    case 'clear':flags('');count(0,0);return '\x1bc';
-   case 'printenv':flags('');count(0,1);return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
+   case 'printenv':flags('');count(0,1);execution.inspectedNote=(paths.length===0||paths[0]==='NOTE')&&this.env.NOTE==='terminal_practice';return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
    case 'which':flags('');count(1);return paths.map(name=>this.findFile(name,{executable:true})||'').filter(Boolean).join('\n');
    default:if(this.dispatch&&['ros2','colcon','source','.','python3'].includes(cmd))return await this.dispatch(this,words);throw Error(cmd+': command not supported in this browser lab');
   }
