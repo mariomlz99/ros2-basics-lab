@@ -160,6 +160,8 @@ export class Terminal{
   const options=new Set(),paths=[];let operands=false;
   for(const arg of args){if(!operands&&arg==='--'){operands=true;continue;}if(!operands&&arg.startsWith('-'))for(const flag of arg.slice(1))options.add(flag);else paths.push(arg);}
   execution.command=cmd;execution.operands=[...paths];
+  // Preserve expanded help semantics even when operand evidence omits flags.
+  execution.helpRequested=args.some(arg=>['-h','--help','--h'].includes(arg));
   const flags=allowed=>{for(const f of options)if(!allowed.includes(f))throw Error(cmd+': unsupported option -'+f);};
   const count=(min,max=Infinity)=>{if(paths.length<min||paths.length>max)throw Error(cmd+': expected '+(min===max?min:`${min} or more`)+' operand(s)');};
   switch(cmd){
@@ -189,7 +191,7 @@ export class Terminal{
    case 'echo':{const noNewline=args[0]==='-n',text=(noNewline?args.slice(1):args).join(' ');if(!redirect){execution.inspectedNote=!!execution.expandedNote&&this.env.NOTE==='terminal_practice'&&text==='terminal_practice';return text;}const previous=redirect.append&&this.fs.exists(redirect.path)?this.fs.read(redirect.path):'';this.fs.write(redirect.path,previous+text+(noNewline?'':'\n'));return '';}
    case 'history':flags('');count(0,0);return this.history.map((s,i)=>`${i+1}  ${s}`).join('\n');
    case 'clear':flags('');count(0,0);return '\x1bc';
-   case 'printenv':flags('');count(0,1);execution.inspectedNote=(paths.length===0||paths[0]==='NOTE')&&this.env.NOTE==='terminal_practice';return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
+   case 'printenv':flags('');count(0,1);execution.inspectedNote=(paths.length===0||paths[0]==='NOTE')&&this.env.NOTE==='terminal_practice';execution.inspectedRosDistro=!!this.env.ROS_DISTRO&&(paths.length===0||paths[0]==='ROS_DISTRO');return paths.length?(this.env[paths[0]]??''):Object.entries(this.env).map(([k,v])=>k+'='+v).join('\n');
    case 'which':flags('');count(1);return paths.map(name=>this.findFile(name,{executable:true})||'').filter(Boolean).join('\n');
    default:if(this.dispatch&&['ros2','colcon','source','.','python3'].includes(cmd))return await this.dispatch(this,words);throw Error(cmd+': command not supported in this browser lab');
   }

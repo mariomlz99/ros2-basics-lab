@@ -1,0 +1,11 @@
+// GNU-style presentation of metadata from the virtual filesystem.
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+export function permissionText(entry){const mode=entry.mode;let result=entry.nativeLink?'l':entry.kind==='dir'?'d':'-';for(const shift of [6,3,0])result+=(mode&(4<<shift)?'r':'-')+(mode&(2<<shift)?'w':'-')+(mode&(1<<shift)?'x':'-');for(const [bit,index,on,off]of [[0o4000,3,'s','S'],[0o2000,6,'s','S'],[0o1000,9,'t','T']])if(mode&bit)result=result.slice(0,index)+(result[index]==='x'?on:off)+result.slice(index+1);return result;}
+export function modificationTime(timestamp,now=Date.now()){const d=new Date(timestamp),recent=timestamp<=now&&now-timestamp<15778476000;return months[d.getMonth()]+' '+String(d.getDate()).padStart(2)+' '+(recent?String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'):' '+d.getFullYear());}
+export function listDirectory(terminal,paths,options){const fs=terminal.fs,long=options.has('l'),all=options.has('a');const operands=(paths.length?paths:['.']).map(name=>({name,path:terminal.path(name)}));
+ const format=rows=>{if(!long)return rows.map(e=>terminal.formatEntry(e.name,e)).join('  ');const stats=rows.map(e=>({...fs.stat(e.path),name:e.name}));const widths={};for(const key of ['links','owner','group','size'])widths[key]=Math.max(0,...stats.map(e=>String(e[key]).length));return stats.map(e=>permissionText(e)+' '+String(e.links).padStart(widths.links)+' '+e.owner.padEnd(widths.owner)+' '+e.group.padEnd(widths.group)+' '+String(e.size).padStart(widths.size)+' '+modificationTime(e.mtime)+' '+terminal.formatEntry(e.name,e)+(e.nativeLink?' -> '+e.nativeLink:'')).join('\n');};
+ const files=operands.filter(e=>fs.entry(e.path).kind!=='dir'),dirs=operands.filter(e=>fs.entry(e.path).kind==='dir'),groups=[];
+ if(files.length)groups.push(format(files.map(e=>({...fs.entry(e.path),...e}))));
+ for(const operand of dirs){const full=operand.path;let rows=fs.list(full).filter(e=>all||!e.name.startsWith('.'));if(all)rows=[{...fs.entry(full),path:full,name:'.'},{...fs.entry(terminal.path(full+'/..')),path:terminal.path(full+'/..'),name:'..'},...rows];const total=long?'total '+rows.reduce((sum,e)=>sum+fs.stat(e.path).blocks,0)+'\n':'';groups.push((operands.length>1?operand.name+':\n':'')+total+format(rows));}
+ return groups.join('\n\n').trimEnd();
+}

@@ -1,6 +1,15 @@
 {
-  "commit": "d8d8461f1b9f3ed76c8804c04f85bc8a83ee7ee2",
-  "builtAt": "2026-10-30T00:01:02.347Z",
+  "project": "ROS 2 Basics Lab",
   "publicBuild": true,
-  "assetVersion": "86b2f81499e5"
+  "preview": false,
+  "builtAt": "2026-11-15T06:27:03.854469+00:00",
+  "assetVersion": "de4f27f7e298",
+  "sourceSha256": "de4f27f7e298e0d74e82dda8e063123963271d0495bda5a5e4b4f063477d1a0b",
+  "baseDistributionCommit": "e20668c65a3a03a00484dfbf434e96bc220b78a9",
+  "previousBuild": {
+    "commit": "d8d8461f1b9f3ed76c8804c04f85bc8a83ee7ee2",
+    "builtAt": "2026-10-30T00:01:02.347Z",
+    "publicBuild": true,
+    "assetVersion": "86b2f81499e5"
+  }
 }
