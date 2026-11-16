@@ -97,25 +97,31 @@ class Node:
         self._parameters = {}
         _nodes[self.name] = self
         _send('node', node=self.name)
+    def _require_live_node(self):
+        if _nodes.get(self.name) is not self:
+            raise RuntimeError('ROS node has been destroyed')
     def create_publisher(self, cls, topic, qos):
+        self._require_live_node()
         return Publisher(self.name, topic, cls)
     def destroy_publisher(self, publisher):
-        if publisher.node != self.name or _publishers.pop(publisher.id, None) is None:
+        if _nodes.get(self.name) is not self or publisher.node != self.name or _publishers.pop(publisher.id, None) is None:
             return False
         _send('unpublisher', id=publisher.id)
         return True
     def create_subscription(self, cls, topic, callback, qos):
+        self._require_live_node()
         key = _id()
         _subscriptions[key] = (self.name, callback, cls)
         _send('subscribe', node=self.name, topic=topic, type=_type_name(cls), id=key)
         return key
     def destroy_subscription(self, key):
-        if key not in _subscriptions or _subscriptions[key][0] != self.name:
+        if _nodes.get(self.name) is not self or key not in _subscriptions or _subscriptions[key][0] != self.name:
             return False
         _subscriptions.pop(key)
         _send('unsubscribe', id=key)
         return True
     def create_timer(self, period, callback):
+        self._require_live_node()
         key = _id()
         timer = Timer(key, self.name, float(period), callback)
         _timers[key] = timer
@@ -123,7 +129,7 @@ class Node:
         return timer
     def destroy_timer(self, timer):
         key = timer.id if isinstance(timer, Timer) else timer
-        if key not in _timers or _timers[key].node != self.name:
+        if _nodes.get(self.name) is not self or key not in _timers or _timers[key].node != self.name:
             return False
         _timers.pop(key)
         _send('timer_cancel', id=key)
@@ -141,6 +147,8 @@ class Node:
             _send('log', node=self.name, level=level, text=str(message))
         return types.SimpleNamespace(debug=lambda s: log(10, s), info=lambda s: log(20, s), warning=lambda s: log(30, s), warn=lambda s: log(30, s), error=lambda s: log(40, s), fatal=lambda s: log(50, s))
     def destroy_node(self):
+        if _nodes.get(self.name) is not self:
+            return
         for publisher in list(_publishers.values()):
             if publisher.node == self.name:
                 self.destroy_publisher(publisher)
@@ -153,6 +161,9 @@ class Node:
         for key, (node, _, _) in list(_services.items()):
             if node == self.name:
                 self.destroy_service(key)
+        for key, (node, _, _) in list(_futures.items()):
+            if node is self:
+                _futures.pop(key, None)
         _nodes.pop(self.name, None)
         _send('destroy', node=self.name)
 
@@ -298,30 +309,37 @@ class Future:
 class Client:
     def __init__(self, node, cls, name):
         self.node, self.cls, self.name = node, cls, name
+        self._require_live_node()
+    def _require_live_node(self):
+        if _nodes.get(self.node.name) is not self.node:
+            raise RuntimeError('Service client node has been destroyed')
     def wait_for_service(self, timeout_sec=None):
+        self._require_live_node()
         if self.name not in _available_services and '/' + self.name not in _available_services:
             raise RuntimeError('Start the service server in another terminal, then rerun the client. Blocking waits are not supported.')
         return True
     def call_async(self, request):
+        self._require_live_node()
         if not isinstance(request, self.cls.Request):
             raise TypeError('Wrong request type')
         key = _id()
         future = Future()
-        _futures[key] = (future, self.cls)
-        _send('service_call', id=key, node=self.node, name=self.name, type=self.cls._type, request=_payload(request))
+        _futures[key] = (self.node, future, self.cls)
+        _send('service_call', id=key, node=self.node.name, name=self.name, type=self.cls._type, request=_payload(request))
         return future
 
 def _create_service(self, cls, name, callback):
+    self._require_live_node()
     key = _id()
     _services[key] = (self.name, cls, callback)
     _send('service', node=self.name, name=name, type=cls._type, id=key)
     return key
 
 def _create_client(self, cls, name):
-    return Client(self.name, cls, name)
+    return Client(self, cls, name)
 
 def _destroy_service(self, key):
-    if key not in _services or _services[key][0] != self.name:
+    if _nodes.get(self.name) is not self or key not in _services or _services[key][0] != self.name:
         return False
     _services.pop(key)
     _send('unservice', id=key)
@@ -345,12 +363,15 @@ def _service_response(key, payload):
     entry = _futures.pop(key, None)
     if entry is None:
         return
-    future, cls = entry
+    node, future, cls = entry
+    if _nodes.get(node.name) is not node:
+        return
     data = json.loads(payload)
     future._error = data.get('error')
     future._result = None if future._error else _from_payload(cls.Response(), data)
     future._done = True
-    for callback in future._callbacks:
+    callbacks, future._callbacks = future._callbacks, []
+    for callback in callbacks:
         callback(future)
 
 # Latest-time TF subset. The worker uses the same publication-derived snapshot

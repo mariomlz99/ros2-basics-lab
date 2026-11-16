@@ -14,6 +14,8 @@ export class RuntimeAdapter{
  releaseWorker(worker){worker.terminate();}
  stop(){this.runtime.tf.listeners.delete(this.tfObserver);for(const listener of this.tfListeners.values())listener.dispose();this.tfListeners.clear();const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);if(this.worker)this.releaseWorker(this.worker);this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
  handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node,d.kind==='node')};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
+  // Reject stale protocol traffic before it can create resources outside Stop's ownership.
+  if(['publisher','subscribe','timer','publish','service'].includes(d.kind)&&(!this.worker||!this.nodes.has(d.node)||!r.nodes.has(d.node)))throw Error('Endpoint needs a live ROS node');
   switch(d.kind){
    case 'tf_listener':{if(!this.nodes.has(d.node))throw Error('TF listener needs a live ROS node');const disposers=['/tf','/tf_static'].map(topic=>r.subscribe(topic,d.node,()=>{},{type:'tf2_msgs/msg/TFMessage',durability:topic==='/tf_static'?'transient_local':'volatile'}));this.tfListeners.set(d.id,{node:d.node,dispose:()=>disposers.forEach(dispose=>dispose())});break;}
    case 'tf_unlistener':this.tfListeners.get(d.id)?.dispose();this.tfListeners.delete(d.id);break;
@@ -26,7 +28,7 @@ export class RuntimeAdapter{
    case 'error':this.output(d.text);this.stop();break;
    case 'shutdown':this.stop();break;
    case 'node':if(r.nodes.has(d.node))throw Error('Node already exists: '+d.node);r.addNode(d.node);this.nodes.add(d.node);break;
-   case 'destroy':this.cleanupNode(d.node);break;
+   case 'destroy':if(this.nodes.has(d.node))this.cleanupNode(d.node);break;
    case 'publisher':{const id=d.id??JSON.stringify([d.node,d.topic]);this.publishers.get(id)?.dispose();const endpoint=Symbol(),topic=r.ensureTopic(d.topic,d.type);topic.publishers.add(d.node,endpoint);this.publishers.set(id,{node:d.node,dispose:()=>{topic.publishers.delete(d.node,endpoint);if(!topic.publishers.has(d.node))r.tf.removePublisher(d.node,d.topic);r.removeEmptyTopics();}});break;}
    case 'unpublisher':this.publishers.get(d.id)?.dispose();this.publishers.delete(d.id);break;
    case 'publish':r.publish(d.topic,d.type,d.message,{node:d.node,owner:this});break;
@@ -39,7 +41,7 @@ export class RuntimeAdapter{
    case 'service':{const name=this.mapTopic(d.name);if(r.services.has(name))throw Error('Service already exists: '+name);const worker=this.worker;r.services.set(name,{node:d.node,type:d.type,owner:this,id:d.id,handler:request=>new Promise((resolve,reject)=>{const token=String(++r.sampleCounter);const timer=setTimeout(()=>{this.pendingServices.delete(token);reject(Error('Service response timed out'));},10000);this.pendingServices.set(token,{resolve,reject,timer,service:name});worker.postMessage({kind:'service_request',id:d.id,token,request});})});break;}
    case 'unservice':{for(const [name,service]of r.services)if(service.owner===this&&service.id===d.id)this.removeService(name);break;}
    case 'service_result':{const pending=this.pendingServices.get(d.token);if(pending){clearTimeout(pending.timer);this.pendingServices.delete(d.token);pending.resolve(d.response);}break;}
-   case 'service_call':{const worker=this.worker;r.callService(this.mapTopic(d.name),d.type,d.request,{caller:this}).then(response=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response});}).catch(e=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response:{error:e.message}});});break;}
+   case 'service_call':{const worker=this.worker;if(!worker||!this.nodes.has(d.node)||!r.nodes.has(d.node)){worker?.postMessage({kind:'service_response',id:d.id,response:{error:'Service client needs a live ROS node'}});break;}r.callService(this.mapTopic(d.name),d.type,d.request,{caller:this}).then(response=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response});}).catch(e=>{if(this.worker===worker)worker.postMessage({kind:'service_response',id:d.id,response:{error:e.message}});});break;}
    case 'parameter_declare':{r.parameterOwners.set(d.node,this);let p=r.parameters.get(d.node);if(!p)r.parameters.set(d.node,p=new Map());const v=Object.hasOwn(this.ros.parameters??{},d.name)?this.ros.parameters[d.name]:d.value;p.set(d.name,v);let types=r.parameterTypes.get(d.node);if(!types)r.parameterTypes.set(d.node,types=new Map());types.set(d.name,d.value_type??(typeof v==='boolean'?1:typeof v==='string'?4:Number.isInteger(v)?2:3));r.parameterEvent(d.node,d.name,v,'new_parameters');if(v!==d.value)this.worker?.postMessage({kind:'parameter_update',node:this.sourceNames.get(d.node),name:d.name,value:v});break;}
   }r.onChange();
  }

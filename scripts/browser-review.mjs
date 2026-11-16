@@ -34,7 +34,7 @@ try{
   await new Promise(done=>setTimeout(done,10000));
  }
  for(const [engine,type]of [['chromium',chromium],['firefox',firefox]]){
-  const browser=await type.launch({headless:true});
+  const browser=await type.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})});
   try{
    for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:320,height:740}]){
     const context=await browser.newContext({viewport,hasTouch:viewport.width<500});
