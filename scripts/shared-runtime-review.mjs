@@ -28,4 +28,9 @@ try{
  if(process.exitCode)throw Error('Python worker lifecycle checks failed; checker tests not started');
  process.env.QA_OUTPUT=resolve(output,'checkers');
  await import('./shared-checker-runtime.mjs');
+ if(process.exitCode)throw Error('Checker regressions failed; delivery checks not started');
+ process.env.QA_OUTPUT=resolve(output,'delivery-ownership');
+ process.env.LAB_BUILD_INFO=resolve(root,'build-info.json');
+ process.env.BROWSERS=process.env.BROWSERS||'chromium,firefox';
+ await import('./shared-delivery-runtime.mjs');
 }finally{server?.close();}

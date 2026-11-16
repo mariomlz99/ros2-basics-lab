@@ -3,16 +3,32 @@
 import {recordTfOutput,sameTfRequest} from './tf-output.js';
 import {TransformStore} from './tf.js';
 import {LatestMailbox} from './mailbox.js';
+// ACKs authorize only a sample actually dispatched to this worker. Private state
+// is bounded by subscriptions; queued latest samples have no receipt yet.
+const deliveredSamples=new WeakMap();
+function liveReceipt(adapter,id,receipt){
+ const r=adapter.runtime;
+ return adapter.worker===receipt.worker&&adapter.subscriptions.get(id)===receipt.subscription
+  &&adapter.nodes.has(receipt.node)&&r.nodes.has(receipt.node)
+  &&r.listeners.get(receipt.subscription.runtimeId)===receipt.listener
+  &&r.samples.get(receipt.sample)===receipt.record&&adapter.mailbox.inFlight.has(id);
+}
 export class RuntimeAdapter{
- constructor(runtime,{output=()=>{},status=()=>{},ros={},onStop=()=>{},language='Python'}={}){Object.assign(this,{runtime,output,status,ros,onStop,language});this.nodes=new Set();this.sourceNames=new Map();this.mappedNodes=new Map();this.publishers=new Map();this.subscriptions=new Map();this.jobs=new Map();this.mailbox=new LatestMailbox();this.processed=new Map();this.reports=new Map();this.pendingServices=new Map();this.worker=null;this.tfSnapshots=new Map();this.tfListeners=new Map();}
+ constructor(runtime,{output=()=>{},status=()=>{},ros={},onStop=()=>{},language='Python'}={}){Object.assign(this,{runtime,output,status,ros,onStop,language});this.nodes=new Set();this.sourceNames=new Map();this.mappedNodes=new Map();this.publishers=new Map();this.subscriptions=new Map();this.jobs=new Map();this.mailbox=new LatestMailbox();this.processed=new Map();this.reports=new Map();this.pendingServices=new Map();this.worker=null;this.tfSnapshots=new Map();this.tfListeners=new Map();deliveredSamples.set(this,new Map());}
  mapNode(name,create=false){const n='/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),this.ros.name??name.replace(/^\//,'')].filter(Boolean).join('/');if(create){if(this.mappedNodes.has(n))throw Error('This browser supports one node with each name per program: '+n);const id=this.runtime.allocateNode(n);this.mappedNodes.set(n,id);this.sourceNames.set(id,name);return id;}return this.mappedNodes.get(n)??n;}
  mapTopic(name){const absolute=n=>n.startsWith('/')?n:'/'+[this.ros.namespace?.replace(/^\/+|\/+$/g,''),n].filter(Boolean).join('/');return absolute(this.ros.remappings?.find(([a])=>absolute(a)===absolute(name))?.[1]??name);}
  watchdog(ms,message){clearTimeout(this.timer);this.timer=setTimeout(()=>{this.output(message);this.stop();},ms);}
  removeService(name){this.runtime.services.delete(name);for(const [token,pending]of this.pendingServices)if(pending.service===name){clearTimeout(pending.timer);pending.reject(Error('Service stopped before responding: '+name));this.pendingServices.delete(token);}}
- cleanupNode(node){for(const [id,listener]of this.tfListeners)if(listener.node===node){listener.dispose();this.tfListeners.delete(id);}for(const [id,p]of this.publishers)if(p.node===node){p.dispose();this.publishers.delete(id);}for(const [id,s]of this.subscriptions)if(s.node===node){s.dispose();this.subscriptions.delete(id);this.mailbox.remove(id);}for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.removeService(name);this.runtime.removeNode(node);this.nodes.delete(node);this.sourceNames.delete(node);for(const [name,id]of this.mappedNodes)if(id===node)this.mappedNodes.delete(name);this.runtime.removeEmptyTopics();}
+ removeSubscription(id,subscription=this.subscriptions.get(id)){
+  if(!subscription||this.subscriptions.get(id)!==subscription)return;
+  // Retire our slot before disposal can synchronously create a replacement.
+  this.subscriptions.delete(id);deliveredSamples.get(this).delete(id);this.mailbox.remove(id);
+  subscription.dispose();
+ }
+ cleanupNode(node){for(const [id,listener]of this.tfListeners)if(listener.node===node){listener.dispose();this.tfListeners.delete(id);}for(const [id,p]of this.publishers)if(p.node===node){p.dispose();this.publishers.delete(id);}for(const [id,s]of this.subscriptions)if(s.node===node)this.removeSubscription(id);for(const [id,j]of this.jobs)if(j.node===node){j.dispose();this.jobs.delete(id);this.mailbox.remove('timer-'+id);}for(const t of this.runtime.topics.values()){t.publishers.delete(node);t.subscribers.delete(node);}for(const [name,s]of this.runtime.services)if(s.node===node)this.removeService(name);this.runtime.removeNode(node);this.nodes.delete(node);this.sourceNames.delete(node);for(const [name,id]of this.mappedNodes)if(id===node)this.mappedNodes.delete(name);this.runtime.removeEmptyTopics();}
  attachTransforms(){this.tfProof=crypto.randomUUID();let first=true;this.runtime.tfEvidence=this.runtime.tfEvidence.filter(event=>event.owner!==this);this.tfSnapshots.clear();this.tfObserver=snapshot=>{this.tfSnapshots.set(snapshot.revision,snapshot);if(this.tfSnapshots.size>256)this.tfSnapshots.delete(this.tfSnapshots.keys().next().value);this.worker?.postMessage({kind:'tf_snapshot',snapshot,...(first?{proof:this.tfProof}:{})});first=false;};this.runtime.tf.listeners.add(this.tfObserver);this.tfObserver(this.runtime.tf.snapshot());}
  releaseWorker(worker){worker.terminate();}
- stop(){this.runtime.tf.listeners.delete(this.tfObserver);for(const listener of this.tfListeners.values())listener.dispose();this.tfListeners.clear();const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);if(this.worker)this.releaseWorker(this.worker);this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();if(active){this.status(this.language+' stopped');this.onStop();}}
+ stop(){this.runtime.tf.listeners.delete(this.tfObserver);for(const listener of this.tfListeners.values())listener.dispose();this.tfListeners.clear();const active=!!this.worker||this.nodes.size>0;clearTimeout(this.timer);if(this.worker)this.releaseWorker(this.worker);this.worker=null;for(const node of [...this.nodes])this.cleanupNode(node);for(const p of this.pendingServices.values()){clearTimeout(p.timer);p.reject(Error('Service process stopped'));}this.pendingServices.clear();this.runtime.parameterListeners.delete(this.parameterListener);this.mailbox.clear();deliveredSamples.get(this).clear();if(active){this.status(this.language+' stopped');this.onStop();}}
  handle(d){const r=this.runtime;if(d.node)d={...d,node:this.mapNode(d.node,d.kind==='node')};if(d.topic)d={...d,topic:this.mapTopic(d.topic)};
   // Reject stale protocol traffic before it can create resources outside Stop's ownership.
   if(['publisher','subscribe','timer','publish','service'].includes(d.kind)&&(!this.worker||!this.nodes.has(d.node)||!r.nodes.has(d.node)))throw Error('Endpoint needs a live ROS node');
@@ -32,12 +48,51 @@ export class RuntimeAdapter{
    case 'publisher':{const id=d.id??JSON.stringify([d.node,d.topic]);this.publishers.get(id)?.dispose();const endpoint=Symbol(),topic=r.ensureTopic(d.topic,d.type);topic.publishers.add(d.node,endpoint);this.publishers.set(id,{node:d.node,dispose:()=>{topic.publishers.delete(d.node,endpoint);if(!topic.publishers.has(d.node))r.tf.removePublisher(d.node,d.topic);r.removeEmptyTopics();}});break;}
    case 'unpublisher':this.publishers.get(d.id)?.dispose();this.publishers.delete(d.id);break;
    case 'publish':r.publish(d.topic,d.type,d.message,{node:d.node,owner:this});break;
-   case 'subscribe':{const dispose=r.subscribe(d.topic,d.node,(message,publisher,sample)=>{if(!this.worker)return;this.mailbox.offer(d.id,()=>{this.worker?.postMessage({kind:'message',subscription:d.id,message,sample});this.watchdog(5000,'Callback took too long; stopped.');});},{type:d.type});this.subscriptions.set(d.id,{node:d.node,dispose});break;}
-   case 'unsubscribe':this.subscriptions.get(d.id)?.dispose();this.subscriptions.delete(d.id);this.mailbox.remove(d.id);break;
+   case 'subscribe':{
+    this.removeSubscription(d.id);
+    // A newer synchronous replacement or node retirement wins over this request.
+    if(this.subscriptions.has(d.id)||!this.worker||!this.nodes.has(d.node)||!r.nodes.has(d.node))break;
+    const subscription={node:d.node,runtimeId:Symbol(),dispose:()=>{}};
+    this.subscriptions.set(d.id,subscription);
+    try{const dispose=r.subscribe(d.topic,d.node,(message,publisher,sample)=>{
+     if(!this.worker||this.subscriptions.get(d.id)!==subscription)return;
+     this.mailbox.offer(d.id,()=>{
+      const worker=this.worker,record=r.samples.get(sample),listener=r.listeners.get(subscription.runtimeId);
+      if(!worker||!listener||this.subscriptions.get(d.id)!==subscription){this.mailbox.remove(d.id);return;}
+      // Evidence-cache eviction cannot discard the independently retained payload.
+      // A callback still runs; only a present canonical record authorizes its ACK.
+      if(record)deliveredSamples.get(this).set(d.id,{sample,record,worker,subscription,listener,node:d.node});
+      else deliveredSamples.get(this).delete(d.id);
+      try{worker.postMessage({kind:'message',subscription:d.id,message,sample});}
+      catch(error){deliveredSamples.get(this).delete(d.id);this.mailbox.remove(d.id);throw error;}
+      this.watchdog(5000,'Callback took too long; stopped.');
+     });
+    },{type:d.type,id:subscription.runtimeId});
+     subscription.dispose=dispose;
+     // onChange runs inside registration, before its disposer is returned.
+     if(this.subscriptions.get(d.id)!==subscription)dispose();
+     else if(!this.worker||!this.nodes.has(d.node)||!r.nodes.has(d.node)||!r.listeners.has(subscription.runtimeId))this.removeSubscription(d.id,subscription);
+    }
+    catch(error){this.removeSubscription(d.id,subscription);throw error;}
+    break;
+   }
+   case 'unsubscribe':this.removeSubscription(d.id);break;
    case 'timer':{this.jobs.get(d.id)?.dispose();const dispose=r.every(d.period,()=>{if(this.worker)this.mailbox.offer('timer-'+d.id,()=>{this.worker?.postMessage({kind:'timer',id:d.id});this.watchdog(5000,'Timer callback took too long; stopped.');});});this.jobs.set(d.id,{node:d.node,dispose});break;}
    case 'timer_cancel':this.jobs.get(d.id)?.dispose();this.jobs.delete(d.id);this.mailbox.remove('timer-'+d.id);break;
-   case 'message_processed':{const sample=r.samples.get(d.sample);if(sample){for(const node of this.nodes)sample.receivedBy.add(node);sample.receivedOwners.add(this);if(sample.publisherOwner){r.programDeliveries.push({topic:sample.topic,type:sample.type,publisher:sample.publisherOwner,receiver:this});if(r.programDeliveries.length>200)r.programDeliveries.shift();}}break;}
-   case 'frame_done':this.mailbox.done(d.subscription);if(!this.mailbox.inFlight.size)clearTimeout(this.timer);break;
+   case 'message_processed':{
+    // Both bridges ACK by sample ID; two subscriptions can receive the same
+    // sample. Consume one matching actual dispatch, never every node/receipt.
+    for(const [id,receipt]of deliveredSamples.get(this)){
+     if(!liveReceipt(this,id,receipt)){deliveredSamples.get(this).delete(id);continue;}
+     if(receipt.sample!==d.sample)continue;
+     deliveredSamples.get(this).delete(id);
+     const sample=receipt.record;sample.receivedBy.add(receipt.node);sample.receivedOwners.add(this);
+     if(sample.publisherOwner){r.programDeliveries.push({topic:sample.topic,type:sample.type,publisher:sample.publisherOwner,receiver:this});if(r.programDeliveries.length>200)r.programDeliveries.shift();}
+     break;
+    }
+    break;
+   }
+   case 'frame_done':deliveredSamples.get(this).delete(d.subscription);this.mailbox.done(d.subscription);if(!this.mailbox.inFlight.size)clearTimeout(this.timer);break;
    case 'service':{const name=this.mapTopic(d.name);if(r.services.has(name))throw Error('Service already exists: '+name);const worker=this.worker;r.services.set(name,{node:d.node,type:d.type,owner:this,id:d.id,handler:request=>new Promise((resolve,reject)=>{const token=String(++r.sampleCounter);const timer=setTimeout(()=>{this.pendingServices.delete(token);reject(Error('Service response timed out'));},10000);this.pendingServices.set(token,{resolve,reject,timer,service:name});worker.postMessage({kind:'service_request',id:d.id,token,request});})});break;}
    case 'unservice':{for(const [name,service]of r.services)if(service.owner===this&&service.id===d.id)this.removeService(name);break;}
    case 'service_result':{const pending=this.pendingServices.get(d.token);if(pending){clearTimeout(pending.timer);this.pendingServices.delete(d.token);pending.resolve(d.response);}break;}

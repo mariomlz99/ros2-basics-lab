@@ -64,3 +64,35 @@ process/launch cancellation, installed-file behavior, session restart
 persistence, shell recovery, translations and attribution follow-ups. Those
 need their own Basics adaptations and release checks. Passing this batch does
 not clear that backlog.
+
+
+## Pending follow-up: delivery acknowledgement ownership
+
+This follow-up is prepared locally. It is not part of the previously published
+batch above. Browser validation and publication remain pending.
+
+- SENSOR-DELIVERY-38-001 (SHARED_IMPLEMENTATION, P0): independently reproduced
+  fabricated acknowledgement could satisfy mandatory pub/sub and launched
+  exchange checks without a receiving subscription. The adapter now accepts
+  acknowledgement only for a message actually dispatched to that worker and
+  live subscription. Acknowledgements are consumed once and retired on cleanup.
+- B39-ACK-001 (BASICS_ONLY regression in the unpublished patch, P1): retaining a
+  callback payload must not depend on retaining its checker evidence record.
+  Busy unrelated topics can evict the record; the callback still runs, without
+  granting evidence for the evicted record.
+- B39-ACK-002 (SHARED_IMPLEMENTATION, P2): synchronous graph observers that retire
+  or replace a subscription no longer leave its original listener behind.
+  This was reproduced with a trusted observer; learner reachability is unproved.
+
+The corrected source passes 56 Node cases plus three independent review cases.
+These use explicit worker doubles. The actual-worker release gate now includes
+Python known-sample-ID forgery attempts from learner code, genuine Python/C++
+pub/sub and launch, and Stop/Reset checks in Chromium and Firefox. It verifies
+that the served source identity matches the candidate. No actual-worker success
+is inferred from preparing this gate.
+
+A dispatch receipt proves that a message reached the worker, not that arbitrary
+student code computed an answer correctly. No curriculum, storage key, license,
+or public brand changes are included. The Sensors mission starter and lesson
+cleanup changes were not blindly copied: the former is KineNest-only and the
+exact latter failure was not reproduced in the six Basics example mains.
